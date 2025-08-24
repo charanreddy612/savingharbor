@@ -1,0 +1,74 @@
+---
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CardCoupon from "../../components/CardCoupon.astro";
+import Pagination from "../../components/Pagination.astro";
+import { api } from "../../lib/api";
+
+type Coupon = {
+  id: string | number;
+  title?: string | null;
+  code?: string | null;
+  ends_at?: string | null;
+  merchant_name?: string | null;
+};
+
+type CouponsResponse = {
+  data: Coupon[];
+  meta: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    canonical?: string;
+    prev?: string | null;
+    next?: string | null;
+    total_pages?: number;
+    jsonld?: any;
+    title?: string;
+    description?: string;
+  };
+};
+
+let resp: CouponsResponse | null = null;
+try {
+  resp = await api.get<CouponsResponse>("/coupons");
+} catch (e) {
+  resp = null;
+}
+
+const coupons = resp?.data || [];
+const meta = resp?.meta || {};
+const pageTitle = meta.title || "Coupons - HandPicked";
+const pageDesc =
+  meta.description || "Browse verified, handpicked coupons and deals.";
+const canonical = meta.canonical;
+const jsonld = meta.jsonld;
+---
+
+<Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
+  <Header />
+  <main class="container py-10">
+    <h1 class="text-2xl font-bold mb-6">Coupons</h1>
+    {
+      coupons.length > 0 ? (
+        <div class="grid-2-equal">
+          {coupons.map((c) => (
+            <CardCoupon coupon={c} />
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-600">
+          No coupons available right now. Check back soon.
+        </p>
+      )
+    }
+
+    <Pagination
+      prev={meta.prev}
+      next={meta.next}
+      total_pages={meta.total_pages}
+    />
+  </main>
+  <Footer />
+</Base>
