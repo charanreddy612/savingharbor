@@ -1,0 +1,42 @@
+---
+type Coupon = {
+  id: string | number;
+  title?: string | null;
+  code?: string | null;
+  ends_at?: string | null;
+  merchant_name?: string | null;
+};
+
+const { coupon } = Astro.props as { coupon: Coupon };
+const ends = coupon.ends_at ? new Date(coupon.ends_at) : null;
+const endsText = ends ? `ends ${ends.toLocaleDateString()}` : null;
+---
+
+<div class="border rounded-lg p-4 hover:shadow-sm transition">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h3 class="font-medium">{coupon.title || "Deal"}</h3>
+      {
+        coupon.merchant_name && (
+          <p class="text-xs text-gray-600">{coupon.merchant_name}</p>
+        )
+      }
+      {endsText && <p class="text-xs text-gray-500 mt-1">{endsText}</p>}
+    </div>
+    <div>
+      {
+        coupon.code ? (
+          <span class="inline-block text-xs bg-black text-white px-2 py-1 rounded">
+            {" "}
+            Code: {coupon.code}{" "}
+          </span>
+        ) : (
+          <span class="inline-block text-xs border px-2 py-1 rounded">
+            {" "}
+            Activate{" "}
+          </span>
+        )
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+---
+import ChevronLeft from "./icons/ChevronLeft.astro";
+import ChevronRight from "./icons/ChevronRight.astro";
+
+const {
+  prev = null,
+  next = null,
+  total_pages = undefined,
+} = Astro.props as {
+  prev?: string | null;
+  next?: string | null;
+  total_pages?: number;
+};
+---
+
+<div class="flex items-center justify-between mt-6">
+  <div class="text-sm text-gray-600">
+    {
+      typeof total_pages === "number" && total_pages > 0
+        ? `Total pages: ${total_pages}`
+        : ""
+    }
+  </div>
+  <div class="flex items-center gap-2">
+    {
+      prev ? (
+        <a href={prev} class="px-3 py-1.5 text-sm border rounded">
+          <ChevronLeft size={18} class="mr-1" />Prev
+        </a>
+      ) : (
+        <span class="px-3 py-1.5 text-sm text-gray-400 border rounded">
+          Prev
+        </span>
+      )
+    }
+    {
+      next ? (
+        <a href={next} class="px-3 py-1.5 text-sm border rounded">
+          Next<ChevronRight size={18} class="ml-1" />
+        </a>
+      ) : (
+        <span class="px-3 py-1.5 text-sm text-gray-400 border rounded">
+          Next
+        </span>
+      )
+    }
+  </div>
+</div>

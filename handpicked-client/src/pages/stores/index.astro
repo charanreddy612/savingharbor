@@ -1,0 +1,58 @@
+---
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CardStore from "../../components/CardStore.astro";
+import Pagination from "../../components/Pagination.astro";
+import { api } from "../../lib/api";
+
+type StoresResponse = {
+  data: any[];
+  meta: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    canonical?: string;
+    prev?: string | null;
+    next?: string | null;
+    total_pages?: number;
+  };
+};
+
+let stores: StoresResponse | null = null;
+try {
+  stores = await api.get<StoresResponse>("/stores");
+} catch (e) {
+  stores = null;
+}
+
+const pageTitle = "Stores - HandPicked";
+const pageDesc = "Explore verified stores with handpicked coupons.";
+const canonical = stores?.meta?.canonical;
+---
+
+<Base meta={{ title: pageTitle, description: pageDesc, canonical }}>
+  <Header />
+  <main class="container py-10">
+    <h1 class="text-2xl font-bold mb-6">Stores</h1>
+    text
+    {
+      stores?.data && stores.data.length > 0 ? (
+        <div class="grid-3-equal">
+          {stores.data.map((s) => (
+            <CardStore store={s} />
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-600">No stores found.</p>
+      )
+    }
+
+    <Pagination
+      prev={stores?.meta?.prev}
+      next={stores?.meta?.next}
+      total_pages={stores?.meta?.total_pages}
+    />
+  </main>
+  <Footer />
+</Base>

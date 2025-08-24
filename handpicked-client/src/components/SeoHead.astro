@@ -1,0 +1,41 @@
+---
+const props = Astro.props as any;
+const meta = (props && props.meta) || {};
+
+const siteName = "HandPicked";
+const defaultTitle =
+  meta.title || "HandPicked Deals | Verified Coupons & Discounts";
+const defaultDesc =
+  meta.description ||
+  "Verified coupons, real savings, no expired junk — handpicked by real humans.";
+const canonical = meta.canonical;
+const ogImage = meta.og_image || "/og-default.png";
+const jsonld = meta.jsonld;
+---
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{defaultTitle}</title>
+  <meta name="description" content={defaultDesc} />
+  {canonical && <link rel="canonical" href={canonical} />}
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  {defaultTitle && <meta property="og:title" content={defaultTitle} />}
+  {defaultDesc && <meta property="og:description" content={defaultDesc} />}
+  {canonical && <meta property="og:url" content={canonical} />}
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  {defaultTitle && <meta name="twitter:title" content={defaultTitle} />}
+  {defaultDesc && <meta name="twitter:description" content={defaultDesc} />}
+  <meta name="twitter:image" content={ogImage} />
+  {
+    jsonld && (
+      <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />
+    )
+  }
+</head>

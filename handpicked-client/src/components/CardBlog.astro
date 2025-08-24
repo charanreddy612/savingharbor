@@ -1,0 +1,41 @@
+---
+type Blog = {
+  id: string | number;
+  slug: string;
+  title: string;
+  hero_image_url?: string | null;
+  category?: string | null;
+  created_at?: string | null;
+};
+
+const { blog } = Astro.props as { blog: Blog };
+---
+
+<a
+  href={`/blog/${blog.slug}`}
+  class="block border rounded-lg overflow-hidden hover:shadow-sm transition"
+>
+  <div class="aspect-[16/9] bg-gray-100">
+    {
+      blog.hero_image_url ? (
+        <img
+          src={blog.hero_image_url}
+          alt={blog.title}
+          class="w-full h-full object-cover"
+          loading="lazy"
+        />
+      ) : null
+    }
+  </div>
+  <div class="p-4">
+    <h3 class="font-semibold line-clamp-2">{blog.title}</h3>
+    <div class="mt-1 text-xs text-gray-600 flex items-center gap-2">
+      {blog.category && <span>{blog.category}</span>}
+      {
+        blog.created_at && (
+          <span>- {new Date(blog.created_at).toLocaleDateString()}</span>
+        )
+      }
+    </div>
+  </div>
+</a>

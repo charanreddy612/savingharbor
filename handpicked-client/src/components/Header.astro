@@ -1,0 +1,28 @@
+---
+const nav = [
+  { href: "/stores", label: "Stores" },
+  { href: "/coupons", label: "Coupons" },
+  { href: "/blog", label: "Blog" },
+];
+---
+
+<header class="site-header w-full">
+  <div class="container py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3">
+      <img src="/logo.svg" alt="HandPicked" width="36" height="36" />
+      <span class="font-semibold text-lg tracking-tight">HandPicked</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-6">
+      {
+        nav.map((n) => (
+          <a href={n.href} class="text-sm text-gray-700 hover:text-black">
+            {n.label}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="md:hidden">
+      <a href="/stores" class="btn btn-outline text-sm">Browse</a>
+    </div>
+  </div>
+</header>
