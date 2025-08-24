@@ -24,4 +24,6 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel build output
 .vercel
