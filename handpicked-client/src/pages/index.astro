@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import BannerSlider from "../components/BannerSlider.jsx";
 
 const pageMeta = {
   title: "HandPicked Deals | Verified Coupons & Discounts",
@@ -29,6 +30,7 @@ const pageMeta = {
         <a href="/stores" class="btn btn-outline">Explore Stores</a>
       </div>
     </section>
+    <BannerSlider client:load/>
     <section
       class="mt-12"
       style="display: grid; gap: 1rem; grid-template-columns: repeat(12, minmax(0,1fr));"
