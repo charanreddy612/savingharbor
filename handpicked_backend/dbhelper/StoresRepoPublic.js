@@ -31,7 +31,7 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   let query = supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, created_at, active_coupons"
+      "id, slug, name, logo_url, category_names, created_at"//, active_coupons
     )
     .order("created_at", { ascending: false }) // use created_at only
     .range(from, to);
@@ -60,7 +60,7 @@ export async function getBySlug(slug) {
   const { data, error } = await supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, side_description_html, meta_title, meta_description, active_coupons"
+      "id, slug, name, logo_url, category_names, side_description_html, meta_title, meta_description" //, active_coupons
     )
     .eq("slug", slug)
     .maybeSingle();
