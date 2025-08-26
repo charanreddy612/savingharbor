@@ -12,10 +12,10 @@ const ends = coupon.ends_at ? new Date(coupon.ends_at) : null;
 const endsText = ends ? `ends ${ends.toLocaleDateString()}` : null;
 ---
 
-<div class="border rounded-lg p-4 hover:shadow-sm transition">
-  <div class="flex items-start justify-between gap-3">
+<div class = "bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+  <div class="flex justify-between items-start">
     <div>
-      <h3 class="font-medium">{coupon.title || "Deal"}</h3>
+      <h3 class="text-lg font-bold text-gray-800">{coupon.title || "Deal"}</h3>
       {
         coupon.merchant_name && (
           <p class="text-xs text-gray-600">{coupon.merchant_name}</p>
@@ -26,7 +26,7 @@ const endsText = ends ? `ends ${ends.toLocaleDateString()}` : null;
     <div>
       {
         coupon.code ? (
-          <span class="inline-block text-xs bg-black text-white px-2 py-1 rounded">
+          <span class="flex-grow border border-gray-300 rounded-l-md px-3 py-2 text-sm">
             {" "}
             Code: {coupon.code}{" "}
           </span>
