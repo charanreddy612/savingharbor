@@ -17,7 +17,7 @@ export async function list({ q, categorySlug, sort, page, limit }) {
     categoryName = cat?.name || null;
   }
 
-  // Count
+  // Count query
   let cQuery = supabase
     .from("merchants")
     .select("id", { count: "exact", head: true });
@@ -27,15 +27,13 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   const { count, error: cErr } = await cQuery;
   if (cErr) throw cErr;
 
-  // Rows
+  // Rows query
   let query = supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, is_featured, created_at, active_coupons"
+      "id, slug, name, logo_url, category_names, created_at, active_coupons"
     )
-    .order(sort === "featured" ? "is_featured" : "created_at", {
-      ascending: sort === "newest" ? false : false,
-    })
+    .order("created_at", { ascending: false }) // use created_at only
     .range(from, to);
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -51,13 +49,14 @@ export async function list({ q, categorySlug, sort, page, limit }) {
     logo_url: r.logo_url,
     category_names: Array.isArray(r.category_names) ? r.category_names : [],
     stats: { active_coupons: r.active_coupons || 0 },
-    is_featured: !!r.is_featured,
   }));
 
   return { rows, total: count || 0 };
 }
 
 export async function getBySlug(slug) {
+  if (!slug) return null;
+
   const { data, error } = await supabase
     .from("merchants")
     .select(
@@ -65,8 +64,14 @@ export async function getBySlug(slug) {
     )
     .eq("slug", slug)
     .maybeSingle();
-  if (error) throw error;
+
+  if (error) {
+    console.error("Supabase getBySlug error:", error);
+    return null; // Fail gracefully instead of throwing
+  }
+
   if (!data) return null;
+
   return {
     id: data.id,
     slug: data.slug,
@@ -103,29 +108,50 @@ export function buildBreadcrumbs(store, { origin }) {
   ];
 }
 
+// Fetch related stores by overlapping categories
 export async function relatedByCategories({
   merchantId,
   categoryNames,
   limit,
 }) {
   if (!categoryNames?.length) return [];
-  const { data, error } = await supabase
-    .from("merchants")
-    .select("id, slug, name, logo_url")
-    .neq("id", merchantId)
-    .overlaps("category_names", categoryNames)
-    .limit(limit);
-  if (error) throw error;
-  return data || [];
+
+  try {
+    const { data, error } = await supabase
+      .from("merchants")
+      .select("id, slug, name, logo_url")
+      .neq("id", merchantId)
+      .overlaps("category_names", categoryNames)
+      .limit(limit || 8);
+
+    if (error) {
+      console.error("Supabase relatedByCategories error:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (e) {
+    console.error("Unexpected error in relatedByCategories:", e);
+    return [];
+  }
 }
 
+// Return only slugs for sitemap or lightweight lists
 export async function listSlugs() {
-  // Return only slug and updated_at if you track it. 
-  // Adjust column names as needed.
-  const { data, error } = await supabase
-    .from("merchants")
-    .select("slug, updated_at")
-    .eq("active", true);
-  if (error) throw error;
-  return { slugs: data || [] };
+  try {
+    const { data, error } = await supabase
+      .from("merchants")
+      .select("slug, updated_at")
+      .eq("active", true);
+
+    if (error) {
+      console.error("Supabase listSlugs error:", error);
+      return { slugs: [] };
+    }
+
+    return { slugs: data || [] };
+  } catch (e) {
+    console.error("Unexpected error in listSlugs:", e);
+    return { slugs: [] };
+  }
 }
