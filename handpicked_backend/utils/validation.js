@@ -80,11 +80,18 @@ export function requireQ(q) {
 
 // derive locale from Accept-Language when explicit locale is absent/invalid
 export function deriveLocale(req, fallback = "en") {
-  const raw = String(req.headers?.["accept-language"] || "").trim();
+  // Accept both lowercase and capitalized header keys
+  const rawHeader =
+    req.headers?.["accept-language"] ?? req.headers?.["Accept-Language"] ?? "";
+
+  if (!rawHeader || typeof rawHeader !== "string") return fallback;
+
+  const raw = rawHeader.trim();
   if (!raw) return fallback;
 
-  // Take the first language tag before comma, strip any q-value
-  const first = raw.split(",")?.trim().split(";")?.trim() || "";
+  // Take the first language tag before comma
+  const first = raw.split(",")[0]?.trim();
+  if (!first) return fallback;
 
   // Accept basic tags like "en" or "en-US"
   if (/^[a-z]{2}(-[A-Z]{2})?$/.test(first)) {
@@ -92,10 +99,9 @@ export function deriveLocale(req, fallback = "en") {
   }
 
   // Fallback to primary subtag if it's valid (e.g., "en-GB-x-private" -> "en")
-  const primary = first.split("-");
+  const primary = first.split("-")[0]?.toLowerCase();
   if (/^[a-z]{2}$/.test(primary)) {
     return primary;
   }
-
   return fallback;
 }
