@@ -4,9 +4,9 @@ import cors from "cors";
 import path from "path";
 import helmet from "helmet";
 
-import { etagMiddleware } from "./middleware/etagMiddleware.js";
-import { publicRateLimiter } from "./middleware/rateLimit.js";
-import { requestLogger } from "./middleware/logger.js";
+// import { etagMiddleware } from "./middleware/etagMiddleware.js";
+// import { publicRateLimiter } from "./middleware/rateLimit.js";
+// import { requestLogger } from "./middleware/logger.js";
 
 import publicRouter from "./routes/public.js";
 // import other routes as needed
@@ -36,14 +36,14 @@ app.use(
 );
 
 // Logging
-if (process.env.NODE_ENV !== "test") {
-  app.use(requestLogger);
-}
+// if (process.env.NODE_ENV !== "test") {
+//   app.use(requestLogger);
+// }
 
 // Public routes with ETag & optional rate limiting
-app.use(etagMiddleware);
-app.use("/public/v1", publicRateLimiter, publicRouter);
-
+// app.use(etagMiddleware);
+// app.use("/public/v1", publicRateLimiter, publicRouter);
+app.use("/public/v1", publicRouter);
 // Static uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
