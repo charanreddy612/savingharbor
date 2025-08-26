@@ -1,6 +1,5 @@
 const API_BASE_URL =
   (process?.env?.API_BASE_URL as string);
-  // || "https://handpicked-dev.onrender.com/public/v1";
 
 async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {

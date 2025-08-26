@@ -17,28 +17,44 @@ import {
 } from "../constants/publicEnums.js";
 
 function getOrigin(req) {
-  return (
-    (req.headers["x-forwarded-proto"]
-      ? String(req.headers["x-forwarded-proto"])
-      : req.protocol) +
-    "://" +
-    req.get("host")
-  );
+  try {
+    return (
+      (req.headers["x-forwarded-proto"]
+        ? String(req.headers["x-forwarded-proto"])
+        : req.protocol) +
+      "://" +
+      req.get("host")
+    );
+  } catch (err) {
+    console.error("Failed to get origin:", err);
+    return "";
+  }
 }
+
 function getPath(req) {
-  return req.originalUrl ? req.originalUrl.split("?") : req.path;
+  try {
+    return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
+  } catch (err) {
+    console.error("Failed to get path:", err);
+    return "/";
+  }
 }
 
 // Build prev/next/total_pages navigation URLs
 function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
   const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
   const makeUrl = (p) => {
-    const url = new URL(`${origin}${path}`);
-    Object.entries({ ...extraParams, page: p, limit }).forEach(([k, v]) => {
-      if (v !== null && v !== undefined && v !== "")
-        url.searchParams.set(k, String(v));
-    });
-    return url.toString();
+    try {
+      const url = new URL(`${origin}${path}`);
+      Object.entries({ ...extraParams, page: p, limit }).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== "")
+          url.searchParams.set(k, String(v));
+      });
+      return url.toString();
+    } catch (err) {
+      console.error("Failed to build URL for pagination:", err);
+      return "";
+    }
   };
   const prev = page > 1 ? makeUrl(page - 1) : null;
   const next = page < totalPages ? makeUrl(page + 1) : null;
@@ -56,11 +72,12 @@ export async function list(req, res) {
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const categorySlug = String(req.query.category || "").slice(0, 100);
-    const storeSlug = String(req.query.store || "").slice(0, 100);    
+    const storeSlug = String(req.query.store || "").slice(0, 100);
+
     const params = {
       q: q.trim(),
-      categorySlug:categorySlug.trim(),
-      storeSlug:storeSlug.trim(),
+      categorySlug: categorySlug.trim(),
+      storeSlug: storeSlug.trim(),
       type,
       status,
       sort,
@@ -74,50 +91,70 @@ export async function list(req, res) {
     const result = await withCache(
       req,
       async () => {
-        const { rows, total } = await CouponsRepo.list(params);
+        try {
+          const { rows, total } = await CouponsRepo.list(params);
 
-        // Build Offer JSON-LD for items with ends_at (optional, AEO-ready)
-        const offers = rows
-          .filter((i) => !!i.ends_at)
-          .map((i) => buildOfferJsonLd(i, params.origin));
+          const safeRows = Array.isArray(rows) ? rows : [];
 
-        // Pagination navigation
-        const nav = buildPrevNext({
-          origin: params.origin,
-          path: params.path,
-          page,
-          limit,
-          total,
-          extraParams: {
-            q: params.q || undefined,
-            category: params.categorySlug || undefined,
-            store: params.storeSlug || undefined,
-            type: params.type,
-            status: params.status,
-            sort: params.sort,
-            locale: params.locale || undefined,
-          },
-        });
+          // Build Offer JSON-LD for items with ends_at (optional, AEO-ready)
+          const offers = safeRows
+            .filter((i) => !!i.ends_at)
+            .map((i) => buildOfferJsonLd(i, params.origin));
 
-        return {
-          data: rows,
-          meta: {
+          // Pagination navigation
+          const nav = buildPrevNext({
+            origin: params.origin,
+            path: params.path,
             page,
             limit,
             total,
-            canonical: buildCanonical({ ...params }),
-            prev: nav.prev,
-            next: nav.next,
-            total_pages: nav.totalPages,
-            jsonld: { offers },
-          },
-        };
+            extraParams: {
+              q: params.q || undefined,
+              category: params.categorySlug || undefined,
+              store: params.storeSlug || undefined,
+              type: params.type,
+              status: params.status,
+              sort: params.sort,
+              locale: params.locale || undefined,
+            },
+          });
+
+          return {
+            data: safeRows,
+            meta: {
+              page,
+              limit,
+              total,
+              canonical: buildCanonical({ ...params }),
+              prev: nav.prev,
+              next: nav.next,
+              total_pages: nav.totalPages,
+              jsonld: { offers },
+            },
+          };
+        } catch (err) {
+          console.error("Failed to fetch coupons:", err);
+          return {
+            data: [],
+            meta: {
+              page,
+              limit,
+              total: 0,
+              canonical: buildCanonical({ ...params }),
+              prev: null,
+              next: null,
+              total_pages: 1,
+              jsonld: { offers: [] },
+            },
+          };
+        }
       },
       { ttlSeconds: 60 }
     );
 
     return ok(res, result);
   } catch (e) {
+    console.error("Error in coupons.list:", e);
     return fail(res, "Failed to list coupons", e);
   }
 }
