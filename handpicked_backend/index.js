@@ -62,8 +62,8 @@ if (process.env.NODE_ENV !== "test") {
 
 // Public: ETag + rate limit + router
 app.use(etagMiddleware);
-app.use("/public/v1", publicRateLimiter, publicRouter);
-
+// app.use("/public/v1", publicRateLimiter, publicRouter);
+app.use("/public/v1", publicRouter);
 // Static
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
