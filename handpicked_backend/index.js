@@ -83,6 +83,7 @@ app.use((err, req, res, next) => {
 
 // Listen on port from Render
 const PORT = process.env.PORT;
+console.log("Render PORT =", process.env.PORT);
 if (!PORT) {
   console.error(
     "🚨 PORT environment variable not set. Render requires this to bind."
