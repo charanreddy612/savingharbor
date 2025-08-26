@@ -46,62 +46,6 @@ function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
   return { prev, next, totalPages };
 }
 
-// export async function list(req, res) {
-//   try {
-//     const page = valPage(req.query.page);
-//     const limit = valLimit(req.query.limit);
-//     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
-//     const locale = valLocale(req.query.locale) || deriveLocale(req);
-//     const q = String(req.query.q || "").trim();
-//     const categorySlug = String(req.query.category || "").trim();
-//     const params = {
-//       q,
-//       categorySlug,
-//       sort,
-//       locale,
-//       page,
-//       limit,
-//       origin: getOrigin(req),
-//       path: getPath(req),
-//     };
-
-//     const result = await withCache(req, async () => {
-//       const { rows, total } = await StoresRepo.list(params);
-
-//       const nav = buildPrevNext({
-//         origin: params.origin,
-//         path: params.path,
-//         page,
-//         limit,
-//         total,
-//         extraParams: {
-//           q: params.q || undefined,
-//           category: params.categorySlug || undefined,
-//           sort: params.sort,
-//           locale: params.locale || undefined,
-//         },
-//       });
-
-//       return {
-//         data: rows,
-//         meta: {
-//           page,
-//           limit,
-//           total,
-//           canonical: buildCanonical({ ...params }),
-//           prev: nav.prev,
-//           next: nav.next,
-//           total_pages: nav.totalPages,
-//         },
-//       };
-//     });
-
-//     return ok(res, result);
-//   } catch (e) {
-//     return fail(res, "Failed to list stores", e);
-//   }
-// }
-
 export async function list(req, res) {
   try {
     const page = valPage(req.query.page);

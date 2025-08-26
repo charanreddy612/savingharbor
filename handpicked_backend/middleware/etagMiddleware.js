@@ -18,7 +18,7 @@ export function etagMiddleware(req, res, next) {
         .createHash("sha256")
         .update(payload)
         .digest("base64url");
-      const etag = W / "${hash}"; // Weak ETag is fine for JSON
+      const etag = `W/${hash}`; // Weak ETag is fine for JSON
       // If client sent If-None-Match and matches current ETag => 304
       const inm = req.headers["if-none-match"];
       if (inm && inm === etag) {
