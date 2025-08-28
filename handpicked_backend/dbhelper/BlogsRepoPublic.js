@@ -52,7 +52,7 @@ export async function getBySlug(slug) {
   const { data, error } = await supabase
     .from("blogs")
     .select(
-      "id, slug, title, hero_image_url, created_at, updated_at, seo_title, meta_description, content_html, category:category_id ( id, name ), author_name, author_avatar_url, author_bio_html"
+      "id, slug, title, featured_image_url, featured_thumb_url, created_at, updated_at, meta_title, meta_description, content, category_id, top_category_name, author_id" //, author_avatar_url, author_bio_html    
     )
     .eq("slug", slug)
     .eq("is_publish", true)
@@ -63,14 +63,14 @@ export async function getBySlug(slug) {
     id: data.id,
     slug: data.slug,
     title: data.title,
-    hero_image_url: data.hero_image_url || null,
+    hero_image_url: data.featured_image_url || data.featured_thumb_url || null,
     created_at: data.created_at,
     updated_at: data.updated_at,
-    seo_title: data.seo_title || "",
+    seo_title: data.meta_title || "",
     meta_description: data.meta_description || "",
-    content_html: sanitize(data.content_html || ""),
-    category: data.category
-      ? { id: data.category.id, name: data.category.name }
+    content_html: sanitize(data.content || ""),
+    category: data.category_id
+      ? { id: data.category.id, name: data.top_category_name }
       : null,
     author: {
       name: data.author_name || "",
