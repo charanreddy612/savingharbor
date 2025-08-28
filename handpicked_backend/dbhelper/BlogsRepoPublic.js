@@ -19,7 +19,7 @@ export async function list({ q, categoryId, sort, page, limit }) {
   let query = supabase
     .from("blogs")
     .select(
-      "id, slug, title, excerpt, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
+      "id, slug, title, content, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
     )
     .eq("is_publish", true)
     .order(sort === "featured" ? "is_featured" : "created_at", {
