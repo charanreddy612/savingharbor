@@ -36,7 +36,6 @@ export async function list({ q, categorySlug, sort, page, limit }) {
     .select("id, slug, name, logo_url, category_names, created_at")
     .order("created_at", { ascending: false })
     .range(from, to);
-
   if (q) query = query.ilike("name", `%${q}%`);
   if (categoryName) query = query.contains("category_names", [categoryName]);
 
@@ -49,16 +48,14 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   if (merchantIds.length) {
     const { data: coupons, error: ce } = await supabase
       .from("coupons")
-      .select("merchant_id, count:id", { count: "exact" })
+      .select("merchant_id", { count: "exact" })
       .in("merchant_id", merchantIds)
-      .eq("active", true)
-      .group("merchant_id");
+      .eq("active", true);
 
     if (!ce && coupons) {
-      couponCounts = coupons.reduce((acc, c) => {
-        acc[c.merchant_id] = c.count || 0;
-        return acc;
-      }, {});
+      coupons.forEach((c) => {
+        couponCounts[c.merchant_id] = c.count || 0;
+      });
     }
   }
 

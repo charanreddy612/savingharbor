@@ -54,14 +54,11 @@ function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
   };
 }
 
-/** ======================
- * Stores List
- * ====================== */
+/** Stores List */
 export async function list(req, res) {
   try {
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
-    // align sort values with repo: "newest" | "popular" | "alpha"
     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
     const locale = valLocale(req.query.locale) || deriveLocale(req);
     const qRaw = String(req.query.q || "");
@@ -82,48 +79,33 @@ export async function list(req, res) {
     const result = await withCache(
       req,
       async () => {
-        try {
-          const { rows, total } = await StoresRepo.list(params);
+        const { rows, total } = await StoresRepo.list(params);
+        const nav = buildPrevNext({
+          origin: params.origin,
+          path: params.path,
+          page,
+          limit,
+          total,
+          extraParams: {
+            q: params.q || undefined,
+            category: params.categorySlug || undefined,
+            sort: params.sort,
+            locale: params.locale || undefined,
+          },
+        });
 
-          const nav = buildPrevNext({
-            origin: params.origin,
-            path: params.path,
+        return {
+          data: rows,
+          meta: {
             page,
             limit,
             total,
-            extraParams: {
-              q: params.q || undefined,
-              category: params.categorySlug || undefined,
-              sort: params.sort,
-              locale: params.locale || undefined,
-            },
-          });
-
-          // list-level meta: you can include title/description if desired
-          return {
-            data: rows,
-            meta: {
-              page,
-              limit,
-              total,
-              canonical: buildCanonical({ ...params }),
-              prev: nav.prev,
-              next: nav.next,
-              total_pages: nav.totalPages,
-            },
-          };
-        } catch (e) {
-          console.error("Error fetching stores:", e);
-          return {
-            data: [],
-            meta: {
-              page,
-              limit,
-              total: 0,
-              canonical: buildCanonical({ ...params }),
-            },
-          };
-        }
+            canonical: buildCanonical({ ...params }),
+            prev: nav.prev,
+            next: nav.next,
+            total_pages: nav.totalPages,
+          },
+        };
       },
       { ttlSeconds: 60 }
     );
@@ -135,9 +117,7 @@ export async function list(req, res) {
   }
 }
 
-/** ======================
- * Store Detail
- * ====================== */
+/** Store Detail */
 export async function detail(req, res) {
   try {
     const slug = String(req.params.slug || "")
@@ -169,11 +149,9 @@ export async function detail(req, res) {
     const result = await withCache(
       req,
       async () => {
-        // get store detail
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
 
-        // coupons for this store (paginated)
         const { items, total } = await CouponsRepo.listForStore({
           merchantId: store.id,
           type,
@@ -181,15 +159,11 @@ export async function detail(req, res) {
           limit,
           sort,
         });
-
-        // related stores by overlapping categories (enriched with active_coupons from merchants table)
         const related = await StoresRepo.relatedByCategories({
           merchantId: store.id,
           categoryNames: store.category_names || [],
           limit: 8,
         });
-
-        // SEO, breadcrumbs and jsonld
         const seo = StoresRepo.buildSeo(store, params);
         const breadcrumbs = StoresRepo.buildBreadcrumbs(store, params);
         const jsonld = {
