@@ -50,7 +50,7 @@ export async function list({ q, categorySlug, sort, page, limit }) {
       .from("coupons")
       .select("merchant_id", { count: "exact" })
       .in("merchant_id", merchantIds)
-      .eq("active", true);
+      .eq("is_publish", true);
 
     if (!ce && coupons) {
       coupons.forEach((c) => {
@@ -97,7 +97,7 @@ export async function getBySlug(slug) {
     .from("coupons")
     .select("id", { count: "exact", head: true })
     .eq("merchant_id", data.id)
-    .eq("active", true);
+    .eq("is_publish", true);
   if (!ce) activeCoupons = ac || 0;
 
   return {
