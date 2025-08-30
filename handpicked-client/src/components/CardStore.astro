@@ -13,45 +13,27 @@ const { store } = Astro.props as { store: Store };
 
 <a
   href={`/stores/${store.slug}`}
-  class="block border rounded-lg p-4 hover:shadow-sm transition"
+  class="block bg-white border rounded-lg p-6 hover:shadow-md transition-shadow duration-200 text-center"
 >
-  <div class="flex items-center gap-4">
-    <div
-      class="w-14 h-14 flex items-center justify-center border rounded overflow-hidden bg-white"
-    >
-      {
-        store.logo_url ? (
-          <img
-            src={store.logo_url}
-            alt={store.name}
-            width="56"
-            height="56"
-            loading="lazy"
-            class="object-contain"
-          />
-        ) : (
-          <div class="text-[10px] text-gray-400">Logo</div>
-        )
-      }
-    </div>
-
-    <div class="min-w-0">
-      <h3 class="font-semibold truncate">{store.name}</h3>
-      {
-        store.category_names && store.category_names.length > 0 && (
-          <p class="text-xs text-gray-600 truncate">
-            {store.category_names.join(", ")}
-          </p>
-        )
-      }
-      {
-        store.stats?.active_coupons !== undefined && (
-          <p class="text-xs text-green-600 mt-1">
-            {store.stats.active_coupons} active coupon
-            {store.stats.active_coupons === 1 ? "" : "s"}
-          </p>
-        )
-      }
-    </div>
+  <div class="w-20 h-20 mx-auto flex items-center justify-center mb-3">
+    {store.logo_url ? (
+      <img
+        src={store.logo_url}
+        alt={store.name}
+        loading="lazy"
+        class="object-contain w-full h-full"
+      />
+    ) : (
+      <div class="text-[10px] text-gray-400">Logo</div>
+    )}
   </div>
+
+  <h3 class="font-semibold text-gray-900 truncate">{store.name}</h3>
+
+  {store.stats?.active_coupons !== undefined && (
+    <p class="text-xs text-green-600 mt-1">
+      {store.stats.active_coupons} active coupon
+      {store.stats.active_coupons === 1 ? "" : "s"}
+    </p>
+  )}
 </a>

@@ -8,35 +8,54 @@ type Coupon = {
 };
 
 const { coupon } = Astro.props as { coupon: Coupon };
-const ends = coupon.ends_at ? new Date(coupon.ends_at) : null;
-const endsText = ends ? `ends ${ends.toLocaleDateString()}` : null;
 ---
 
-<div class = "bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-  <div class="flex justify-between items-start">
-    <div>
-      <h3 class="text-lg font-bold text-gray-800">{coupon.title || "Deal"}</h3>
-      {
-        coupon.merchant_name && (
-          <p class="text-xs text-gray-600">{coupon.merchant_name}</p>
-        )
-      }
-      {endsText && <p class="text-xs text-gray-500 mt-1">{endsText}</p>}
-    </div>
-    <div>
-      {
-        coupon.code ? (
-          <span class="flex-grow border border-gray-300 rounded-l-md px-3 py-2 text-sm">
-            {" "}
-            Code: {coupon.code}{" "}
-          </span>
-        ) : (
-          <span class="inline-block text-xs border px-2 py-1 rounded">
-            {" "}
-            Activate{" "}
-          </span>
-        )
-      }
-    </div>
+<div
+  class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition relative"
+  x-data="{ revealed: false }"
+>
+  <!-- Merchant Name -->
+  <h3 class="font-semibold text-gray-900 truncate">
+    {coupon.merchant_name || "Store"}
+  </h3>
+
+  <!-- Coupon Title -->
+  <p class="text-sm text-gray-700 mt-1">
+    {coupon.title || "Special Offer"}
+  </p>
+
+  <!-- Ends At -->
+  {
+    coupon.ends_at && (
+      <p class="text-xs text-gray-500 mt-1">
+        Ends {new Date(coupon.ends_at).toLocaleDateString()}
+      </p>
+    )
+  }
+
+  <!-- Reveal Code Button -->
+  <div class="mt-3">
+    {
+      coupon.code ? (
+        <button
+          class="w-full bg-green-600 text-white text-sm font-medium py-2 px-4 rounded hover:bg-green-700 transition"
+          on-click="this.nextElementSibling.classList.remove('hidden'); this.classList.add('hidden');"
+        >
+          Reveal Code
+        </button>
+      ) : (
+        <span class="inline-block bg-gray-200 text-gray-700 text-sm px-3 py-2 rounded">
+          Activate Deal
+        </span>
+      )
+    }
+
+    {
+      coupon.code && (
+        <div class="hidden border border-dashed border-gray-400 text-center mt-2 py-2 rounded text-sm font-mono tracking-wide select-all">
+          {coupon.code}
+        </div>
+      )
+    }
   </div>
 </div>
