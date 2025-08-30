@@ -5,123 +5,149 @@ import Footer from "../../components/Footer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardCoupon from "../../components/CardCoupon.astro";
 import Pagination from "../../components/Pagination.astro";
+import CardStore from "../../components/CardStore.astro";
 import { api } from "../../lib/api";
 
 type Coupon = {
-id: string | number;
-title?: string | null;
-code?: string | null;
-ends_at?: string | null;
-merchant_name?: string | null;
+  id: string | number;
+  title?: string | null;
+  code?: string | null;
+  ends_at?: string | null;
+  merchant_name?: string | null;
 };
 
 type StoreDetail = {
-id: number | string;
-slug: string;
-name: string;
-logo_url?: string | null;
-category_names?: string[];
-about_html?: string | null;
-breadcrumbs?: { name: string; url: string }[];
-coupons?: {
-items: Coupon[];
-page?: number;
-limit?: number;
-total?: number;
-prev?: string | null;
-next?: string | null;
-total_pages?: number;
-};
+  id: number | string;
+  slug: string;
+  name: string;
+  logo_url?: string | null;
+  category_names?: string[];
+  about_html?: string | null;
+  breadcrumbs?: { name: string; url: string }[];
+  stats?: { active_coupons?: number };
+  coupons?: {
+    items: Coupon[];
+    page?: number;
+    limit?: number;
+    total?: number;
+    prev?: string | null;
+    next?: string | null;
+    total_pages?: number;
+  };
+  related_stores?: { id: string | number; name: string; slug: string; logo_url?: string | null }[];
 };
 
 type StoreDetailResponse = {
-data: StoreDetail | null;
-meta?: {
-canonical?: string;
-jsonld?: any;
-title?: string;
-description?: string;
-};
+  data: StoreDetail | null;
+  meta?: {
+    canonical?: string;
+    jsonld?: any;
+    title?: string;
+    description?: string;
+  };
 };
 
 const { slug } = Astro.params as { slug: string };
 
 let resp: StoreDetailResponse | null = null;
 try {
-resp = await api.get<StoreDetailResponse>(`/stores/${slug}`);
+  resp = await api.get<StoreDetailResponse>(`/stores/${slug}`);
 } catch (e) {
-resp = null;
+  resp = null;
 }
 
 const store = resp?.data || null;
 const meta = resp?.meta || {};
 const pageTitle = meta?.title || (store?.name ? `${store.name} - HandPicked` : "Store - HandPicked");
 const pageDesc =
-meta?.description ||
-(store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
+  meta?.description ||
+  (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
 ---
 
-<Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}> <Header /> <main class="container py-10"> {store ? ( <> <Breadcrumbs breadcrumbs={store.breadcrumbs} />
-    <!-- Store header -->
-    <section class="mt-4 store-header">
-      <div class="store-logo">
-        {store.logo_url ? (
-          <img
-            src={store.logo_url}
-            alt={store.name}
-            width="64"
-            height="64"
-            class="object-contain"
-            loading="lazy"
-          />
-        ) : (
-          <div class="store-logo__placeholder">Logo</div>
-        )}
-      </div>
-      <div class="store-title">
-        <h1 class="text-2xl font-bold">{store.name}</h1>
-        {store.category_names && store.category_names.length > 0 && (
-          <p class="text-sm text-gray-600 truncate">
-            {store.category_names.join(", ")}
-          </p>
-        )}
-      </div>
-    </section>
+<Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
+  <Header />
+  <main class="container py-10">
+    {store ? (
+      <>
+        <Breadcrumbs breadcrumbs={store.breadcrumbs} />
 
-    <!-- About -->
-    {store.about_html && (
-      <section class="prose max-w-none mt-6">
-        <div set:html={store.about_html}></div>
+        <!-- Store header -->
+        <section class="mt-4 store-header flex items-center gap-4">
+          <div class="store-logo">
+            {store.logo_url ? (
+              <img
+                src={store.logo_url}
+                alt={store.name}
+                width="64"
+                height="64"
+                class="object-contain"
+                loading="lazy"
+              />
+            ) : (
+              <div class="store-logo__placeholder">Logo</div>
+            )}
+          </div>
+          <div class="store-title">
+            <h1 class="text-2xl font-bold">{store.name}</h1>
+            {store.category_names && store.category_names.length > 0 && (
+              <p class="text-sm text-gray-600">{store.category_names.join(", ")}</p>
+            )}
+            {store.stats?.active_coupons !== undefined && (
+              <p class="text-sm text-green-600 mt-1">
+                {store.stats.active_coupons} active coupons
+              </p>
+            )}
+          </div>
+        </section>
+
+        <!-- About -->
+        {store.about_html && (
+          <section class="prose max-w-none mt-6">
+            <div set:html={store.about_html}></div>
+          </section>
+        )}
+
+        <!-- Coupons -->
+        <section class="mt-8">
+          <h2 class="text-xl font-semibold mb-4">Coupons</h2>
+          {store.coupons?.items && store.coupons.items.length > 0 ? (
+            <div class="grid-2-equal">
+              {store.coupons.items.map((c) => <CardCoupon coupon={c} />)}
+            </div>
+          ) : (
+            <p class="text-gray-600">No active coupons at the moment.</p>
+          )}
+
+          <Pagination
+            prev={store.coupons?.prev}
+            next={store.coupons?.next}
+            total_pages={store.coupons?.total_pages}
+          />
+        </section>
+
+        <!-- Related Stores -->
+        {store.related_stores && store.related_stores.length > 0 && (
+          <section class="mt-12">
+            <h2 class="text-xl font-semibold mb-4">Related Stores</h2>
+            <div class="grid-3-equal">
+              {store.related_stores.map((rs) => (
+                <CardStore store={rs} />
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    ) : (
+      <section class="py-20 text-center">
+        <h1 class="text-2xl font-bold">Store not found</h1>
+        <p class="text-gray-600 mt-2">Please check the URL or browse all stores.</p>
+        <div class="mt-4">
+          <a href="/stores" class="btn btn-outline">Back to Stores</a>
+        </div>
       </section>
     )}
-
-    <!-- Coupons -->
-    <section class="mt-8">
-      <h2 class="text-xl font-semibold mb-4">Coupons</h2>
-      {store.coupons?.items && store.coupons.items.length > 0 ? (
-        <div class="grid-2-equal">
-          {store.coupons.items.map((c) => <CardCoupon coupon={c} />)}
-        </div>
-      ) : (
-        <p class="text-gray-600">No active coupons at the moment.</p>
-      )}
-
-      <Pagination
-        prev={store.coupons?.prev}
-        next={store.coupons?.next}
-        total_pages={store.coupons?.total_pages}
-      />
-    </section>
-  </>
-) : (
-  <section class="py-20 text-center">
-    <h1 class="text-2xl font-bold">Store not found</h1>
-    <p class="text-gray-600 mt-2">Please check the URL or browse all stores.</p>
-    <div class="mt-4">
-      <a href="/stores" class="btn btn-outline">Back to Stores</a>
-    </div>
-  </section>
-)}
-</main> <Footer /> </Base>
+  </main>
+  <Footer />
+</Base>

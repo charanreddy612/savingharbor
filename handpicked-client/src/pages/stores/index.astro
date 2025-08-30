@@ -6,8 +6,16 @@ import CardStore from "../../components/CardStore.astro";
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 
+type Store = {
+  id: string | number;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  stats?: { active_coupons?: number };
+};
+
 type StoresResponse = {
-  data: any[];
+  data: Store[];
   meta: {
     page?: number;
     limit?: number;
@@ -16,42 +24,46 @@ type StoresResponse = {
     prev?: string | null;
     next?: string | null;
     total_pages?: number;
+    title?: string;
+    description?: string;
   };
 };
 
-let stores: StoresResponse | null = null;
+let resp: StoresResponse | null = null;
 try {
-  stores = await api.get<StoresResponse>("/stores");
+  resp = await api.get<StoresResponse>("/stores");
 } catch (e) {
-  stores = null;
+  console.error("Error fetching stores:", e);
+  resp = null;
 }
 
-const pageTitle = "Stores - HandPicked";
-const pageDesc = "Explore verified stores with handpicked coupons.";
-const canonical = stores?.meta?.canonical;
+const stores = resp?.data || [];
+const meta = resp?.meta || {};
+const pageTitle = meta.title || "Stores - HandPicked";
+const pageDesc =
+  meta.description || "Explore verified stores with handpicked coupons.";
+const canonical = meta.canonical;
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical }}>
   <Header />
   <main class="container py-10">
     <h1 class="text-2xl font-bold mb-6">Stores</h1>
-    text
-    {
-      stores?.data && stores.data.length > 0 ? (
-        <div class="grid-3-equal">
-          {stores.data.map((s) => (
-            <CardStore store={s} />
-          ))}
-        </div>
-      ) : (
-        <p class="text-gray-600">No stores found.</p>
-      )
-    }
+
+    {stores.length > 0 ? (
+      <div class="grid-3-equal gap-6">
+        {stores.map((store) => (
+          <CardStore store={store} />
+        ))}
+      </div>
+    ) : (
+      <p class="text-gray-600">No stores found.</p>
+    )}
 
     <Pagination
-      prev={stores?.meta?.prev}
-      next={stores?.meta?.next}
-      total_pages={stores?.meta?.total_pages}
+      prev={meta.prev}
+      next={meta.next}
+      total_pages={meta.total_pages}
     />
   </main>
   <Footer />

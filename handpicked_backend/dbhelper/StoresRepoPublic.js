@@ -1,6 +1,9 @@
 import { supabase } from "../dbhelper/dbclient.js";
 import { sanitize } from "../utils/sanitize.js";
 
+/**
+ * List merchants with filters, pagination and optional category filter
+ */
 export async function list({ q, categorySlug, sort, page, limit }) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -30,10 +33,8 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   // Rows query
   let query = supabase
     .from("merchants")
-    .select(
-      "id, slug, name, logo_url, category_names, created_at"//, active_coupons
-    )
-    .order("created_at", { ascending: false }) // use created_at only
+    .select("id, slug, name, logo_url, category_names, created_at")
+    .order("created_at", { ascending: false })
     .range(from, to);
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -42,35 +43,65 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   const { data, error } = await query;
   if (error) throw error;
 
+  // Fetch active coupons count per merchant
+  const merchantIds = (data || []).map((r) => r.id);
+  let couponCounts = {};
+  if (merchantIds.length) {
+    const { data: coupons, error: ce } = await supabase
+      .from("coupons")
+      .select("merchant_id, count:id", { count: "exact" })
+      .in("merchant_id", merchantIds)
+      .eq("active", true)
+      .group("merchant_id");
+
+    if (!ce && coupons) {
+      couponCounts = coupons.reduce((acc, c) => {
+        acc[c.merchant_id] = c.count || 0;
+        return acc;
+      }, {});
+    }
+  }
+
   const rows = (data || []).map((r) => ({
     id: r.id,
     slug: r.slug,
     name: r.name,
     logo_url: r.logo_url,
     category_names: Array.isArray(r.category_names) ? r.category_names : [],
-    stats: { active_coupons: r.active_coupons || 0 },
+    stats: { active_coupons: couponCounts[r.id] || 0 },
   }));
 
   return { rows, total: count || 0 };
 }
 
+/**
+ * Fetch store by slug
+ */
 export async function getBySlug(slug) {
   if (!slug) return null;
 
   const { data, error } = await supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, side_description_html, meta_title, meta_description" //, active_coupons
+      "id, slug, name, logo_url, category_names, side_description_html, meta_title, meta_description"
     )
     .eq("slug", slug)
     .maybeSingle();
 
   if (error) {
     console.error("Supabase getBySlug error:", error);
-    return null; // Fail gracefully instead of throwing
+    return null;
   }
-
   if (!data) return null;
+
+  // Fetch active coupons count for this merchant
+  let activeCoupons = 0;
+  const { count: ac, error: ce } = await supabase
+    .from("coupons")
+    .select("id", { count: "exact", head: true })
+    .eq("merchant_id", data.id)
+    .eq("active", true);
+  if (!ce) activeCoupons = ac || 0;
 
   return {
     id: data.id,
@@ -83,10 +114,13 @@ export async function getBySlug(slug) {
     about_html: sanitize(data.side_description_html || ""),
     meta_title: data.meta_title || "",
     meta_description: data.meta_description || "",
-    active_coupons: data.active_coupons || 0,
+    active_coupons: activeCoupons,
   };
 }
 
+/**
+ * Build SEO metadata
+ */
 export function buildSeo(store, { origin, path, locale }) {
   const canonical = `${origin}${path}`;
   return {
@@ -100,6 +134,9 @@ export function buildSeo(store, { origin, path, locale }) {
   };
 }
 
+/**
+ * Build breadcrumbs
+ */
 export function buildBreadcrumbs(store, { origin }) {
   return [
     { name: "Home", url: `${origin}/` },
@@ -108,7 +145,9 @@ export function buildBreadcrumbs(store, { origin }) {
   ];
 }
 
-// Fetch related stores by overlapping categories
+/**
+ * Related stores by overlapping categories
+ */
 export async function relatedByCategories({
   merchantId,
   categoryNames,
@@ -128,7 +167,6 @@ export async function relatedByCategories({
       console.error("Supabase relatedByCategories error:", error);
       return [];
     }
-
     return data || [];
   } catch (e) {
     console.error("Unexpected error in relatedByCategories:", e);
@@ -136,7 +174,9 @@ export async function relatedByCategories({
   }
 }
 
-// Return only slugs for sitemap or lightweight lists
+/**
+ * Return lightweight slugs for sitemap
+ */
 export async function listSlugs() {
   try {
     const { data, error } = await supabase
@@ -148,7 +188,6 @@ export async function listSlugs() {
       console.error("Supabase listSlugs error:", error);
       return { slugs: [] };
     }
-
     return { slugs: data || [] };
   } catch (e) {
     console.error("Unexpected error in listSlugs:", e);

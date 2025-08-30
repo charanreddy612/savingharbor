@@ -5,6 +5,7 @@ type Store = {
   name: string;
   logo_url?: string | null;
   category_names?: string[];
+  stats?: { active_coupons?: number };
 };
 
 const { store } = Astro.props as { store: Store };
@@ -33,13 +34,21 @@ const { store } = Astro.props as { store: Store };
         )
       }
     </div>
+
     <div class="min-w-0">
       <h3 class="font-semibold truncate">{store.name}</h3>
       {
         store.category_names && store.category_names.length > 0 && (
           <p class="text-xs text-gray-600 truncate">
-            {" "}
-            {store.category_names.join(", ")}{" "}
+            {store.category_names.join(", ")}
+          </p>
+        )
+      }
+      {
+        store.stats?.active_coupons !== undefined && (
+          <p class="text-xs text-green-600 mt-1">
+            {store.stats.active_coupons} active coupon
+            {store.stats.active_coupons === 1 ? "" : "s"}
           </p>
         )
       }

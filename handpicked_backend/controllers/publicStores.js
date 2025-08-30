@@ -14,7 +14,7 @@ import {
 import { badRequest } from "../utils/errors.js";
 import { STORE_SORTS, STORE_COUPON_TYPES } from "../constants/publicEnums.js";
 
-// Helper to get origin safely
+/** Helpers */
 function getOrigin(req) {
   try {
     return (
@@ -26,8 +26,6 @@ function getOrigin(req) {
     return "";
   }
 }
-
-// Helper to get path safely
 function getPath(req) {
   try {
     return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
@@ -35,8 +33,6 @@ function getPath(req) {
     return "/";
   }
 }
-
-// Build prev/next URLs safely
 function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
   const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
   const makeUrl = (p) => {
@@ -51,18 +47,21 @@ function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
       return null;
     }
   };
-  const prev = page > 1 ? makeUrl(page - 1) : null;
-  const next = page < totalPages ? makeUrl(page + 1) : null;
-  return { prev, next, totalPages };
+  return {
+    prev: page > 1 ? makeUrl(page - 1) : null,
+    next: page < totalPages ? makeUrl(page + 1) : null,
+    totalPages,
+  };
 }
 
-// ==========================
-// Stores List
-// ==========================
+/** ======================
+ * Stores List
+ * ====================== */
 export async function list(req, res) {
   try {
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
+    // align sort values with repo: "newest" | "popular" | "alpha"
     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
     const locale = valLocale(req.query.locale) || deriveLocale(req);
     const qRaw = String(req.query.q || "");
@@ -85,6 +84,7 @@ export async function list(req, res) {
       async () => {
         try {
           const { rows, total } = await StoresRepo.list(params);
+
           const nav = buildPrevNext({
             origin: params.origin,
             path: params.path,
@@ -99,6 +99,7 @@ export async function list(req, res) {
             },
           });
 
+          // list-level meta: you can include title/description if desired
           return {
             data: rows,
             meta: {
@@ -113,7 +114,15 @@ export async function list(req, res) {
           };
         } catch (e) {
           console.error("Error fetching stores:", e);
-          return { data: [], meta: { error: "Failed to load stores" } };
+          return {
+            data: [],
+            meta: {
+              page,
+              limit,
+              total: 0,
+              canonical: buildCanonical({ ...params }),
+            },
+          };
         }
       },
       { ttlSeconds: 60 }
@@ -126,19 +135,24 @@ export async function list(req, res) {
   }
 }
 
-// ==========================
-// Store Detail
-// ==========================
-
+/** ======================
+ * Store Detail
+ * ====================== */
 export async function detail(req, res) {
   try {
-    const slug = String(req.params.slug || "").trim().toLowerCase();
+    const slug = String(req.params.slug || "")
+      .trim()
+      .toLowerCase();
     if (!slug) return badRequest(res, "Invalid store slug");
 
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const type = valEnum(req.query.type, STORE_COUPON_TYPES, "all");
-    const sort = valEnum(req.query.sort, ["editor", "latest", "ending"], "editor");
+    const sort = valEnum(
+      req.query.sort,
+      ["editor", "latest", "ending"],
+      "editor"
+    );
     const locale = valLocale(req.query.locale) || deriveLocale(req);
 
     const params = {
@@ -155,11 +169,11 @@ export async function detail(req, res) {
     const result = await withCache(
       req,
       async () => {
-        // Fetch store by slug (original method - unchanged)
+        // get store detail
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
 
-        // Fetch coupons for that store (keeps original behaviour)
+        // coupons for this store (paginated)
         const { items, total } = await CouponsRepo.listForStore({
           merchantId: store.id,
           type,
@@ -168,14 +182,14 @@ export async function detail(req, res) {
           sort,
         });
 
-        // Related/stats left in source but commented out so you can re-enable later:
-        // const related = await StoresRepo.relatedByCategories({
-        //   merchantId: store.id,
-        //   categoryNames: store.category_names || [],
-        //   limit: 8,
-        // });
-        // const stats = { active_coupons: store.active_coupons || 0 };
+        // related stores by overlapping categories (enriched with active_coupons from merchants table)
+        const related = await StoresRepo.relatedByCategories({
+          merchantId: store.id,
+          categoryNames: store.category_names || [],
+          limit: 8,
+        });
 
+        // SEO, breadcrumbs and jsonld
         const seo = StoresRepo.buildSeo(store, params);
         const breadcrumbs = StoresRepo.buildBreadcrumbs(store, params);
         const jsonld = {
@@ -211,7 +225,7 @@ export async function detail(req, res) {
             seo,
             breadcrumbs,
             about_html: store.about_html || "",
-            // stats: { active_coupons: store.active_coupons || 0 }, // commented out
+            stats: { active_coupons: store.active_coupons || 0 },
             coupons: {
               items,
               page,
@@ -221,13 +235,12 @@ export async function detail(req, res) {
               next: couponsNav.next,
               total_pages: couponsNav.totalPages,
             },
-            // related_stores: related, // commented out
+            related_stores: related,
           },
           meta: {
             generated_at: new Date().toISOString(),
             canonical: buildCanonical({ ...params }),
             jsonld,
-            // optional: keep title/description in meta for UI convenience
             title: seo?.meta_title || undefined,
             description: seo?.meta_description || undefined,
           },
@@ -236,134 +249,10 @@ export async function detail(req, res) {
       { ttlSeconds: 60 }
     );
 
-    if (!result?.data) {
-      return notFound(res, "Store not found");
-    }
+    if (!result?.data) return notFound(res, "Store not found");
     return ok(res, result);
   } catch (e) {
     console.error("Store detail controller error:", e);
     return fail(res, "Failed to get store detail", e);
   }
 }
-
-
-// export async function detail(req, res) {
-//   try {
-//     const slug = String(req.params.slug || "")
-//       .trim()
-//       .toLowerCase();
-//     if (!slug) return badRequest(res, "Invalid store slug");
-
-//     const page = valPage(req.query.page);
-//     const limit = valLimit(req.query.limit);
-//     const type = valEnum(req.query.type, STORE_COUPON_TYPES, "all");
-//     const sort = valEnum(
-//       req.query.sort,
-//       ["editor", "latest", "ending"],
-//       "editor"
-//     );
-//     const locale = valLocale(req.query.locale) || deriveLocale(req);
-
-//     const params = {
-//       slug,
-//       type,
-//       sort,
-//       locale,
-//       page,
-//       limit,
-//       origin: getOrigin(req),
-//       path: getPath(req),
-//     };
-
-//     const result = await withCache(
-//       req,
-//       async () => {
-//         try {
-//           const store = await StoresRepo.getBySlug(params.slug);
-//           if (!store) return { data: null, meta: { status: 404 } };
-
-//           const { items, total } = await CouponsRepo.listForStore({
-//             merchantId: store.id,
-//             type,
-//             page,
-//             limit,
-//             sort,
-//           });
-
-//           const related = await StoresRepo.relatedByCategories({
-//             merchantId: store.id,
-//             categoryNames: store.category_names || [],
-//             limit: 8,
-//           });
-
-//           const seo = StoresRepo.buildSeo(store, params);
-//           const breadcrumbs = StoresRepo.buildBreadcrumbs(store, params);
-//           const jsonld = {
-//             organization: buildStoreJsonLd(store, params.origin),
-//             breadcrumb: {
-//               "@context": "https://schema.org",
-//               "@type": "BreadcrumbList",
-//               itemListElement: breadcrumbs.map((b, i) => ({
-//                 "@type": "ListItem",
-//                 position: i + 1,
-//                 name: b.name,
-//                 item: b.url,
-//               })),
-//             },
-//           };
-
-//           const couponsNav = buildPrevNext({
-//             origin: params.origin,
-//             path: params.path,
-//             page,
-//             limit,
-//             total,
-//             extraParams: { type, sort, locale: params.locale || undefined },
-//           });
-
-//           return {
-//             data: {
-//               id: store.id,
-//               slug: store.slug,
-//               name: store.name,
-//               logo_url: store.logo_url,
-//               category_names: store.category_names || [],
-//               seo,
-//               breadcrumbs,
-//               about_html: store.about_html || "",
-//               stats: { active_coupons: store.active_coupons || 0 },
-//               coupons: {
-//                 items,
-//                 page,
-//                 limit,
-//                 total,
-//                 prev: couponsNav.prev,
-//                 next: couponsNav.next,
-//                 total_pages: couponsNav.totalPages,
-//               },
-//               related_stores: related,
-//             },
-//             meta: {
-//               generated_at: new Date().toISOString(),
-//               canonical: buildCanonical({ ...params }),
-//               jsonld,
-//             },
-//           };
-//         } catch (e) {
-//           console.error("Error fetching store detail:", e);
-//           return { data: null, meta: { error: "Failed to load store" } };
-//         }
-//       },
-//       { ttlSeconds: 60 }
-//     );
-
-//     if (!result?.data) {
-//       return notFound(res, "Store not found");
-//     }
-
-//     return ok(res, result);
-//   } catch (e) {
-//     console.error("Store detail controller error:", e);
-//     return fail(res, "Failed to get store detail", e);
-//   }
-// }
