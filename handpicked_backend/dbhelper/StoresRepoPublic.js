@@ -45,18 +45,22 @@ export async function list({ q, categorySlug, sort, page, limit }) {
   // Fetch active coupons count per merchant
   const merchantIds = (data || []).map((r) => r.id);
   let couponCounts = {};
-  if (merchantIds.length) {
-    const { data: coupons, error: ce } = await supabase
-      .from("coupons")
-      .select("merchant_id", { count: "exact" })
-      .in("merchant_id", merchantIds)
-      .eq("is_publish", true);
 
-    if (!ce && coupons) {
-      coupons.forEach((c) => {
-        couponCounts[c.merchant_id] = c.count || 0;
-      });
-    }
+  if (merchantIds.length) {
+    const counts = await Promise.all(
+      merchantIds.map(async (id) => {
+        const { count, error } = await supabase
+          .from("coupons")
+          .select("id", { count: "exact", head: true })
+          .eq("merchant_id", id)
+          .eq("is_publish", true);
+        return { id, count: count || 0 };
+      })
+    );
+
+    counts.forEach((c) => {
+      couponCounts[c.id] = c.count;
+    });
   }
 
   const rows = (data || []).map((r) => ({
