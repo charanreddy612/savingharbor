@@ -313,13 +313,16 @@ const bestCoupon = (() => {
                   <span class="hidden md:inline-block rounded-xl bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
                     {c.discount_text ?? "Coupon"}
                   </span>
-                  <!-- Button semantics only; real click-out can happen in your Card component or link wrapper -->
-                  <button
+                  <a
+                    href={c.url ?? "#"}
+                    target={c.url ? "_blank" : undefined}
+                    rel="nofollow sponsored noopener"
+                    data-code={c.code ?? undefined}
                     class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50 active:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
                     aria-label={c.code ? `Copy code ${c.code}` : "Open deal"}
                   >
                     {c.code ? "SHOW CODE" : "GET DEAL"}
-                  </button>
+                  </a>
                 </div>
               </div>
             </li>
@@ -376,5 +379,16 @@ const bestCoupon = (() => {
         <p class="mt-4 text-xs">© {new Date().getFullYear()} HandPicked</p>
       </div>
     </footer>
+    <script is:inline>
+      document.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target instanceof Element) {
+          const el = target.closest("[data-code]");
+          if (el && el instanceof HTMLElement && el.dataset.code) {
+            navigator.clipboard?.writeText(el.dataset.code).catch(() => {});
+          }
+        }
+      });
+    </script>
   </body>
 </html>
