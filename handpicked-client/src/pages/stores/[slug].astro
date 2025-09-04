@@ -1,380 +1,203 @@
 ---
-/**
- * HandPicked — Store Page (Astro + Tailwind)
- * Route: /stores/[slug]
- * File:  src/pages/stores/[slug].astro
- * Notes:
- * - Zero-bloat; optimized for Core Web Vitals + SEO/AEO/EEAT
- * - Minimal client JS (none required here)
- * - Expects a backend API; set env PUBLIC_API_BASE_URL
- */
+import { Astro } from "astro";
 
-export const prerender = false;
+// Environment variable
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL;
 
-const API_BASE =
-  import.meta.env.PUBLIC_API_BASE_URL ?? "https://api.handpicked.example.com";
+// Extract slug from route params
+const { slug } = Astro.params;
 
-const { slug } = Astro.params as { slug: string };
-
-// ----------------- Fetch Helpers -----------------
-async function getJSON(url: string) {
-  const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store" });
-  if (!res.ok) throw new Error(`Fetch failed ${res.status}`);
-  return res.json();
-}
-
-/**
- * Expected API shape (adjust to your backend fields):
- * GET /stores/:slug
- * {
- *   data: {
- *     id, slug, name, logo_url, category_names: string[],
- *     about_html, last_updated, stats: { active_coupons },
- *     coupons: { items: [{ id, title, code, ends_at, discount_text }], total_pages, prev, next },
- *     breadcrumbs: [{ name, url }],
- *     seo_title?, seo_description?, canonical?, rating_value?, rating_count?, brand_site?, hero_image?
- *   }
- * }
- */
-
-let payload: any = null;
+// Defensive fetch
+let store = null;
 try {
-  payload = await getJSON(`${API_BASE}/stores/${slug}`);
+  const res = await fetch(`${API_BASE}/stores/${slug}`, {
+    headers: { "Accept": "application/json" },
+    cache: "no-store",
+  });
+  if (res.ok) {
+    const json = await res.json();
+    store = json?.data ?? null;
+  }
 } catch (e) {
-  // Non-fatal: use a minimal fallback to let the page render for now
-  payload = {
-    data: {
-      id: slug,
-      slug,
-      name: slug.replace(/-/g, " ").replace(/\b\w/g, (m: string) => m.toUpperCase()),
-      logo_url: "",
-      category_names: ["Activewear"],
-      about_html:
-        "<p>Verified promo codes and exclusive deals updated regularly—save on quality gear without breaking the bank.</p>",
-      last_updated: new Date().toISOString(),
-      stats: { active_coupons: 0 },
-      coupons: { items: [], total_pages: 1, prev: null, next: null },
-      breadcrumbs: [
-        { name: "Home", url: "/" },
-        { name: "Stores", url: "/stores" },
-        { name: "Ellie", url: `/stores/${slug}` }
-      ],
-      seo_title: "Ellie Activewear Coupons & Promo Codes – Save Up to 40% Today",
-      seo_description: "Verified Ellie promo codes, discounts & deals. Updated today for best savings on activewear.",
-      canonical: undefined,
-      brand_site: undefined,
-      hero_image: undefined,
-      rating_value: undefined,
-      rating_count: undefined
-    }
-  };
+  store = null;
 }
 
-const store = payload?.data ?? null;
-const coupons = store?.coupons?.items ?? [];
-const totalPages = store?.coupons?.total_pages ?? 1;
-const prev = store?.coupons?.prev ?? null;
-const next = store?.coupons?.next ?? null;
-const updated = store?.last_updated ? new Date(store.last_updated) : new Date();
+// Fallback data
+const fallback = {
+  name: slug,
+  logo_url: "/fallback-logo.svg",
+  category_names: ["General"],
+  about_html: "<p>Coupons and promo codes updated regularly.</p>",
+  last_updated: new Date().toISOString(),
+  stats: { active_coupons: 0 },
+  coupons: { items: [], total_pages: 1 },
+  breadcrumbs: [
+    { name: "Home", url: "/" },
+    { name: "Stores", url: "/stores" },
+    { name: slug, url: `/stores/${slug}` },
+  ],
+  seo_title: `${slug} Coupons & Promo Codes`,
+  seo_description: `Find the latest ${slug} coupons & deals.`,
+  canonical: `https://yoursite.com/stores/${slug}`,
+  rating_value: 4.5,
+  rating_count: 100,
+  brand_site: "#",
+  hero_image: "/fallback-hero.webp",
+};
 
-// ----------------- SEO -----------------
-function monthYear(d = new Date()) {
-  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
-}
-const pageTitle =
-  store?.seo_title || `${store?.name ?? "Store"} Coupons & Promo Codes | ${monthYear()}`;
-const pageDesc =
-  store?.seo_description || `Verified ${store?.name ?? "Store"} promo codes & deals — updated ${monthYear()}.`;
-const siteBase = Astro.site?.toString().replace(/\/$/, "") ?? "";
-const canonical = store?.canonical || (siteBase ? `${siteBase}/stores/${slug}` : undefined);
-const ogImage = store?.hero_image || store?.logo_url || undefined;
+const data = store ?? fallback;
 
-// ----------------- JSON-LD -----------------
-const ldBreadcrumb =
-  store?.breadcrumbs?.length
-    ? {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        itemListElement: store.breadcrumbs.map((b: any, i: number) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name: b.name,
-          item: siteBase ? siteBase + b.url : b.url
-        }))
-      }
-    : null;
+// SEO metadata
+const pageTitle = data.seo_title || `${data.name} Coupons & Promo Codes | ${new Date().toLocaleString("default",{month:"long",year:"numeric"})}`;
+const pageDesc = data.seo_description || `Save with the latest ${data.name} coupons, promo codes & deals.`;
+const canonical = data.canonical || `https://yoursite.com/stores/${data.slug ?? slug}`;
+const ogImage = data.hero_image || data.logo_url;
 
-const ldBrand = store
-  ? {
-      "@context": "https://schema.org",
-      "@type": "Brand",
-      name: store.name,
-      url: store.brand_site || (siteBase ? `${siteBase}/stores/${store.slug}` : undefined),
-      logo: store.logo_url || undefined,
-      aggregateRating:
-        store.rating_value && store.rating_count
-          ? { "@type": "AggregateRating", ratingValue: store.rating_value, reviewCount: store.rating_count }
-          : undefined
-    }
-  : null;
-
-const ldOffers =
-  coupons.length
-    ? {
-        "@context": "https://schema.org",
-        "@type": "OfferCatalog",
-        name: `${store?.name ?? "Brand"} Coupons & Offers`,
-        itemListElement: coupons.map((c: any) => ({
-          "@type": "Coupon",
-          name: c.title || "Coupon",
-          description: c.title || undefined,
-          discountCode: c.code || undefined,
-          validThrough: c.ends_at || undefined,
-          url: canonical || undefined
-        }))
-      }
-    : null;
-
-// ----------------- Utils -----------------
-function formatDate(d?: string | Date | null) {
-  if (!d) return "";
-  const dt = typeof d === "string" ? new Date(d) : d;
-  if (isNaN(dt.getTime())) return "";
-  return dt.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" });
-}
-
-const bestCoupon = (() => {
-  if (!coupons.length) return null;
-  return coupons.reduce((best: any, c: any) => {
-    const cur =
-      (typeof c.discount_text === "string" && /\d+/.test(c.discount_text) && parseInt(c.discount_text, 10)) ||
-      (typeof c.title === "string" && /(\d+)%/i.test(c.title) && parseInt(RegExp.$1, 10)) ||
-      0;
-    const prev =
-      (best &&
-        typeof best.discount_text === "string" &&
-        /\d+/.test(best.discount_text) &&
-        parseInt(best.discount_text, 10)) ||
-      (best && typeof best.title === "string" && /(\d+)%/i.test(best.title) && parseInt(RegExp.$1, 10)) ||
-      0;
-    return cur > prev ? c : best;
-  }, coupons[0]);
-})();
+// JSON-LD
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": pageTitle,
+  "description": pageDesc,
+  "breadcrumb": {
+    "@type": "BreadcrumbList",
+    "itemListElement": data.breadcrumbs.map((b, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": b.name,
+      "item": `https://yoursite.com${b.url}`,
+    })),
+  },
+  "brand": {
+    "@type": "Brand",
+    "name": data.name,
+    "logo": data.logo_url,
+    "url": data.brand_site,
+    ...(data.rating_value && data.rating_count
+      ? {
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": data.rating_value,
+            "ratingCount": data.rating_count,
+          },
+        }
+      : {}),
+  },
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": `${data.name} Coupons`,
+    "itemListElement": data.coupons.items.map((c) => ({
+      "@type": "Coupon",
+      "name": c.title,
+      "discountCode": c.code || undefined,
+      "description": c.discount_text,
+      "validThrough": c.ends_at || undefined,
+    })),
+  },
+};
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <title>{pageTitle}</title>
     <meta name="description" content={pageDesc} />
-    {canonical && <link rel="canonical" href={canonical} />}
-    <meta name="robots" content="index,follow,max-image-preview:large" />
-    <meta name="theme-color" content="#0ea5e9" />
-
-    <!-- Open Graph / Twitter -->
+    <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDesc} />
-    {ogImage && <meta property="og:image" content={ogImage} />}
-    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={pageDesc} />
-    {ogImage && <meta name="twitter:image" content={ogImage} />}
-
-    <!-- Preconnect safe hints -->
-    {store?.logo_url && <link rel="preconnect" href={new URL(store.logo_url).origin} crossOrigin="" />}
-
-    <!-- JSON-LD -->
-    {ldBreadcrumb && (
-      <script type="application/ld+json">{JSON.stringify(ldBreadcrumb)}</script>
-    )}
-    {ldBrand && <script type="application/ld+json">{JSON.stringify(ldBrand)}</script>}
-    {ldOffers && <script type="application/ld+json">{JSON.stringify(ldOffers)}</script>}
+    <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json">
+      {JSON.stringify(jsonLd)}
+    </script>
   </head>
-
-  <body class="bg-white text-slate-900 antialiased">
-    <!-- Top Nav (very light, you likely have a shared layout; keep here minimal) -->
-    <header class="border-b border-slate-100">
-      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <a href="/" class="font-semibold">HandPicked</a>
-        <nav class="text-sm text-slate-700">
-          <a class="hover:text-slate-900" href="/stores">Stores</a>
-          <span class="px-2 text-slate-300">•</span>
-          <a class="hover:text-slate-900" href="/coupons">Coupons</a>
-          <span class="px-2 text-slate-300">•</span>
-          <a class="hover:text-slate-900" href="/blog">Blog</a>
-        </nav>
-      </div>
-    </header>
-
+  <body class="bg-white text-gray-900 font-sans">
     <!-- Breadcrumbs -->
-    <nav aria-label="Breadcrumb" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-4">
-      <ol class="flex flex-wrap items-center gap-1 text-sm text-slate-600">
-        {(store?.breadcrumbs ?? [{ name: "Home", url: "/" }, { name: "Stores", url: "/stores" }, { name: store?.name ?? "Store", url: `/stores/${slug}` }]).map((b: any, i: number) => (
-          <li class="inline-flex items-center">
-            <a href={b.url} class="hover:text-slate-900 transition">{b.name}</a>
-            {i < (store?.breadcrumbs?.length ?? 3) - 1 && <span class="mx-2 text-slate-400">/</span>}
+    <nav aria-label="Breadcrumb" class="p-4 text-sm">
+      <ol class="flex flex-wrap gap-2">
+        {data.breadcrumbs.map((b, i) => (
+          <li>
+            <a href={b.url} class="text-blue-600 hover:underline">{b.name}</a>
+            {i < data.breadcrumbs.length - 1 ? "›" : ""}
           </li>
         ))}
       </ol>
     </nav>
 
     <!-- Hero -->
-    <header class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-6 pb-4">
-      <div class="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-4 md:gap-6 items-start">
-        <div class="flex items-center gap-3">
-          {store?.logo_url ? (
-            <img
-              src={store.logo_url}
-              alt={`${store.name} logo`}
-              width="96"
-              height="96"
-              loading="eager"
-              fetchpriority="high"
-              decoding="async"
-              class="h-16 w-16 rounded-xl ring-1 ring-slate-100 object-contain bg-white"
-            />
-          ) : (
-            <div class="h-16 w-16 rounded-xl bg-slate-100 grid place-content-center text-slate-500">Logo</div>
-          )}
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">
-              {store?.name} Coupons & Promo Codes
-            </h1>
-            {store?.category_names?.length ? (
-              <p class="mt-1 text-slate-600 text-sm sm:text-base">{store.category_names.join(", ")}</p>
-            ) : null}
-            {typeof store?.stats?.active_coupons === "number" && (
-              <p class="mt-1 text-sm text-slate-700">{store.stats.active_coupons} active coupons</p>
-            )}
-          </div>
-        </div>
-
-        <!-- Quick Answers (AEO) -->
-        <aside class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-          <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div>
-              <dt class="text-slate-500">Best code today</dt>
-              <dd class="font-semibold">{bestCoupon?.discount_text ?? bestCoupon?.title ?? "—"}</dd>
-            </div>
-            <div>
-              <dt class="text-slate-500">Updated</dt>
-              <dd class="font-semibold">{formatDate(updated)}</dd>
-            </div>
-            <div>
-              <dt class="text-slate-500">Categories</dt>
-              <dd class="font-semibold">{store?.category_names?.join(", ") ?? "—"}</dd>
-            </div>
-            <div>
-              <dt class="text-slate-500">Status</dt>
-              <dd class="font-semibold">
-                {typeof store?.stats?.active_coupons === "number" && store.stats.active_coupons > 0 ? "Active" : "Updating"}
-              </dd>
-            </div>
-          </dl>
-        </aside>
-      </div>
+    <header class="p-4 md:p-8 text-center">
+      <img
+        src={data.logo_url}
+        alt={`${data.name} logo`}
+        width="120"
+        height="120"
+        loading="lazy"
+        decoding="async"
+        class="mx-auto mb-4 rounded"
+      />
+      <h1 class="text-2xl md:text-4xl font-bold">{data.name} Coupons & Promo Codes</h1>
+      <p class="text-gray-600">{data.category_names.join(", ")}</p>
+      <p class="mt-2 text-green-700 font-semibold">{data.stats.active_coupons} Active Coupons</p>
     </header>
 
+    <!-- Quick Answers -->
+    <section class="max-w-3xl mx-auto p-4 grid gap-2 border rounded-xl shadow-sm bg-gray-50">
+      <h2 class="sr-only">Quick Answers</h2>
+      <p><strong>Best code today:</strong> {data.coupons.items[0]?.discount_text || "Check deals"}</p>
+      <p><strong>Updated:</strong> {new Date(data.last_updated).toLocaleDateString()}</p>
+      <p><strong>Categories:</strong> {data.category_names.join(", ")}</p>
+      <p><strong>Status:</strong> {data.stats.active_coupons > 0 ? "Active" : "Updating"}</p>
+    </section>
+
     <!-- About -->
-    {store?.about_html && (
-      <section class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <article class="prose max-w-none">
-          <div set:html={store.about_html}></div>
-        </article>
-      </section>
-    )}
+    <section class="max-w-3xl mx-auto p-4 prose">
+      <h2>About {data.name}</h2>
+      <div set:html={data.about_html}></div>
+    </section>
 
     <!-- Coupons -->
-    <section class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-8" aria-labelledby="coupons-heading">
-      <div class="flex items-center gap-3 border-b border-slate-200">
-        <h2 id="coupons-heading" class="py-3 text-xl font-semibold">Top Coupons</h2>
-        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{coupons.length}</span>
-      </div>
+    <section class="max-w-3xl mx-auto p-4">
+      <h2 class="text-xl font-bold mb-4">Available Coupons</h2>
+      <ul class="space-y-4">
+        {data.coupons.items.map((c) => (
+          <li class="p-4 border rounded-lg shadow-sm bg-white">
+            <h3 class="font-semibold">{c.title}</h3>
+            <p class="text-green-700">{c.discount_text}</p>
+            {c.ends_at && (
+              <p class="text-sm text-gray-500">Expires {new Date(c.ends_at).toLocaleDateString()}</p>
+            )}
+            <button
+              class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              aria-label={`Reveal ${c.code ? "coupon code" : "deal"} for ${c.title}`}
+              onClick={`navigator.clipboard.writeText('${c.code ?? ""}')`}
+              rel="nofollow sponsored noopener"
+            >
+              {c.code ? "SHOW CODE" : "GET DEAL"}
+            </button>
+          </li>
+        ))}
+      </ul>
 
-      {coupons.length ? (
-        <ul class="mt-4 grid gap-4">
-          {coupons.map((c: any) => (
-            <li class="rounded-2xl border border-slate-200 p-4 md:p-5 bg-white shadow-sm">
-              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div class="min-w-0">
-                  <h3 class="text-base md:text-lg font-semibold">{c.title ?? "Coupon"}</h3>
-                  <p class="mt-1 text-sm text-slate-600">{c.discount_text ?? (c.code ? "Use code at checkout" : "Deal")}</p>
-                  {c.ends_at && (
-                    <p class="mt-1 text-xs text-slate-500">
-                      Expires <time dateTime={c.ends_at}>{formatDate(c.ends_at)}</time>
-                    </p>
-                  )}
-                </div>
-                <div class="flex items-center gap-3 shrink-0">
-                  <span class="hidden md:inline-block rounded-xl bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-                    {c.discount_text ?? "Coupon"}
-                  </span>
-                  <!-- Button semantics only; real click-out can happen in your Card component or link wrapper -->
-                  <button
-                    class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50 active:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    aria-label={c.code ? `Copy code ${c.code}` : "Open deal"}
-                  >
-                    {c.code ? "SHOW CODE" : "GET DEAL"}
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p class="mt-4 text-slate-600">No active coupons at the moment. Check back soon.</p>
-      )}
-
-      <!-- Pagination summary/controls -->
-      <div class="mt-6 flex items-center justify-between text-sm">
-        <p class="text-slate-600">Total pages: {totalPages}</p>
-        <div class="flex gap-2">
-          {prev ? (
-            <a href={prev} class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Prev</a>
-          ) : (
-            <span class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-400 cursor-not-allowed">Prev</span>
-          )}
-          {next ? (
-            <a href={next} class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Next</a>
-          ) : (
-            <span class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-400 cursor-not-allowed">Next</span>
-          )}
-        </div>
+      <!-- Pagination -->
+      <div class="flex justify-between mt-6">
+        {data.coupons.prev && <a href={data.coupons.prev} class="text-blue-600 hover:underline">Previous</a>}
+        {data.coupons.next && <a href={data.coupons.next} class="text-blue-600 hover:underline">Next</a>}
       </div>
     </section>
 
-    <!-- Trust -->
-    <section class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-10 mb-12">
-      <div class="rounded-2xl border border-slate-200 p-5 bg-slate-50/60">
-        <h3 class="text-base font-semibold">Why Trust This Page</h3>
-        <ul class="mt-3 space-y-2 text-sm text-slate-700">
-          <li>✅ Human-verified coupons & clear terms</li>
-          <li>⚡ Near real-time refresh from source</li>
-          <li>🔒 Safe outlinks (<code>rel="sponsored"</code> + <code>noopener</code>)</li>
-          <li>♻️ Expired offers are removed promptly</li>
-        </ul>
-        <p class="mt-4 text-xs text-slate-500">
-          Last updated: <time dateTime={updated.toISOString()}>{formatDate(updated)}</time>
-        </p>
-      </div>
-    </section>
-
-    <!-- Footer (very light placeholder) -->
-    <footer class="border-t border-slate-100">
-      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-slate-600">
-        <div class="font-semibold text-slate-800">HandPicked</div>
-        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-          <a class="hover:text-slate-900" href="/about">About</a>
-          <a class="hover:text-slate-900" href="/contact">Contact</a>
-          <a class="hover:text-slate-900" href="/privacy">Privacy</a>
-          <a class="hover:text-slate-900" href="/terms">Terms</a>
-        </div>
-        <p class="mt-4 text-xs">© {new Date().getFullYear()} HandPicked</p>
-      </div>
-    </footer>
+    <!-- Trust box -->
+    <aside class="max-w-3xl mx-auto p-4 mt-8 border rounded-lg bg-gray-50">
+      <h2 class="text-lg font-bold mb-2">Why trust our coupons?</h2>
+      <ul class="list-disc ml-6 text-sm">
+        <li>Verified codes and deals updated regularly.</li>
+        <li>Safe outbound links (nofollow, sponsored, noopener).</li>
+        <li>Expiry dates clearly displayed.</li>
+        <li>Last updated {new Date(data.last_updated).toLocaleDateString()}.</li>
+      </ul>
+    </aside>
   </body>
 </html>
