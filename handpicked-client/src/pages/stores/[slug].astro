@@ -62,94 +62,33 @@ type StoreDetail = {
   subscribe_info?: { endpoint: string; required_fields: string[] };
 };
 
-// Defensive fetch
-let store = null;
+type StoreDetailResponse = {
+  data: StoreDetail | null;
+  meta?: {
+    canonical?: string;
+    jsonld?: any;
+    title?: string;
+    description?: string;
+  };
+};
+
+const { slug } = Astro.params as { slug: string };
+
+let resp: StoreDetailResponse | null = null;
 try {
-  const res = await fetch(`${API_BASE}/stores/${slug}`, {
-    headers: { "Accept": "application/json" },
-    cache: "no-store",
-  });
-  if (res.ok) {
-    const json = await res.json();
-    store = json?.data ?? null;
-  }
+  resp = await api.get<StoreDetailResponse>(`/stores/${slug}`);
 } catch (e) {
-  store = null;
+  resp = null;
 }
 
-// Fallback data
-const fallback = {
-  name: slug,
-  logo_url: "/fallback-logo.svg",
-  category_names: ["General"],
-  about_html: "<p>Coupons and promo codes updated regularly.</p>",
-  last_updated: new Date().toISOString(),
-  stats: { active_coupons: 0 },
-  coupons: { items: [], total_pages: 1 },
-  breadcrumbs: [
-    { name: "Home", url: "/" },
-    { name: "Stores", url: "/stores" },
-    { name: slug, url: `/stores/${slug}` },
-  ],
-  seo_title: `${slug} Coupons & Promo Codes`,
-  seo_description: `Find the latest ${slug} coupons & deals.`,
-  canonical: `https://yoursite.com/stores/${slug}`,
-  rating_value: 4.5,
-  rating_count: 100,
-  brand_site: "#",
-  hero_image: "/fallback-hero.webp",
-};
-
-const data = store ?? fallback;
-
-// SEO metadata
-const pageTitle = data.seo_title || `${data.name} Coupons & Promo Codes | ${new Date().toLocaleString("default",{month:"long",year:"numeric"})}`;
-const pageDesc = data.seo_description || `Save with the latest ${data.name} coupons, promo codes & deals.`;
-const canonical = data.canonical || `https://yoursite.com/stores/${data.slug ?? slug}`;
-const ogImage = data.hero_image || data.logo_url;
-
-// JSON-LD
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": pageTitle,
-  "description": pageDesc,
-  "breadcrumb": {
-    "@type": "BreadcrumbList",
-    "itemListElement": data.breadcrumbs.map((b, i) => ({
-      "@type": "ListItem",
-      "position": i + 1,
-      "name": b.name,
-      "item": `https://yoursite.com${b.url}`,
-    })),
-  },
-  "brand": {
-    "@type": "Brand",
-    "name": data.name,
-    "logo": data.logo_url,
-    "url": data.brand_site,
-    ...(data.rating_value && data.rating_count
-      ? {
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": data.rating_value,
-            "ratingCount": data.rating_count,
-          },
-        }
-      : {}),
-  },
-  "hasOfferCatalog": {
-    "@type": "OfferCatalog",
-    "name": `${data.name} Coupons`,
-    "itemListElement": data.coupons.items.map((c) => ({
-      "@type": "Coupon",
-      "name": c.title,
-      "discountCode": c.code || undefined,
-      "description": c.discount_text,
-      "validThrough": c.ends_at || undefined,
-    })),
-  },
-};
+const store = resp?.data || null;
+const meta = resp?.meta || {};
+const pageTitle = meta?.title || (store?.name ? `${store.name} - HandPicked` : "Store - HandPicked");
+const pageDesc =
+  meta?.description ||
+  (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
+const canonical = meta?.canonical;
+const jsonld = meta?.jsonld;
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
