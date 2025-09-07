@@ -14,6 +14,7 @@ import {
 import { badRequest } from "../utils/errors.js";
 import { STORE_SORTS, STORE_COUPON_TYPES } from "../constants/publicEnums.js";
 import * as TestimonialsRepo from "../dbhelper/TestimonialsRepo.js";
+import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
 
 /** Helpers */
 function getOrigin(req) {
@@ -166,7 +167,7 @@ export async function detail(req, res) {
         // Fetch store
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
-    console.info("Store detail controller method: Store", store);
+        console.info("Store detail controller method: Store", store);
         // Primary coupons list for page (ensure codes omitted in mapping below)
         const { items: rawItems = [], total = 0 } =
           (await CouponsRepo.listForStore({
@@ -192,7 +193,7 @@ export async function detail(req, res) {
           is_editor: !!r.is_editor,
           // other fields if needed for UI (but no raw codes)
         }));
-    console.info("Store detail controller method: Coupons ", couponsItems);
+        console.info("Store detail controller method: Coupons ", couponsItems);
 
         // Related stores (existing)
         const related = await StoresRepo.relatedByCategories({
@@ -234,7 +235,7 @@ export async function detail(req, res) {
           })
           .filter(Boolean)
           .slice(0, 50);
-    console.info("Store detail controller method: FAQs ", faqs);
+        console.info("Store detail controller method: FAQs ", faqs);
 
         // Testimonials (optional repo) — get top 3 and stats
         let testimonials = [];
