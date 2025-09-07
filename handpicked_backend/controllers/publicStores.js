@@ -132,6 +132,7 @@ export async function list(req, res) {
  */
 
 export async function detail(req, res) {
+  console.info("Store detail controller method:");
   try {
     const slug = String(req.params.slug || "")
       .trim()
@@ -165,7 +166,7 @@ export async function detail(req, res) {
         // Fetch store
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
-
+    console.info("Store detail controller method: Store", store);
         // Primary coupons list for page (ensure codes omitted in mapping below)
         const { items: rawItems = [], total = 0 } =
           (await CouponsRepo.listForStore({
@@ -191,6 +192,7 @@ export async function detail(req, res) {
           is_editor: !!r.is_editor,
           // other fields if needed for UI (but no raw codes)
         }));
+    console.info("Store detail controller method: Coupons ", couponsItems);
 
         // Related stores (existing)
         const related = await StoresRepo.relatedByCategories({
@@ -232,6 +234,7 @@ export async function detail(req, res) {
           })
           .filter(Boolean)
           .slice(0, 50);
+    console.info("Store detail controller method: FAQs ", faqs);
 
         // Testimonials (optional repo) — get top 3 and stats
         let testimonials = [];
