@@ -3,17 +3,32 @@ import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import CardCoupon from "../../components/CardCoupon.astro";
-import Pagination from "../../components/Pagination.astro";
 import CardStore from "../../components/CardStore.astro";
+import Pagination from "../../components/Pagination.astro";
+
+/* Islands & components */
+import CouponRevealIsland from "../../components/islands/CouponRevealIsland.jsx";
+import SubscribeBox from "../../components/SubscribeBox.jsx";
+import FaqAccordion from "../../components/FAQAccordion.jsx";
+import TestimonialsList from "../../components/TestimonialsList.jsx";
+import RecentActivity from "../../components/RecentActivity.jsx";
+import TrendingOffersCompact from "../../components/TrendingOffersCompact.jsx";
+import WhyTrustUs from "../../components/WhyTrustUs.jsx";
+
 import { api } from "../../lib/api";
 
 type Coupon = {
   id: string | number;
   title?: string | null;
-  code?: string | null;
+  coupon_type?: string | null;
   ends_at?: string | null;
   merchant_name?: string | null;
+  merchant?: {
+    slug?: string | null;
+    logo_url?: string | null;
+    affl_url?: string | null;
+    web_url?: string | null;
+  };
 };
 
 type StoreDetail = {
@@ -22,6 +37,8 @@ type StoreDetail = {
   name: string;
   logo_url?: string | null;
   category_names?: string[];
+  side_description_html?: string | null;
+  description_html?: string | null;
   about_html?: string | null;
   breadcrumbs?: { name: string; url: string }[];
   stats?: { active_coupons?: number };
@@ -35,6 +52,14 @@ type StoreDetail = {
     total_pages?: number;
   };
   related_stores?: { id: string | number; name: string; slug: string; logo_url?: string | null }[];
+  faqs?: { question: string; answer: string }[];
+  testimonials?: { id: string; user_name: string; rating: number; comment: string; avatar_url?: string; posted_at?: string }[];
+  avg_rating?: number | null ;
+  reviews_count?: number;
+  trending_offers?: any[];
+  recent_activity?: { total_offers_added_last_30d: number; recent: any[] };
+  trust_text?: string | null;
+  subscribe_info?: { endpoint: string; required_fields: string[] };
 };
 
 type StoreDetailResponse = {
@@ -68,76 +93,153 @@ const jsonld = meta?.jsonld;
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
+
   <main class="container py-10">
     {store ? (
       <>
         <Breadcrumbs breadcrumbs={store.breadcrumbs} />
 
-        <!-- Store header -->
-        <section class="mt-4 store-header flex items-center gap-4">
-          <div class="store-logo">
-            {store.logo_url ? (
-              <img
-                src={store.logo_url}
-                alt={store.name}
-                width="64"
-                height="64"
-                class="object-contain"
-                loading="lazy"
-              />
-            ) : (
-              <div class="store-logo__placeholder">Logo</div>
-            )}
+        <!-- Hero -->
+        <section class="mt-4 store-header flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          <div class="flex items-center gap-4">
+            <div class="store-logo">
+              {store.logo_url ? (
+                <img
+                  src={store.logo_url}
+                  alt={store.name}
+                  width="80"
+                  height="80"
+                  class="object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <div class="store-logo__placeholder w-20 h-20 flex items-center justify-center bg-gray-100 rounded">Logo</div>
+              )}
+            </div>
+
+            <div>
+              <h1 class="text-2xl font-bold">{store.name}</h1>
+              {store.category_names && store.category_names.length > 0 && (
+                <p class="text-sm text-gray-600">{store.category_names.join(", ")}</p>
+              )}
+              {store.stats?.active_coupons !== undefined && (
+                <p class="text-sm text-green-600 mt-1">
+                  {store.stats.active_coupons} active coupons
+                </p>
+              )}
+
+              {/* Side blurb (short) */}
+              {store.side_description_html && (
+                <div class="mt-3 text-sm text-gray-700 max-w-xl">
+                  <div class="prose max-w-none line-clamp-2" set:html={store.side_description_html}></div>
+                  <a href="#about-section" class="text-indigo-600 hover:underline text-sm">Read more</a>
+                </div>
+              )}
+            </div>
           </div>
-          <div class="store-title">
-            <h1 class="text-2xl font-bold">{store.name}</h1>
-            {store.category_names && store.category_names.length > 0 && (
-              <p class="text-sm text-gray-600">{store.category_names.join(", ")}</p>
-            )}
-            {store.stats?.active_coupons !== undefined && (
-              <p class="text-sm text-green-600 mt-1">
-                {store.stats.active_coupons} active coupons
-              </p>
-            )}
+
+          {/* Optional quick actions or stats could go here */}
+          <div class="flex-shrink-0">
+            <!-- placeholder for future hero actions -->
           </div>
         </section>
 
-        <!-- About -->
-        {store.about_html && (
-          <section class="prose max-w-none mt-6">
-            <div set:html={store.about_html}></div>
-          </section>
-        )}
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Main column -->
+          <div class="lg:col-span-2 space-y-8">
+            <!-- Coupons / Deals -->
+            <section>
+              <h2 class="text-xl font-semibold mb-4">Coupons & Deals</h2>
+              {store.coupons?.items && store.coupons.items.length > 0 ? (
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {store.coupons.items.map((c) => (
+                    <CouponRevealIsland client:load coupon={c} storeSlug={store.slug} />
+                  ))}
+                </div>
+              ) : (
+                <p class="text-gray-600">No active coupons at the moment.</p>
+              )}
 
-        <!-- Coupons -->
-        <section class="mt-8">
-          <h2 class="text-xl font-semibold mb-4">Coupons</h2>
-          {store.coupons?.items && store.coupons.items.length > 0 ? (
-            <div class="grid-2-equal">
-              {store.coupons.items.map((c) => <CardCoupon coupon={c} />)}
+              <div class="mt-4">
+                <Pagination
+                  prev={store.coupons?.prev}
+                  next={store.coupons?.next}
+                  total_pages={store.coupons?.total_pages}
+                />
+              </div>
+            </section>
+
+            <!-- About Store (detailed) -->
+            <section id="about-section" class="mt-6 bg-white border border-gray-100 rounded p-6">
+              <h2 class="text-xl font-semibold mb-4">About this store</h2>
+
+              {/* Side description (if you want to keep both, else hide) */}
+              {store.side_description_html && (
+                <div class="prose max-w-none mb-4" set:html={store.side_description_html}></div>
+              )}
+
+              {/* Full description_html (preferred) */}
+              {store.description_html ? (
+                <div class="prose max-w-none" set:html={store.description_html}></div>
+              ) : store.about_html ? (
+                <div class="prose max-w-none" set:html={store.about_html}></div>
+              ) : (
+                <p class="text-gray-600">No detailed description available for this store.</p>
+              )}
+            </section>
+
+            <!-- Testimonials -->
+            {/* {store.testimonials && store.testimonials.length > 0 && (
+              <section>
+                <TestimonialsList client:load items={store.testimonials} avgRating={store.avg_rating as number | null} totalReviews={store.reviews_count} />
+              </section>
+            )} */}
+
+            <!-- FAQs -->
+            {store.faqs && store.faqs.length > 0 && (
+              <section>
+                <FaqAccordion client:load faqs={store.faqs} />
+              </section>
+            )}
+
+            <!-- Related Stores -->
+            {store.related_stores && store.related_stores.length > 0 && (
+              <section>
+                <h2 class="text-xl font-semibold mb-4">Similar stores</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {store.related_stores.map((rs) => (
+                    <CardStore store={rs} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          <!-- Right sidebar -->
+          <aside class="lg:col-span-1 space-y-6">
+            {/* Trending offers (compact) */}
+            <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
+
+            {/* Recent activity */}
+            <RecentActivity client:load data={store.recent_activity} />
+
+            {/* Subscribe box */}
+            <div class="bg-white border border-gray-100 rounded-md p-4">
+              <h3 class="text-lg font-semibold mb-3">Get updates</h3>
+              <SubscribeBox client:load source={store.slug} />
             </div>
-          ) : (
-            <p class="text-gray-600">No active coupons at the moment.</p>
-          )}
 
-          <Pagination
-            prev={store.coupons?.prev}
-            next={store.coupons?.next}
-            total_pages={store.coupons?.total_pages}
-          />
-        </section>
+            {/* Why trust us */}
+            <WhyTrustUs client:load />
 
-        <!-- Related Stores -->
-        {store.related_stores && store.related_stores.length > 0 && (
-          <section class="mt-12">
-            <h2 class="text-xl font-semibold mb-4">Related Stores</h2>
-            <div class="grid-3-equal">
-              {store.related_stores.map((rs) => (
-                <CardStore store={rs} />
-              ))}
-            </div>
-          </section>
-        )}
+            {/* Trust text (optional) */}
+            {store.trust_text && (
+              <div class="bg-white border border-gray-100 rounded-md p-4 text-sm text-gray-700">
+                {store.trust_text}
+              </div>
+            )}
+          </aside>
+        </div>
       </>
     ) : (
       <section class="py-20 text-center">
@@ -149,5 +251,6 @@ const jsonld = meta?.jsonld;
       </section>
     )}
   </main>
+
   <Footer />
 </Base>

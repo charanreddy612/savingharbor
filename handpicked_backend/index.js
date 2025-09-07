@@ -9,7 +9,8 @@ import helmet from "helmet";
 // import { requestLogger } from "./middleware/logger.js";
 
 import publicRouter from "./routes/public.js";
-// import other routes as needed
+import offersRouter from "./routes/offers.js";
+import subscribeRoutes from "./routes/subscribe.js";
 
 dotenv.config(); // keep for local dev, but PORT comes from Render in production
 
@@ -46,6 +47,9 @@ app.use(
 app.use("/public/v1", publicRouter);
 // Static uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// offer routes
+app.use('/api/offers', offersRouter);
+app.use("/api/subscribe", subscribeRoutes);
 
 // Helmet for security on API routes
 app.use(
