@@ -84,7 +84,7 @@ export async function getBySlug(slug) {
   const { data, error } = await supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, side_description_html, meta_title, meta_description"
+      "id, slug, name, logo_url, category_names, side_description_html, description_html, meta_title, meta_description, faqs"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -113,6 +113,7 @@ export async function getBySlug(slug) {
       ? data.category_names
       : [],
     about_html: sanitize(data.side_description_html || ""),
+    description_html: sanitize(data.description_html || ""),
     meta_title: data.meta_title || "",
     meta_description: data.meta_description || "",
     active_coupons: activeCoupons,

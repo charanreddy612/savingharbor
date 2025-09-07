@@ -13,6 +13,7 @@ import {
 } from "../utils/validation.js";
 import { badRequest } from "../utils/errors.js";
 import { STORE_SORTS, STORE_COUPON_TYPES } from "../constants/publicEnums.js";
+import * as TestimonialsRepo from "../dbhelper/TestimonialsRepo.js";
 
 /** Helpers */
 function getOrigin(req) {
@@ -119,16 +120,6 @@ export async function list(req, res) {
 
 /** Store Detail — enriched for frontend needs
  *
- * Adds:
- *  - side_description_html (short blurb)
- *  - description_html (full about)
- *  - faqs (parsed from merchants table JSON)
- *  - testimonials (top 3), avg_rating, reviews_count
- *  - trending_offers (1-3 offers; no codes)
- *  - recent_activity (offers added count + recent list)
- *  - subscribe_info (endpoint meta)
- *
- * Ensures coupon codes are not returned in GET response.
  *
  * Relies on repo helpers:
  *  - StoresRepo.getBySlug(slug)
@@ -142,13 +133,19 @@ export async function list(req, res) {
 
 export async function detail(req, res) {
   try {
-    const slug = String(req.params.slug || "").trim().toLowerCase();
+    const slug = String(req.params.slug || "")
+      .trim()
+      .toLowerCase();
     if (!slug) return badRequest(res, "Invalid store slug");
 
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const type = valEnum(req.query.type, STORE_COUPON_TYPES, "all");
-    const sort = valEnum(req.query.sort, ["editor", "latest", "ending"], "editor");
+    const sort = valEnum(
+      req.query.sort,
+      ["editor", "latest", "ending"],
+      "editor"
+    );
     const locale = valLocale(req.query.locale) || deriveLocale(req);
 
     const params = {
@@ -240,30 +237,34 @@ export async function detail(req, res) {
         let testimonials = [];
         let avgRating = null;
         let reviewsCount = 0;
-        try {
-          if (typeof TestimonialsRepo?.getTopForStore === "function") {
-            const tRes = await TestimonialsRepo.getTopForStore({
-              merchantId: store.id,
-              limit: 3,
-            });
-            // Expect shape { items: [...], avgRating: x, totalReviews: n } or fallback
-            if (tRes) {
-              testimonials = tRes.items || tRes || [];
-              if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
-              if (tRes.totalReviews !== undefined) reviewsCount = tRes.totalReviews;
-            }
-          } else if (store.reviews && Array.isArray(store.reviews)) {
-            // fallback: if store row includes reviews array
-            testimonials = (store.reviews || []).slice(0, 3);
-            reviewsCount = store.reviews?.length || 0;
-            // compute avg
-            const sum = (store.reviews || []).reduce((s, r) => s + (r.rating || 0), 0);
-            avgRating = reviewsCount ? sum / reviewsCount : null;
-          }
-        } catch (tErr) {
-          console.warn("Failed to load testimonials for store", store.id, tErr);
-          testimonials = [];
-        }
+        /*
+         *To be Implemented
+         */
+
+        // try {
+        //   if (typeof TestimonialsRepo?.getTopForStore === "function") {
+        //     const tRes = await TestimonialsRepo.getTopForStore({
+        //       merchantId: store.id,
+        //       limit: 3,
+        //     });
+        //     // Expect shape { items: [...], avgRating: x, totalReviews: n } or fallback
+        //     if (tRes) {
+        //       testimonials = tRes.items || tRes || [];
+        //       if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
+        //       if (tRes.totalReviews !== undefined) reviewsCount = tRes.totalReviews;
+        //     }
+        //   } else if (store.reviews && Array.isArray(store.reviews)) {
+        //     // fallback: if store row includes reviews array
+        //     testimonials = (store.reviews || []).slice(0, 3);
+        //     reviewsCount = store.reviews?.length || 0;
+        //     // compute avg
+        //     const sum = (store.reviews || []).reduce((s, r) => s + (r.rating || 0), 0);
+        //     avgRating = reviewsCount ? sum / reviewsCount : null;
+        //   }
+        // } catch (tErr) {
+        //   console.warn("Failed to load testimonials for store", store.id, tErr);
+        //   testimonials = [];
+        // }
 
         // Trending offers (1-3) — try to call coupons repo with sort 'trending' or by click_count
         let trendingOffers = [];
@@ -307,7 +308,11 @@ export async function detail(req, res) {
             }
           }
         } catch (tErr) {
-          console.warn("Failed to load trending offers for store", store.id, tErr);
+          console.warn(
+            "Failed to load trending offers for store",
+            store.id,
+            tErr
+          );
           trendingOffers = [];
         }
 
@@ -334,7 +339,11 @@ export async function detail(req, res) {
             }
           }
         } catch (aErr) {
-          console.warn("Failed to load recent activity for store", store.id, aErr);
+          console.warn(
+            "Failed to load recent activity for store",
+            store.id,
+            aErr
+          );
           recentActivity = { total_offers_added_last_30d: 0, recent: [] };
         }
 
@@ -366,8 +375,10 @@ export async function detail(req, res) {
         });
 
         // side_description_html and description_html: prefer explicit fields on store row
-        const side_description_html = store.side_description_html || store.summary_html || null;
-        const description_html = store.description_html || store.about_html || null;
+        const side_description_html =
+          store.side_description_html || store.summary_html || null;
+        const description_html =
+          store.description_html || store.about_html || null;
 
         // Prepare final data payload
         return {
@@ -400,8 +411,13 @@ export async function detail(req, res) {
             avg_rating: avgRating,
             trending_offers: trendingOffers,
             recent_activity: recentActivity,
-            trust_text: StoresRepo.getTrustText ? StoresRepo.getTrustText(store) : null,
-            subscribe_info: { endpoint: "/api/subscribe", required_fields: ["email"] },
+            trust_text: StoresRepo.getTrustText
+              ? StoresRepo.getTrustText(store)
+              : null,
+            subscribe_info: {
+              endpoint: "/api/subscribe",
+              required_fields: ["email"],
+            },
           },
           meta: {
             generated_at: new Date().toISOString(),
