@@ -3,12 +3,87 @@ import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import BannerSlider from "../components/BannerSlider.jsx";
+import CouponRevealIsland from "../components/islands/CouponRevealIsland";
+import CardStore from "../components/CardStore.astro";
+import Pagination from "../components/Pagination.astro";
+import { api } from "../lib/api";
 
 const pageMeta = {
   title: "HandPicked Deals | Verified Coupons & Discounts",
   description:
     "Verified coupons, real savings, no expired junk — handpicked by real humans.",
 };
+
+type Store = {
+  id: string | number;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  stats?: { active_coupons?: number };
+};
+
+type StoresResponse = {
+  data: Store[];
+  meta: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    canonical?: string;
+    prev?: string | null;
+    next?: string | null;
+    total_pages?: number;
+    title?: string;
+    description?: string;
+  };
+};
+
+let resp: StoresResponse | null = null;
+try {
+  resp = await api.get<StoresResponse>("/stores");
+} catch (e) {
+  console.error("Error fetching stores:", e);
+  resp = null;
+}
+
+const stores = resp?.data || [];
+const meta = resp?.meta || {};
+const pageTitle = meta.title || "Stores - HandPicked";
+const pageDesc =
+  meta.description || "Explore verified stores with handpicked coupons.";
+const canonical = meta.canonical;
+
+type Coupon = {
+  id: string | number;
+  title?: string | null;
+  code?: string | null;
+  ends_at?: string | null;
+  merchant_name?: string | null;
+};
+
+type CouponsResponse = {
+  data: Coupon[];
+  meta: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    canonical?: string;
+    prev?: string | null;
+    next?: string | null;
+    total_pages?: number;
+    jsonld?: any;
+    title?: string;
+    description?: string;
+  };
+};
+
+let cresp: CouponsResponse | null = null;
+try {
+  cresp = await api.get<CouponsResponse>("/coupons");
+} catch (e) {
+  resp = null;
+}
+
+const coupons = cresp?.data || [];
 ---
 
 <Base meta={pageMeta}>
@@ -22,97 +97,69 @@ const pageMeta = {
       <p class="mt-3" style="color: var(--color-muted);">
         Save on top brands with codes we test ourselves.
       </p>
-      <div
+      <!-- <div
         class="mt-6"
         style="display: flex; gap: 0.75rem; justify-content: center;"
       >
         <a href="/coupons" class="btn btn-primary">Browse Coupons</a>
         <a href="/stores" class="btn btn-outline">Explore Stores</a>
-      </div>
+      </div> -->
     </section>
-    <BannerSlider client:load/>
+    <BannerSlider client:load />
     <section
       class="mt-12"
       style="display: grid; gap: 1rem; grid-template-columns: repeat(12, minmax(0,1fr));"
     >
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        20% OFF + Free Shipping
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        15% OFF for Gamers
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        25% OFF + Bonus Guide
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        90% OFF on Select Courses
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        10% OFF for Members
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:640px){grid-column: span 6}; @media(min-width:1024px){grid-column: span 4};"
-      >
-        30% OFF on Creative Cloud
-      </div>
+      <h1 class="text-2xl font-bold mb-6">Stores</h1>
+
+      {
+        stores.length > 0 ? (
+          <div class="grid-3-equal gap-6">
+            {stores.map((store) => (
+              <CardStore store={store} />
+            ))}
+          </div>
+        ) : (
+          <p class="text-gray-600">No stores found.</p>
+        )
+      }
+
+      <Pagination
+        prev={meta.prev}
+        next={meta.next}
+        total_pages={meta.total_pages}
+      />
     </section>
 
     <section
       class="mt-16"
       style="display: grid; gap: 1.5rem; grid-template-columns: repeat(12, minmax(0,1fr));"
     >
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        Because your trust means everything.
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        Yes! We test everything ourselves.
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        No login needed. Just copy and save.
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        No. It's 100% free.
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        Every 24–48 hours.
-      </div>
-      <div
-        class="card p-4"
-        style="grid-column: span 12; @media(min-width:768px){grid-column: span 4};"
-      >
-        Direct from brands or user-submitted.
-      </div>
+      <h1 class="text-2xl font-bold mb-6">Coupons</h1>
+      {
+        coupons.length > 0 ? (
+          <div class="grid-2-equal">
+            {coupons.map((c) => (
+              // <CardCoupon coupon={c} />
+              <CouponRevealIsland
+                client:load
+                coupon={c}
+                storeSlug={c.merchant_name}
+              />
+            ))}
+          </div>
+        ) : (
+          <p class="text-gray-600">
+            No coupons available right now. Check back soon.
+          </p>
+        )
+      }
+
+      <Pagination
+        prev={meta.prev}
+        next={meta.next}
+        total_pages={meta.total_pages}
+      />
     </section>
 
     <section class="mt-16">
