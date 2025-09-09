@@ -116,6 +116,7 @@ export async function getBySlug(slug) {
     description_html: sanitize(data.description_html || ""),
     meta_title: data.meta_title || "",
     meta_description: data.meta_description || "",
+    faqs: data.faqs || [],
     active_coupons: activeCoupons,
   };
 }
