@@ -204,6 +204,8 @@ export async function detail(req, res) {
         });
 
         // Parse FAQs from store row (merchants table)
+        console.info("FAQs from DB : ", store.faqs);
+
         let faqs = [];
         faqs = normalizeFaqsFromColumn(store.faqs);
         // sanitize answers (and questions) to remove any unsafe HTML

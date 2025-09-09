@@ -5,7 +5,6 @@ import { supabase } from "./dbclient.js";
  * ActivityRepo.recentOffersForStore({ merchantId, days = 30, limit = 10 })
  */
 export async function recentOffersForStore({
-  supabase,
   merchantId,
   days = 30,
   limit = 10,
