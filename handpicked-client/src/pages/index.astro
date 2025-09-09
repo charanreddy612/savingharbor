@@ -100,11 +100,11 @@ const cmeta = cresp?.meta || {};
     </section>
     <BannerSlider client:visible />
     <h1 class="text-2xl font-bold mb-6">Stores</h1>
-
-    <section
+    <!-- <section
       class="mt-12"
       style="display: grid; gap: 1rem; grid-template-columns: repeat(12, minmax(0,1fr));"
-    >
+    > -->
+    <section class="text-center" style="max-width: 48rem; margin: 0 auto;">
       {
         stores.length > 0 ? (
           <div class="grid-3-equal gap-6">
@@ -124,10 +124,11 @@ const cmeta = cresp?.meta || {};
       />
     </section>
     <h1 class="text-2xl font-bold mb-6">Coupons</h1>
-    <section
+    <!-- <section
       class="mt-16"
       style="display: grid; gap: 1.5rem; grid-template-columns: repeat(12, minmax(0,1fr));"
-    >
+    > -->
+    <section class="text-center" style="max-width: 48rem; margin: 0 auto;">
       {
         coupons.length > 0 ? (
           <div class="grid-2-equal">
