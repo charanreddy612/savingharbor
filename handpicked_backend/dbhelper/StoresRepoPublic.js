@@ -158,12 +158,11 @@ export async function relatedByCategories({
   if (!categoryNames?.length) return [];
 
   try {
-    const { data, error } = await supabase
-      .from("merchants")
-      .select("id, slug, name, logo_url")
-      .neq("id", merchantId)
-      .overlaps("category_names", categoryNames)
-      .limit(limit || 8);
+    const { data, error } = await supabase.rpc("merchants_by_category_any", {
+      cat_list: categoryNames, // e.g. ['electronics', 'home']
+      exclude_id: merchantId || null,
+      limit_val: limit || 8,
+    });
 
     if (error) {
       console.error("Supabase relatedByCategories error:", error);

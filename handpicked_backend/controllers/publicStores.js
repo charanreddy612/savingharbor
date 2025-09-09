@@ -204,37 +204,7 @@ export async function detail(req, res) {
 
         // Parse FAQs from store row (merchants table)
         let faqs = [];
-        try {
-          const rawCandidates = [
-            store.faqs,
-            store.merchant_faqs,
-            store.store_faqs,
-            store.faq_json,
-          ].filter(Boolean);
-
-          if (rawCandidates.length) {
-            const raw = rawCandidates[0];
-            if (typeof raw === "string") {
-              const parsed = JSON.parse(raw);
-              if (Array.isArray(parsed)) faqs = parsed;
-            } else if (Array.isArray(raw)) {
-              faqs = raw;
-            }
-          }
-        } catch (err) {
-          console.warn(`Failed to parse FAQs for store ${store.id}:`, err);
-          faqs = [];
-        }
-        faqs = (faqs || [])
-          .map((f) => {
-            if (!f) return null;
-            const q = (f.question || f.q || "").toString().trim();
-            const a = (f.answer || f.a || f.ans || "").toString().trim();
-            if (!q || !a) return null;
-            return { question: q, answer: a };
-          })
-          .filter(Boolean)
-          .slice(0, 50);
+        faqs = normalizeFaqsFromColumn(store.faqs);
         console.info("Store detail controller method: FAQs ", faqs);
 
         // Testimonials (optional repo) — get top 3 and stats
@@ -441,4 +411,46 @@ export async function detail(req, res) {
     console.error("Store detail controller error:", e);
     return fail(res, "Failed to get store detail", e);
   }
+}
+
+function normalizeFaqsFromColumn(raw) {
+  // raw is expected to be either: null/undefined, a JS array (from jsonb), or a JSON string.
+  if (!raw) return [];
+
+  let parsed = null;
+  if (Array.isArray(raw)) {
+    parsed = raw;
+  } else if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      console.warn(
+        "normalizeFaqsFromColumn: failed to JSON.parse faqs string:",
+        err
+      );
+      return [];
+    }
+  } else {
+    // unexpected type
+    console.warn(
+      "normalizeFaqsFromColumn: unexpected faqs column type:",
+      typeof raw
+    );
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  const faqs = parsed
+    .map((item) => {
+      if (!item) return null;
+      const q = (item.question || item.q || "").toString().trim();
+      const a = (item.answer || item.a || item.ans || "").toString().trim();
+      if (!q || !a) return null;
+      return { question: q, answer: a };
+    })
+    .filter(Boolean)
+    .slice(0, 50);
+
+  return faqs;
 }
