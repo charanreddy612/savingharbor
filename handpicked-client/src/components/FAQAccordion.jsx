@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import PropTypes from "prop-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -130,17 +129,3 @@ export default function FaqAccordion({ faqs, defaultOpen = null, idPrefix = "faq
     </div>
   );
 }
-
-FaqAccordion.propTypes = {
-  faqs: PropTypes.arrayOf(
-    PropTypes.shape({
-      question: PropTypes.string,
-      q: PropTypes.string,
-      answer: PropTypes.string,
-      a: PropTypes.string,
-      ans: PropTypes.string,
-    })
-  ),
-  defaultOpen: PropTypes.number,
-  idPrefix: PropTypes.string,
-};
