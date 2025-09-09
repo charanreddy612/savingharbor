@@ -37,21 +37,6 @@ type StoresResponse = {
   };
 };
 
-let resp: StoresResponse | null = null;
-try {
-  resp = await api.get<StoresResponse>("/stores");
-} catch (e) {
-  console.error("Error fetching stores:", e);
-  resp = null;
-}
-
-const stores = resp?.data || [];
-const meta = resp?.meta || {};
-const pageTitle = meta.title || "Stores - HandPicked";
-const pageDesc =
-  meta.description || "Explore verified stores with handpicked coupons.";
-const canonical = meta.canonical;
-
 type Coupon = {
   id: string | number;
   title?: string | null;
@@ -76,14 +61,22 @@ type CouponsResponse = {
   };
 };
 
-let cresp: CouponsResponse | null = null;
+let resp = null,
+  cresp = null;
 try {
-  cresp = await api.get<CouponsResponse>("/coupons");
-} catch (e) {
-  resp = null;
+  const [r, c] = await Promise.allSettled([
+    api.get<StoresResponse>("/stores?limit=8"),
+    api.get<CouponsResponse>("/coupons?limit=8"),
+  ]);
+  if (r.status === "fulfilled") resp = r.value;
+  if (c.status === "fulfilled") cresp = c.value;
+} catch (err) {
+  console.error("Landing fetch error", err);
 }
-
+const stores = resp?.data || [];
+const meta = resp?.meta || {};
 const coupons = cresp?.data || [];
+const cmeta = cresp?.meta || {};
 ---
 
 <Base meta={pageMeta}>
@@ -105,7 +98,7 @@ const coupons = cresp?.data || [];
         <a href="/stores" class="btn btn-outline">Explore Stores</a>
       </div> -->
     </section>
-    <BannerSlider client:load />
+    <BannerSlider client:visible />
     <section
       class="mt-12"
       style="display: grid; gap: 1rem; grid-template-columns: repeat(12, minmax(0,1fr));"
@@ -142,7 +135,7 @@ const coupons = cresp?.data || [];
             {coupons.map((c) => (
               // <CardCoupon coupon={c} />
               <CouponRevealIsland
-                client:load
+                client:idle
                 coupon={c}
                 storeSlug={c.merchant_name}
               />
@@ -156,9 +149,9 @@ const coupons = cresp?.data || [];
       }
 
       <Pagination
-        prev={meta.prev}
-        next={meta.next}
-        total_pages={meta.total_pages}
+        prev={cmeta.prev}
+        next={cmeta.next}
+        total_pages={cmeta.total_pages}
       />
     </section>
 
