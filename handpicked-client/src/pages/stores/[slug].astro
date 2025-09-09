@@ -14,7 +14,7 @@ import TestimonialsList from "../../components/TestimonialsList.jsx";
 import RecentActivity from "../../components/RecentActivity.jsx";
 import TrendingOffersCompact from "../../components/TrendingOffersCompact.jsx";
 import WhyTrustUs from "../../components/WhyTrustUs.jsx";
-
+import DOMPurify from "isomorphic-dompurify";
 import { api } from "../../lib/api";
 
 type Coupon = {
@@ -89,6 +89,16 @@ const pageDesc =
   (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
+
+const safeSideHtml = store?.side_description_html
+    ? DOMPurify.sanitize(store.side_description_html)
+    : null;
+  const safeDescriptionHtml = store?.description_html
+    ? DOMPurify.sanitize(store.description_html)
+    : store?.about_html
+    ? DOMPurify.sanitize(store.about_html)
+    : null;
+
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -174,13 +184,13 @@ const jsonld = meta?.jsonld;
               <h2 class="text-xl font-semibold mb-4">About this store</h2>
 
               {/* Side description (if you want to keep both, else hide) */}
-              {store.side_description_html && (
-                <div class="prose max-w-none mb-4" set:html={store.side_description_html}></div>
+              {safeSideHtml && (
+                <div class="prose max-w-none mb-4" set:html={safeSideHtml}></div>
               )}
 
               {/* Full description_html (preferred) */}
-              {store.description_html ? (
-                <div class="prose max-w-none" set:html={store.description_html}></div>
+              {safeDescriptionHtml ? (
+                <div class="prose max-w-none" set:html={safeDescriptionHtml}></div>
               ) : store.about_html ? (
                 <div class="prose max-w-none" set:html={store.about_html}></div>
               ) : (
