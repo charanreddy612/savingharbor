@@ -15,6 +15,7 @@ import { badRequest } from "../utils/errors.js";
 import { STORE_SORTS, STORE_COUPON_TYPES } from "../constants/publicEnums.js";
 import * as TestimonialsRepo from "../dbhelper/TestimonialsRepo.js";
 import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
+import DOMPurify from "isomorphic-dompurify";
 
 /** Helpers */
 function getOrigin(req) {
@@ -205,6 +206,11 @@ export async function detail(req, res) {
         // Parse FAQs from store row (merchants table)
         let faqs = [];
         faqs = normalizeFaqsFromColumn(store.faqs);
+        // sanitize answers (and questions) to remove any unsafe HTML
+        faqs = faqs.map((f) => ({
+          question: DOMPurify.sanitize(f.question),
+          answer: DOMPurify.sanitize(f.answer),
+        }));
         console.info("Store detail controller method: FAQs ", faqs);
 
         // Testimonials (optional repo) — get top 3 and stats

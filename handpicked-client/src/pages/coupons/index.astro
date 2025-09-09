@@ -5,6 +5,7 @@ import Footer from "../../components/Footer.astro";
 import CardCoupon from "../../components/CardCoupon.astro";
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
+import CouponRevealIsland from "../../components/islands/CouponRevealIsland";
 
 type Coupon = {
   id: string | number;
@@ -54,7 +55,8 @@ const jsonld = meta.jsonld;
       coupons.length > 0 ? (
         <div class="grid-2-equal">
           {coupons.map((c) => (
-            <CardCoupon coupon={c} />
+            // <CardCoupon coupon={c} />
+            <CouponRevealIsland client:load coupon={c} storeSlug={c.merchant_name} />
           ))}
         </div>
       ) : (
