@@ -1,15 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
+import { api } from "../../lib/api";
 
 /**
  * CouponRevealIsland.jsx
- *
- * Behavior:
- *  - If coupon (has code): on click -> call endpoint -> reveal code + copy -> open merchant URL (if any)
- *  - If deal (no code): on click -> call endpoint -> open merchant URL (if any)
- *
- * Notes:
- *  - Assumes endpoint POST /api/offers/:id/click returns JSON { ok: true, code?: string, redirect_url?: string, message?: string }
- *  - If server does not return a code but initial payload included coupon.code, we reveal that value after click.
  */
 
 function Toast({ message, onClose }) {
@@ -96,7 +89,8 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
     const endpoint = `/api/offers/${encodeURIComponent(String(c.id))}/click`;
     try {
-      const resp = await fetch(endpoint, {
+      // const resp = await fetch(endpoint, {
+      const resp = await api.get(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // If you use cookie-based auth, uncomment the next line:
