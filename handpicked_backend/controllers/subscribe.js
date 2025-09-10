@@ -3,19 +3,6 @@ import { supabase } from "../dbhelper/dbclient.js";
 
 /**
  * POST /api/subscribe
- * Body: { email, source?, honeypot? }
- *
- * Basic behaviour:
- * - Validate email (simple regex)
- * - Check honeypot (must be empty)
- * - Rate-limit per IP (in-memory, replace with Redis in prod)
- * - Persist to `subscriptions` table with fields: email, source, created_at
- *
- * Response:
- * 200 { ok: true, message: "Subscribed" }
- * 400 { ok: false, message: "Invalid email" }
- * 429 { ok: false, message: "Too many requests" }
- * 500 { ok: false, message: "Server error" }
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
