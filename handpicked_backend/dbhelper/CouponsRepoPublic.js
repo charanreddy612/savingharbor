@@ -200,7 +200,7 @@ export async function getById(offerId) {
          slug,
          name,
          logo_url,
-         affl_url,
+         aff_url,
          web_url
        )`
     )
@@ -229,7 +229,7 @@ export async function getById(offerId) {
           id: data.merchants.id,
           slug: data.merchants.slug,
           name: data.merchants.name,
-          affl_url: data.merchants.affl_url,
+          aff_url: data.merchants.aff_url,
           web_url: data.merchants.web_url,
           logo_url: data.merchants.logo_url,
         }

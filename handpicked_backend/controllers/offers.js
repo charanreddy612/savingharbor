@@ -49,13 +49,13 @@ export async function click(req, res) {
     if (!offer)
       return res.status(404).json({ ok: false, message: "Offer not found" });
 
-    // Determine redirect_url priority: affl_url -> web_url -> null
+    // Determine redirect_url priority: aff_url -> web_url -> null
     const merch = offer.merchant || {};
     let redirectUrl = null;
-    const affl = merch.affl_url || merch.affiliate_url || merch.afflUrl || null;
-    const web = merch.web_url || merch.website || merch.webUrl || null;
+    const aff = merch.aff_url || null;
+    const web = merch.web_url || null;
 
-    const pick = affl || web || null;
+    const pick = aff || web || null;
     if (pick && (pick.startsWith("http://") || pick.startsWith("https://"))) {
       redirectUrl = pick;
     } else {
