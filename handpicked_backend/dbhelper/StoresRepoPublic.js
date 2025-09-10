@@ -84,7 +84,7 @@ export async function getBySlug(slug) {
   const { data, error } = await supabase
     .from("merchants")
     .select(
-      "id, slug, name, logo_url, category_names, side_description_html, description_html, meta_title, meta_description, faqs"
+      "id, slug, name, logo_url, category_names, side_description_html, description_html, meta_title, meta_description, faqs, h1keyword, meta_keywords, coupon_h2_blocks, coupon_h3_blocks"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -117,6 +117,14 @@ export async function getBySlug(slug) {
     meta_title: data.meta_title || "",
     meta_description: data.meta_description || "",
     faqs: data.faqs || [],
+    h1keyword: data.h1keyword,
+    meta_keywords: data.meta_keywords,
+    coupon_h2_blocks: Array.isArray(data.coupon_h2_blocks)
+      ? data.coupon_h2_blocks
+      : [],
+    coupon_h3_blocks: Array.isArray(data.coupon_h3_blocks)
+      ? data.coupon_h3_blocks
+      : [],
     active_coupons: activeCoupons,
   };
 }

@@ -41,6 +41,8 @@ type StoreDetail = {
   description_html?: string | null;
   about_html?: string | null;
   breadcrumbs?: { name: string; url: string }[];
+  coupon_h2_blocks?: string[];
+  coupon_h3_blocks?: string[];
   stats?: { active_coupons?: number };
   coupons?: {
     items: Coupon[];
@@ -89,7 +91,6 @@ const pageDesc =
   (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
-
 const safeSideHtml = store?.side_description_html
     ? DOMPurify.sanitize(store.side_description_html)
     : null;
@@ -137,12 +138,18 @@ const safeSideHtml = store?.side_description_html
                   {store.stats.active_coupons} active coupons
                 </p>
               )}
-
-              {/* Side blurb (short) */}
-              {store.side_description_html && (
+            </div>
+            <div>
+              {/* Meta Description */}
+              {meta.description && (
                 <div class="mt-3 text-sm text-gray-700 max-w-xl">
-                  <div class="prose max-w-none line-clamp-2" set:html={store.side_description_html}></div>
-                  <a href="#about-section" class="text-indigo-600 hover:underline text-sm">Read more</a>
+                  <div class="prose max-w-none mb-4" set:html={meta.description}></div>
+                </div>
+              )}
+              {/* Side description (if you want to keep both, else hide) */}
+              {safeSideHtml && (
+                <div class="mt-3 text-sm text-gray-700 max-w-xl">
+                  <div class="prose max-w-none mb-4" set:html={safeSideHtml}></div>
                 </div>
               )}
             </div>
@@ -182,12 +189,6 @@ const safeSideHtml = store?.side_description_html
             <!-- About Store (detailed) -->
             <section id="about-section" class="mt-6 bg-white border border-gray-100 rounded p-6">
               <h2 class="text-xl font-semibold mb-4">About this store</h2>
-
-              {/* Side description (if you want to keep both, else hide) */}
-              {safeSideHtml && (
-                <div class="prose max-w-none mb-4" set:html={safeSideHtml}></div>
-              )}
-
               {/* Full description_html (preferred) */}
               {safeDescriptionHtml ? (
                 <div class="prose max-w-none" set:html={safeDescriptionHtml}></div>

@@ -1,12 +1,36 @@
 export function buildStoreJsonLd(store, origin) {
+  const normalizeKeywords = (h1, meta) => {
+    const raw = [h1, meta]
+      .filter(Boolean)
+      .flatMap(val =>
+        typeof val === "string" ? val.split(",") : Array.isArray(val) ? val : []
+      );
+    const seen = new Set();
+    const out = [];
+    for (let k of raw) {
+      if (!k) continue;
+      const t = String(k).trim();
+      if (!t) continue;
+      if (seen.has(t.toLowerCase())) continue;
+      seen.add(t.toLowerCase());
+      out.push(t);
+      if (out.length >= 25) break; // cap to avoid stuffing
+    }
+    return out;
+  };
+
+  const keywords = normalizeKeywords(store.h1keyword, store.meta_keywords);
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: store.name,
     url: `${origin}/stores/${store.slug}`,
     logo: store.logo_url || undefined,
+    ...(keywords.length ? { keywords } : {}),
   };
 }
+
 export function buildArticleJsonLd(blog, origin) {
   return {
     "@context": "https://schema.org",

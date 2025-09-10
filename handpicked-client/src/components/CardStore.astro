@@ -32,8 +32,8 @@ const { store } = Astro.props as { store: Store };
 
   {store.stats?.active_coupons !== undefined && (
     <p class="text-xs text-green-600 mt-1">
-      {store.stats.active_coupons} active coupon
-      {store.stats.active_coupons === 1 ? "" : "s"}
+      {store.stats.active_coupons} 
+      {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
     </p>
   )}
 </a>
