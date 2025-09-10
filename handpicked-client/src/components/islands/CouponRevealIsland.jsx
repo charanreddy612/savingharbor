@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { api } from "../../lib/api";
 
 /**
  * CouponRevealIsland.jsx
@@ -85,12 +84,11 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
     if (disabled || loading) return;
 
     setLoading(true);
-    setError(null);
-
-    const endpoint = `/api/offers/${encodeURIComponent(String(c.id))}/click`;
+    setError(null);0
+    const base = import.meta.env.PUBLIC_API_BASE_URL || "";
+    const endpoint = base + `/api/offers/${encodeURIComponent(String(c.id))}/click`;
     try {
-      // const resp = await fetch(endpoint, {
-      const resp = await api.get(endpoint, {
+      const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // If you use cookie-based auth, uncomment the next line:
