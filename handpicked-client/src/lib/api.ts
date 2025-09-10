@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  (process?.env?.API_BASE_URL as string);
+  (process?.env?.PUBLIC_API_BASE_URL as string);
 
 async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {

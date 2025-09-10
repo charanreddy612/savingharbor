@@ -65,7 +65,7 @@ export default function SubscribeBox({ source }) {
 
     setLoading(true);
     try {
-      const base = import.meta.env.API_BASE_URL || "";
+      const base = import.meta.env.PUBLIC_API_BASE_URL || "";
       const endpoint = base + "/subscribe";
       const res = await fetch(endpoint, {
         method: "POST",

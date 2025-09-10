@@ -85,8 +85,9 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
     setLoading(true);
     setError(null);0
-    const base = import.meta.env.API_BASE_URL || "";
+    const base = import.meta.env.PUBLIC_API_BASE_URL || "";
     const endpoint = base + `/offers/${encodeURIComponent(String(c.id))}/click`;
+    console.log("offer endpoint :: ", endpoint);
     try {
       const resp = await fetch(endpoint, {
         method: "POST",
