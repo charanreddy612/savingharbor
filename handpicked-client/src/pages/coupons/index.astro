@@ -6,12 +6,18 @@ import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland";
 
+type merchant = {
+slug: string | null;
+logo_url: String | null; 
+};
+
 type Coupon = {
   id: string | number;
   title?: string | null;
   code?: string | null;
   ends_at?: string | null;
   merchant_name?: string | null;
+  merchant: merchant | null;
 };
 
 type CouponsResponse = {
@@ -55,7 +61,7 @@ const jsonld = meta.jsonld;
         <div class="grid-2-equal">
           {coupons.map((c) => (
             // <CardCoupon coupon={c} />
-            <CouponRevealIsland client:load coupon={c} storeSlug={c.merchant_name} />
+            <CouponRevealIsland client:load coupon={c} storeSlug={c.merchant?.slug} />
           ))}
         </div>
       ) : (

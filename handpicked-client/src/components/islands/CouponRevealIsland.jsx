@@ -84,7 +84,7 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
     if (disabled || loading) return;
 
     setLoading(true);
-    setError(null);0
+    setError(null);
     const base = import.meta.env.PUBLIC_API_BASE_URL || "";
     const endpoint = base + `/offers/${encodeURIComponent(String(c.id))}/click`;
     console.log("offer endpoint :: ", endpoint);
