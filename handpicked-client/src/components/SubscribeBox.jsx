@@ -3,20 +3,6 @@ import React, { useState, useRef } from "react";
 
 /**
  * SubscribeBox.jsx
- *
- * Simple React island for email subscription.
- * Props: { source } optional string to indicate store_slug or origin.
- *
- * Usage in Astro:
- *  <SubscribeBox client:load source={store?.slug} />
- *
- * Behavior:
- * - Validates email with a simple regex
- * - Includes a honeypot hidden field (bots likely fill)
- * - Uses in-memory rate-limit tolerant UI handling (server enforces limits)
- * - Posts to POST /api/subscribe with { email, source, honeypot }
- * - Shows inline toasts (success / error)
- * - Accessible (aria-live for messages)
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -79,7 +65,9 @@ export default function SubscribeBox({ source }) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/subscribe", {
+      const base = import.meta.env.API_BASE_URL || "";
+      const endpoint = base + "/subscribe";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
