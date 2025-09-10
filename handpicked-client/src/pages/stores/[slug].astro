@@ -91,13 +91,11 @@ const pageDesc =
   (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
-const safeSideHtml = store?.side_description_html
-    ? DOMPurify.sanitize(store.side_description_html)
+const safeSideHtml = store?.about_html
+    ? DOMPurify.sanitize(store.about_html)
     : null;
   const safeDescriptionHtml = store?.description_html
     ? DOMPurify.sanitize(store.description_html)
-    : store?.about_html
-    ? DOMPurify.sanitize(store.about_html)
     : null;
 
 ---
