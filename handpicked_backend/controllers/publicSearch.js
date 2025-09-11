@@ -85,3 +85,30 @@ export async function search(req, res) {
     return fail(res, "Search failed", e);
   }
 }
+
+export async function searchStores(req, res) {
+  try {
+    const qRaw = req.query.q;
+    const q = qRaw ? String(qRaw).trim() : "";
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit || req.query.limit_per_type || 6)));
+
+    // If empty query, return empty list quickly (UI will show no results)
+    if (!q) {
+      return ok(res, {
+        data: { stores: [] },
+        meta: { q: "", limit },
+      });
+    }
+
+    // Call repo (implement below)
+    const stores = await SearchRepo.searchStores({ q, limit });
+
+    return ok(res, {
+      data: { stores: stores || [] },
+      meta: { q, limit },
+    });
+  } catch (err) {
+    console.error("searchStores controller error:", err);
+    return fail(res, "Search failed", err);
+  }
+}

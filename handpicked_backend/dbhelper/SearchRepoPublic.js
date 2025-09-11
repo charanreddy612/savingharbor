@@ -7,14 +7,37 @@ export async function searchAll({ q, limit }) {
   return { stores, coupons, blogs };
 }
 
-async function searchStores(q, limit) {
+// async function searchStores(q, limit) {
+//   const { data, error } = await supabase
+//     .from("merchants")
+//     .select("id, slug, name, logo_url, category_names")
+//     .ilike("name", `%${q}%`)
+//     .limit(limit);
+//   if (error) throw error;
+//   return (data || []).map((r) => ({
+//     id: r.id,
+//     slug: r.slug,
+//     name: r.name,
+//     logo_url: r.logo_url,
+//     category_names: r.category_names || [],
+//   }));
+// }
+
+async function searchStores({ q, limit = 6 }) {
+  const term = `%${q}%`;
   const { data, error } = await supabase
     .from("merchants")
-    .select("id, slug, name, logo_url, category_names")
-    .ilike("name", `%${q}%`)
+    .select("id, name, slug, logo_url, category_names")
+    .or(
+      `name.ilike.${term},slug.ilike.${term},category_names::text.ilike.${term}`
+    )
     .limit(limit);
-  if (error) throw error;
-  return (data || []).map((r) => ({
+
+  if (error) {
+    console.error("SearchRepo.searchStores supabase error:", error);
+    return [];
+  }
+    return (data || []).map((r) => ({
     id: r.id,
     slug: r.slug,
     name: r.name,
