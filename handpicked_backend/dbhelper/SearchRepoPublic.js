@@ -32,7 +32,7 @@ export async function searchStores({ q, limit = 6 }) {
 
   const params = [term, `%${term}%`, lim];
 
-  const { rows } = await db.query(sql, params);
+  const { rows } = await supabase.query(sql, params);
   // Return only necessary properties
   return (rows || []).map((r) => ({
     id: r.id,
