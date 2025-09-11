@@ -26,7 +26,7 @@ publicRouter.get("/blogs", publicBlogs.list);
 publicRouter.get("/blogs/:slug", publicBlogs.detail);
 
 // Search
-publicRouter.get("/search", publicSearch.search);
+// publicRouter.get("/search", publicSearch.search);
 
 // GET /public/v1/search/stores?q=term&limit=6
 publicRouter.get("/search/stores", publicSearch.searchStores);
