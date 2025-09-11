@@ -2,46 +2,73 @@ import React, { useState, useRef, useEffect } from "react";
 
 /**
  * HeaderSearchIsland.jsx
+ * - Calls /search/stores?q=term&limit=6
+ * - Accessible, debounced, abortable, highlights matches
  */
+
+const DEFAULT_API_BASE = "https://handpickedclient.onrender.com/public/v1";
+const DEBOUNCE_MS = 250;
+const MAX_RESULTS = 6;
+
+function highlight(name = "", q = "") {
+  if (!q) return name;
+  const lower = name.toLowerCase();
+  const qi = q.toLowerCase();
+  const idx = lower.indexOf(qi);
+  if (idx === -1) return name;
+  return (
+    <>
+      {name.slice(0, idx)}
+      <span className="bg-indigo-100 rounded px-0.5">
+        {name.slice(idx, idx + q.length)}
+      </span>
+      {name.slice(idx + q.length)}
+    </>
+  );
+}
 
 export default function HeaderSearchIsland() {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState([]);
+  const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const [errMsg, setErrMsg] = useState(null);
+  const [active, setActive] = useState(-1);
+
   const abortRef = useRef(null);
+  const debounceRef = useRef(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
-  const debounceRef = useRef(null);
 
-  // Build base from env if provided (baked at build time)
-  const rawBase = (import.meta.env && import.meta.env.PUBLIC_API_BASE_URL);
+  const rawBase =
+    (import.meta.env && import.meta.env.PUBLIC_API_BASE_URL) ||
+    DEFAULT_API_BASE;
   const base = rawBase.replace(/\/+$/, "");
 
-  // Close dropdown when clicking outside
+  // click outside closes
   useEffect(() => {
-    const onDocClick = (e) => {
+    const onDoc = (e) => {
       if (!containerRef.current) return;
       if (!containerRef.current.contains(e.target)) {
         setOpen(false);
-        setActiveIndex(-1);
+        setActive(-1);
       }
     };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
   }, []);
 
-  // Debounced search effect
+  // Debounced search
   useEffect(() => {
     if (!q || q.trim().length < 1) {
-      setResults([]);
+      setItems([]);
       setOpen(false);
-      setActiveIndex(-1);
+      setActive(-1);
+      setErrMsg(null);
+      if (abortRef.current) abortRef.current.abort();
       return;
     }
 
-    // debounce
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       if (abortRef.current) abortRef.current.abort();
@@ -49,76 +76,86 @@ export default function HeaderSearchIsland() {
       const signal = abortRef.current.signal;
 
       setLoading(true);
+      setErrMsg(null);
+
+      const endpoint = `${base}/search/stores?q=${encodeURIComponent(
+        q.trim()
+      )}&limit=${MAX_RESULTS}`;
+
       try {
-        const url = `${base}/search?q=${encodeURIComponent(q.trim())}`;
-        const res = await fetch(url, { signal, method: "GET" });
-        if (!res.ok) {
-          setResults([]);
+        const res = await fetch(endpoint, { method: "GET", signal });
+        if (res.status === 404) {
+          // helpful hint: maybe endpoint path mismatch
+          setErrMsg("Search endpoint not found (404). Check server route.");
+          setItems([]);
           setOpen(true);
-          setActiveIndex(-1);
-          setLoading(false);
+          setActive(-1);
           return;
         }
-        const json = await res.json();
-        // Expecting json.data to be an array of stores
-        const items = Array.isArray(json?.data) ? json.data.slice(0, 6) : [];
-        setResults(items);
-        setOpen(true);
-        setActiveIndex(-1);
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Search error:", err);
-          setResults([]);
+        if (!res.ok) {
+          const txt = await res.text().catch(() => null);
+          setErrMsg(txt || `Search failed (${res.status})`);
+          setItems([]);
           setOpen(true);
-          setActiveIndex(-1);
+          setActive(-1);
+          return;
         }
+
+        const json = await res.json();
+        // server shape: { data: { stores: [...] } }
+        const list = (json?.data?.stores || []).slice(0, MAX_RESULTS);
+        setItems(list);
+        setOpen(true);
+        setActive(-1);
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("Search fetch error:", err);
+        setErrMsg("Network error while searching");
+        setItems([]);
+        setOpen(true);
+        setActive(-1);
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, DEBOUNCE_MS);
 
-    return () => {
-      clearTimeout(debounceRef.current);
-    };
+    return () => clearTimeout(debounceRef.current);
   }, [q, base]);
 
-  // keyboard navigation
+  // keyboard
   const onKeyDown = (e) => {
     if (!open) {
-      if (e.key === "ArrowDown" && results.length > 0) {
+      if (e.key === "ArrowDown" && items.length > 0) {
         setOpen(true);
-        setActiveIndex(0);
+        setActive(0);
       }
       return;
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+      setActive((i) => Math.min(i + 1, items.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, 0));
+      setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const sel = activeIndex >= 0 ? results[activeIndex] : results[0];
-      if (sel) {
-        window.location.href = `/stores/${sel.slug}`;
-      }
+      const sel = active >= 0 ? items[active] : items[0];
+      if (sel) window.location.href = `/stores/${sel.slug}`;
     } else if (e.key === "Escape") {
       setOpen(false);
-      setActiveIndex(-1);
+      setActive(-1);
     }
   };
 
-  const onResultClick = (store) => {
-    window.location.href = `/stores/${store.slug}`;
+  const onClickItem = (s) => {
+    window.location.href = `/stores/${s.slug}`;
   };
 
   return (
-    <div className="relative" ref={containerRef} style={{ minWidth: "16rem" }}>
+    <div ref={containerRef} className="relative" style={{ minWidth: "16rem" }}>
       <label htmlFor="header-search" className="sr-only">
         Search stores
       </label>
-
       <div className="relative">
         <input
           id="header-search"
@@ -130,14 +167,18 @@ export default function HeaderSearchIsland() {
           placeholder="Search stores..."
           aria-autocomplete="list"
           aria-expanded={open}
-          aria-controls="search-results-listbox"
+          aria-controls="header-search-listbox"
+          aria-activedescendant={active >= 0 ? `hs-item-${active}` : undefined}
           role="combobox"
           className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 w-64"
         />
 
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {loading ? (
-            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4 animate-spin text-gray-500"
+              viewBox="0 0 24 24"
+            >
               <circle
                 cx="12"
                 cy="12"
@@ -165,30 +206,30 @@ export default function HeaderSearchIsland() {
         </div>
       </div>
 
-      {/* Dropdown */}
       {open && (
         <ul
-          id="search-results-listbox"
+          id="header-search-listbox"
           role="listbox"
           className="absolute z-50 mt-1 w-80 max-h-64 overflow-auto bg-white border border-gray-200 rounded shadow-lg"
         >
-          {results.length === 0 ? (
+          {errMsg ? (
+            <li className="p-3 text-sm text-red-600">{errMsg}</li>
+          ) : items.length === 0 ? (
             <li className="p-3 text-sm text-gray-600">No stores found</li>
           ) : (
-            results.map((s, i) => (
+            items.map((s, i) => (
               <li
+                id={`hs-item-${i}`}
                 key={s.id || s.slug || i}
                 role="option"
-                aria-selected={i === activeIndex}
-                onMouseDown={() => onResultClick(s)} // use onMouseDown to avoid blur-before-click
+                aria-selected={i === active}
+                onMouseDown={() => onClickItem(s)}
                 className={`flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 ${
-                  i === activeIndex ? "bg-gray-100" : ""
+                  i === active ? "bg-gray-100" : ""
                 }`}
               >
                 <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
                   {s.logo_url ? (
-                    // safe image rendering
-                    // If using remote domains, ensure CORS and that the URL is publicly reachable
                     <img
                       src={s.logo_url}
                       alt={s.name}
@@ -198,10 +239,9 @@ export default function HeaderSearchIsland() {
                     <div className="text-[10px] text-gray-400">Logo</div>
                   )}
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 truncate">
-                    {s.name}
+                    {highlight(s.name, q)}
                   </div>
                   {Array.isArray(s.category_names) &&
                     s.category_names.length > 0 && (
@@ -214,7 +254,6 @@ export default function HeaderSearchIsland() {
             ))
           )}
 
-          {/* See all results */}
           <li className="p-2 text-sm border-t">
             <a
               href={`/stores?q=${encodeURIComponent(q)}`}

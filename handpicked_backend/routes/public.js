@@ -29,7 +29,7 @@ publicRouter.get("/blogs/:slug", publicBlogs.detail);
 // publicRouter.get("/search", publicSearch.search);
 
 // GET /public/v1/search/stores?q=term&limit=6
-publicRouter.get("/search", publicSearch.searchStores);
+publicRouter.get("/search/stores", publicSearch.searchStores);
 
 // Health
 publicRouter.get("/health", publicHealth.health);
