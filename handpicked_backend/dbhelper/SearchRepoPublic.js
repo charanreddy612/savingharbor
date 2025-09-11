@@ -1,46 +1,60 @@
 import { supabase } from "../dbhelper/dbclient.js";
 
-/**
- * Full-text search for stores, relevance ordered
- * @param {Object} opts
- * @param {string} opts.q - query
- * @param {number} opts.limit - max results
- * @returns {Promise<Array>}
- */
 export async function searchStores({ q, limit = 6 }) {
   if (!q || String(q).trim() === "") return [];
 
   const term = String(q).trim();
   const lim = Math.max(1, Math.min(50, Number(limit || 6)));
 
-  // Use plainto_tsquery for tokenized search; use trigram similarity as tiebreaker
-  const sql = `
-      SELECT id, name, slug, logo_url, category_names
-      FROM (
-        SELECT
-          id, name, slug, logo_url, category_names,
-          ts_rank_cd(search_tsv, plainto_tsquery('simple', $1)) AS rank_score,
-          similarity(name, $1) AS name_sim
-        FROM merchants
-        WHERE search_tsv @@ plainto_tsquery('simple', $1)
-           OR name ILIKE $2
-        ORDER BY rank_score DESC NULLS LAST, name_sim DESC NULLS LAST
-        LIMIT $3
-      ) AS sub
-      ORDER BY rank_score DESC NULLS LAST, name_sim DESC NULLS LAST;
-    `;
+  const { data, error } = await supabase.rpc("search_stores", {
+    query: term,
+    lim,
+  });
 
-  const params = [term, `%${term}%`, lim];
+  if (error) {
+    console.error("SearchRepo.searchStores supabase rpc error:", error);
+    return [];
+  }
 
-  const { rows } = await supabase.query(sql, params);
-  // Return only necessary properties
-  return (rows || []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    slug: r.slug,
-    logo_url: r.logo_url,
-    category_names: r.category_names,
-  }));
+  if (!Array.isArray(data)) return [];
+
+  // Normalize rows: ensure consistent types for the frontend
+  return data.map((r) => {
+    // category_names may come back as jsonb, text[], or null — normalize to array
+    let categories = null;
+    try {
+      if (Array.isArray(r.category_names)) categories = r.category_names;
+      else if (r.category_names == null) categories = [];
+      else if (typeof r.category_names === "string") {
+        // sometimes comes as JSON string
+        try {
+          const parsed = JSON.parse(r.category_names);
+          categories = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          categories = [];
+        }
+      } else {
+        // JSON object (jsonb) or other — coerce to array when possible
+        categories = Array.isArray(r.category_names) ? r.category_names : [];
+      }
+    } catch {
+      categories = [];
+    }
+
+    // id may be bigint (returned as number or string) — keep as string to be safe, or number if you prefer
+    const id =
+      typeof r.id === "bigint" || typeof r.id === "string"
+        ? String(r.id)
+        : r.id;
+
+    return {
+      id,
+      name: r.name || "",
+      slug: r.slug || "",
+      logo_url: r.logo_url || null,
+      category_names: categories,
+    };
+  });
 }
 
 // async function searchCoupons(q, limit) {
