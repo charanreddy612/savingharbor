@@ -7,7 +7,7 @@ import { supabase } from "../dbhelper/dbclient.js";
  * @param {number} opts.limit - max results
  * @returns {Promise<Array>}
  */
-async function searchStores({ q, limit = 6 }) {
+export async function searchStores({ q, limit = 6 }) {
   if (!q || String(q).trim() === "") return [];
 
   const term = String(q).trim();
