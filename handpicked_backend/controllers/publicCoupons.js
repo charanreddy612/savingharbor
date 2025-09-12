@@ -148,7 +148,7 @@ export async function list(req, res) {
           };
         }
       },
-      { ttlSeconds: 60 }
+      { ttlSeconds: 60, keyExtra: "coupons" }
     );
 
     return ok(res, result);

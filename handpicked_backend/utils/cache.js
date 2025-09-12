@@ -10,7 +10,7 @@ function buildCacheKey(req, keyExtra = "") {
     req.get("host");
 
   // Path without query
-  const path = req.originalUrl ? req.originalUrl.split("?") : req.path;
+  const path = req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
 
   // Sorted query string for deterministic keys
   const params = new URLSearchParams(req.query || {});
@@ -24,9 +24,8 @@ function buildCacheKey(req, keyExtra = "") {
     });
 
   const queryStr = sorted.toString();
-  const base =
-    `${method}` | `${origin}${path}${queryStr ? "?" + queryStr : ""}`;
-  return keyExtra ? `${base}` | `${keyExtra}` : base;
+  const base = `${method}:${origin}${path}${queryStr ? "?" + queryStr : ""}`;
+  return keyExtra ? `${base}:${keyExtra}` : base;
 }
 
 /**

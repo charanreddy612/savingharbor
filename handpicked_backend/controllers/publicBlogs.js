@@ -111,7 +111,7 @@ export async function list(req, res) {
           throw err;
         }
       },
-      { ttlSeconds: 60 }
+      { ttlSeconds: 60, keyExtra: "blogs" }
     );
 
     return ok(res, result);
@@ -180,7 +180,7 @@ export async function detail(req, res) {
           throw err;
         }
       },
-      { ttlSeconds: 300 }
+      { ttlSeconds: 300, keyExtra: "blogs" }
     );
 
     if (!result?.data) return notFound(res, "Blog not found");

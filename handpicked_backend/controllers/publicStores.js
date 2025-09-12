@@ -110,7 +110,7 @@ export async function list(req, res) {
           },
         };
       },
-      { ttlSeconds: 60 }
+      { ttlSeconds: 60, keyExtra: "stores" }
     );
 
     return ok(res, result);
@@ -424,7 +424,7 @@ export async function detail(req, res) {
           },
         };
       },
-      { ttlSeconds: 60 }
+      { ttlSeconds: 60, keyExtra: "stores" }
     );
 
     if (!result?.data) return notFound(res, "Store not found");

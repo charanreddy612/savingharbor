@@ -60,7 +60,7 @@ export async function searchStores(req, res) {
           return { data: { stores: [] }, meta: { q, limit } };
         }
       },
-      { ttlSeconds: 30 } // short TTL for search suggestions
+      { ttlSeconds: 30, keyExtra: "search" } // short TTL for search suggestions
     );
 
     // attach canonical for SEO / shareability

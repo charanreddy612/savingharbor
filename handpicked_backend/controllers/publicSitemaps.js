@@ -63,7 +63,7 @@ export async function stores(req, res) {
         }));
         return { xml: buildSitemapXml(urls) };
       },
-      { ttlSeconds: 300 }
+      { ttlSeconds: 300, keyExtra: "sitemap" }
     );
 
     return res.status(200).send(payload.xml || buildSitemapXml([]));
@@ -92,7 +92,7 @@ export async function blogs(req, res) {
         }));
         return { xml: buildSitemapXml(urls) };
       },
-      { ttlSeconds: 300 }
+      { ttlSeconds: 300, keyExtra: "sitemap" }
     );
 
     return res.status(200).send(payload.xml || buildSitemapXml([]));
