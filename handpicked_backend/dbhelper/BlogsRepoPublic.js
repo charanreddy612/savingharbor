@@ -40,7 +40,6 @@ export async function list({
       id: b.id,
       slug: b.slug,
       title: b.title,
-      excerpt: b.excerpt || "",
       hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
       category: b.category_id
         ? { id: b.category_id, name: b.top_category_name }
@@ -74,7 +73,7 @@ export async function list({
   let query = supabase
     .from("blogs")
     .select(
-      "id, slug, title, excerpt, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
+      "id, slug, title, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
     )
     .eq("is_publish", true)
     .range(from, to);
@@ -98,7 +97,7 @@ export async function list({
     id: b.id,
     slug: b.slug,
     title: b.title,
-    excerpt: b.excerpt || "",
+    // content: b.content || "",
     hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
     category: b.category_id
       ? { id: b.category_id, name: b.top_category_name }
@@ -127,7 +126,6 @@ export async function getBySlug(slug) {
        meta_title,
        meta_description,
        content,
-       excerpt,
        category_id,
        top_category_name,
        author_id,
@@ -152,7 +150,7 @@ export async function getBySlug(slug) {
     seo_title: data.meta_title || "",
     meta_description: data.meta_description || "",
     content_html: sanitize(data.content || ""),
-    excerpt: data.excerpt || "",
+    // content: data.content || "",
     category: data.category_id
       ? { id: data.category_id, name: data.top_category_name }
       : null,

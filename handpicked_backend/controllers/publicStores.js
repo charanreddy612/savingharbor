@@ -186,16 +186,16 @@ export async function detail(req, res) {
           return [];
         });
 
-        const testimonialsPromise =
-          typeof TestimonialsRepo?.getTopForStore === "function"
-            ? TestimonialsRepo.getTopForStore({
-                merchantId: store.id,
-                limit: 3,
-              }).catch((e) => {
-                console.warn("getTopForStore failed:", e);
-                return null;
-              })
-            : Promise.resolve(null);
+        // const testimonialsPromise =
+        //   typeof TestimonialsRepo?.getTopForStore === "function"
+        //     ? TestimonialsRepo.getTopForStore({
+        //         merchantId: store.id,
+        //         limit: 3,
+        //       }).catch((e) => {
+        //         console.warn("getTopForStore failed:", e);
+        //         return null;
+        //       })
+        //     : Promise.resolve(null);
 
         const trendingPromise = CouponsRepo.listForStore({
           merchantId: store.id,
@@ -234,13 +234,13 @@ export async function detail(req, res) {
         const [
           couponsResult,
           relatedResult,
-          testimonialsResult,
+          // testimonialsResult,
           trendingResult,
           recentResult,
         ] = await Promise.all([
           couponsPromise,
           relatedPromise,
-          testimonialsPromise,
+          // testimonialsPromise,
           trendingPromise,
           recentActivityPromise,
         ]);
@@ -285,17 +285,17 @@ export async function detail(req, res) {
         let testimonials = [];
         let avgRating = null;
         let reviewsCount = 0;
-        if (testimonialsResult) {
-          const tRes = testimonialsResult;
-          if (Array.isArray(tRes)) {
-            testimonials = tRes.slice(0, 3);
-          } else if (tRes.items) {
-            testimonials = tRes.items || [];
-            if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
-            if (tRes.totalReviews !== undefined)
-              reviewsCount = tRes.totalReviews;
-          }
-        }
+        // if (testimonialsResult) {
+        //   const tRes = testimonialsResult;
+        //   if (Array.isArray(tRes)) {
+        //     testimonials = tRes.slice(0, 3);
+        //   } else if (tRes.items) {
+        //     testimonials = tRes.items || [];
+        //     if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
+        //     if (tRes.totalReviews !== undefined)
+        //       reviewsCount = tRes.totalReviews;
+        //   }
+        // }
 
         // Trending offers: try repo result first, otherwise fallback to listTopByClicks if implemented
         let trendingOffers = [];

@@ -22,7 +22,7 @@ type BlogDetail = {
     sameAs?: string[];
   } | null;
   breadcrumbs?: { name: string; url: string }[];
-  body_html?: string | null;
+  content_html?: string | null;
 };
 
 type BlogDetailResponse = {
@@ -40,7 +40,11 @@ const { slug } = Astro.params as { slug: string };
 let resp: BlogDetailResponse | null = null;
 try {
   // retries + timeout to reduce transient failures
-  resp = await api.get<BlogDetailResponse>(`/blogs/${slug}`, {}, { retries: 2, timeout: 8000 });
+  resp = await api.get<BlogDetailResponse>(
+    `/blogs/${slug}`,
+    {},
+    { retries: 2, timeout: 8000 }
+  );
 } catch (e) {
   console.error("Error fetching blog detail:", e);
   // safe fallback shape so UI bindings don't break
@@ -65,7 +69,9 @@ const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 
 // sanitize body_html once for safe rendering
-const safeBodyHtml = post?.body_html ? DOMPurify.sanitize(post.body_html) : null;
+const safeBodyHtml = post?.content_html
+  ? DOMPurify.sanitize(post.content_html)
+  : null;
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
