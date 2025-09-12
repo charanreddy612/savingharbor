@@ -4,29 +4,7 @@ import { withCache } from "../utils/cache.js";
 import { requireQ, valLimit } from "../utils/validation.js";
 import { buildCanonical } from "../utils/seo.js";
 
-export async function searchStores(req, res) {
-  try {
-    const qRaw = req.query.q;
-    const q = qRaw ? String(qRaw).trim() : "";
-    const limit = Math.max(
-      1,
-      Math.min(50, Number(req.query.limit || req.query.limit_per_type || 6))
-    );
-
-    if (!q) {
-      return ok(res, { data: { stores: [] }, meta: { q: "", limit } });
-    }
-
-    const stores = await SearchRepo.searchStores({ q, limit });
-
-    return ok(res, { data: { stores }, meta: { q, limit } });
-  } catch (err) {
-    console.error("searchStores controller error:", err);
-    return fail(res, "Search failed", err);
-  }
-}
-
-
+/* helpers copied from other controllers for canonical/path/origin */
 function getOrigin(req) {
   try {
     return (
@@ -36,76 +14,67 @@ function getOrigin(req) {
       "://" +
       req.get("host")
     );
-  } catch (err) {
-    console.error("Failed to get origin:", err);
+  } catch {
     return "";
   }
 }
-
 function getPath(req) {
   try {
     return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
-  } catch (err) {
-    console.error("Failed to get path:", err);
+  } catch {
     return "/";
   }
 }
 
-// export async function search(req, res) {
-//   try {
-//     const qRaw = req.query.q;
-//     const q = qRaw ? String(qRaw).trim() : "";
-//     const limit = valLimit(req.query.limit_per_type || 5);
-//     const origin = getOrigin(req);
-//     const path = getPath(req);
+export async function searchStores(req, res) {
+  try {
+    const qRaw = req.query.q;
+    const q = qRaw ? String(qRaw).trim().slice(0, 200) : "";
+    const limit = valLimit(req.query.limit || req.query.limit_per_type || 6);
 
-//     if (!q) {
-//       return ok(res, {
-//         data: { stores: [], coupons: [], blogs: [] },
-//         meta: {
-//           q: "",
-//           limit_per_type: limit,
-//           canonical: buildCanonical({ origin, path }),
-//         },
-//       });
-//     }
+    // allow empty q to return empty shape (keeps UI stable)
+    if (!q) {
+      const meta = {
+        q: "",
+        limit,
+        canonical: buildCanonical({
+          origin: getOrigin(req),
+          path: getPath(req),
+        }),
+      };
+      return ok(res, { data: { stores: [] }, meta });
+    }
 
-//     const result = await withCache(req, async () => {
-//       try {
-//         const data = await SearchRepo.searchAll({ q, limit });
+    const params = { q, limit, origin: getOrigin(req), path: getPath(req) };
 
-//         // Ensure data is always objects with expected keys
-//         const safeData = {
-//           stores: Array.isArray(data.stores) ? data.stores : [],
-//           coupons: Array.isArray(data.coupons) ? data.coupons : [],
-//           blogs: Array.isArray(data.blogs) ? data.blogs : [],
-//         };
+    // cache short-lived to reduce duplicate load for identical queries
+    const result = await withCache(
+      req,
+      async () => {
+        try {
+          const stores = await SearchRepo.searchStores(params);
+          return { data: { stores }, meta: { q, limit } };
+        } catch (repoErr) {
+          console.error("SearchRepo.searchStores error:", repoErr);
+          // return safe empty shape (controller-level failure already logged)
+          return { data: { stores: [] }, meta: { q, limit } };
+        }
+      },
+      { ttlSeconds: 30 } // short TTL for search suggestions
+    );
 
-//         return {
-//           data: safeData,
-//           meta: {
-//             q,
-//             limit_per_type: limit,
-//             canonical: buildCanonical({ origin, path }),
-//           },
-//         };
-//       } catch (err) {
-//         console.error("Failed to execute searchAll:", err);
-//         return {
-//           data: { stores: [], coupons: [], blogs: [] },
-//           meta: {
-//             q,
-//             limit_per_type: limit,
-//             canonical: buildCanonical({ origin, path }),
-//           },
-//         };
-//       }
-//     });
+    // attach canonical for SEO / shareability
+    result.meta = result.meta || {};
+    result.meta.canonical = buildCanonical({
+      origin: params.origin,
+      path: params.path,
+      q: params.q,
+      limit: params.limit,
+    });
 
-//     return ok(res, result);
-//   } catch (e) {
-//     console.error("Search controller failed:", e);
-//     return fail(res, "Search failed", e);
-//   }
-// }
-
+    return ok(res, result);
+  } catch (err) {
+    console.error("searchStores controller error:", err);
+    return fail(res, "Search failed", err);
+  }
+}

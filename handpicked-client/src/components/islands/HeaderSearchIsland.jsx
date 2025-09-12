@@ -2,13 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 
 /**
  * HeaderSearchIsland.jsx
- * - Calls /search/stores?q=term&limit=6
- * - Accessible, debounced, abortable, highlights matches
  */
 
 const DEFAULT_API_BASE = "https://handpickedclient.onrender.com/public/v1";
 const DEBOUNCE_MS = 250;
 const MAX_RESULTS = 6;
+const MIN_QUERY_LEN = 3;
 
 function highlight(name = "", q = "") {
   if (!q) return name;
@@ -58,34 +57,57 @@ export default function HeaderSearchIsland() {
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
+  // cleanup on unmount: clear debounce and abort
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
+
   // Debounced search
   useEffect(() => {
-    if (!q || q.trim().length < 1) {
+    // clear previous debounce
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // if query too short, clear results and abort inflight fetch
+    if (!q || q.trim().length < MIN_QUERY_LEN) {
+      if (abortRef.current) {
+        try {
+          abortRef.current.abort();
+        } catch {}
+      }
       setItems([]);
       setOpen(false);
       setActive(-1);
       setErrMsg(null);
-      if (abortRef.current) abortRef.current.abort();
+      setLoading(false);
       return;
     }
 
-    clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      if (abortRef.current) abortRef.current.abort();
+      // abort prior
+      if (abortRef.current) {
+        try {
+          abortRef.current.abort();
+        } catch {}
+      }
       abortRef.current = new AbortController();
       const signal = abortRef.current.signal;
 
       setLoading(true);
       setErrMsg(null);
 
-      const endpoint = `${base}/search/stores?q=${encodeURIComponent(
-        q.trim()
-      )}&limit=${MAX_RESULTS}`;
+      // build endpoint with URLSearchParams
+      const params = new URLSearchParams({
+        q: q.trim(),
+        limit: String(MAX_RESULTS),
+      });
+      const endpoint = `${base}/search/stores?${params.toString()}`;
 
       try {
         const res = await fetch(endpoint, { method: "GET", signal });
         if (res.status === 404) {
-          // helpful hint: maybe endpoint path mismatch
           setErrMsg("Search endpoint not found (404). Check server route.");
           setItems([]);
           setOpen(true);
@@ -101,14 +123,25 @@ export default function HeaderSearchIsland() {
           return;
         }
 
-        const json = await res.json();
-        // server shape: { data: { stores: [...] } }
+        const json = await res.json().catch(() => null);
         const list = (json?.data?.stores || []).slice(0, MAX_RESULTS);
-        setItems(list);
+
+        // normalize entries defensively
+        const normalized = list.map((s) => ({
+          id: s.id,
+          slug: s.slug,
+          name: s.name || s.slug || "",
+          logo_url: s.logo_url || null,
+          category_names: Array.isArray(s.category_names)
+            ? s.category_names
+            : [],
+        }));
+
+        setItems(normalized);
         setOpen(true);
         setActive(-1);
       } catch (err) {
-        if (err.name === "AbortError") return;
+        if (err && err.name === "AbortError") return;
         console.error("Search fetch error:", err);
         setErrMsg("Network error while searching");
         setItems([]);
@@ -119,7 +152,9 @@ export default function HeaderSearchIsland() {
       }
     }, DEBOUNCE_MS);
 
-    return () => clearTimeout(debounceRef.current);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [q, base]);
 
   // keyboard
@@ -148,7 +183,8 @@ export default function HeaderSearchIsland() {
   };
 
   const onClickItem = (s) => {
-    window.location.href = `/stores/${s.slug}`;
+    // onMouseDown used during render to avoid blur; here normal navigation
+    if (s && s.slug) window.location.href = `/stores/${s.slug}`;
   };
 
   return (

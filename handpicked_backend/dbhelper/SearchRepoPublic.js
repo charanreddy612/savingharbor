@@ -1,51 +1,96 @@
 import { supabase } from "../dbhelper/dbclient.js";
 
+/**
+ * searchStores({ q, limit = 6 })
+ * - returns array of stores: { id, name, slug, logo_url, category_names: [], active_coupons_count? }
+ * - safe: RPC preferred, fallback to direct query if RPC fails.
+ */
 export async function searchStores({ q, limit = 6 }) {
   if (!q || String(q).trim() === "") return [];
 
   const term = String(q).trim();
+  // avoid tiny queries causing load
+  if (term.length < 2) return [];
+
   const lim = Math.max(1, Math.min(50, Number(limit || 6)));
 
-  const { data, error } = await supabase.rpc("search_stores", {
-    query: term,
-    lim,
-  });
+  // preferred: call RPC
+  try {
+    const { data, error } = await supabase.rpc("search_stores", {
+      query: term,
+      lim,
+    });
 
-  if (error) {
-    console.error("SearchRepo.searchStores supabase rpc error:", error);
-    return [];
+    if (error) {
+      console.warn(
+        "SearchRepo.searchStores RPC error, falling back:",
+        error.message || error
+      );
+      // fall through to fallback below
+    } else if (Array.isArray(data)) {
+      return normalizeStores(data);
+    } else {
+      // unexpected shape, fall back
+      console.warn(
+        "SearchRepo.searchStores RPC returned unexpected shape, falling back"
+      );
+    }
+  } catch (rpcErr) {
+    console.warn(
+      "SearchRepo.searchStores RPC threw, falling back:",
+      rpcErr && rpcErr.message ? rpcErr.message : rpcErr
+    );
   }
 
-  if (!Array.isArray(data)) return [];
+  // Fallback: do a fast ilike query (will use pg_trgm index if installed)
+  try {
+    const likeQ = `%${term}%`;
+    const { data, error } = await supabase
+      .from("merchants")
+      .select("id, slug, name, logo_url, category_names, active_coupons_count")
+      .ilike("name", likeQ)
+      .eq("is_publish", true)
+      .order("active_coupons_count", { ascending: false })
+      .limit(lim);
 
-  // Normalize rows: ensure consistent types for the frontend
-  return data.map((r) => {
-    // category_names may come back as jsonb, text[], or null — normalize to array
-    let categories = null;
+    if (error) {
+      console.error("SearchRepo.searchStores fallback query error:", error);
+      return [];
+    }
+    return normalizeStores(data || []);
+  } catch (e) {
+    console.error("SearchRepo.searchStores fallback exception:", e);
+    return [];
+  }
+}
+
+/** helper to normalize rows coming from RPC or direct query */
+function normalizeStores(rows) {
+  return (rows || []).map((r) => {
+    // normalize category_names to array
+    let categories = [];
     try {
       if (Array.isArray(r.category_names)) categories = r.category_names;
-      else if (r.category_names == null) categories = [];
+      else if (!r.category_names) categories = [];
       else if (typeof r.category_names === "string") {
-        // sometimes comes as JSON string
         try {
           const parsed = JSON.parse(r.category_names);
           categories = Array.isArray(parsed) ? parsed : [];
         } catch {
-          categories = [];
+          // string but not JSON -> try comma split
+          categories = r.category_names
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         }
       } else {
-        // JSON object (jsonb) or other — coerce to array when possible
         categories = Array.isArray(r.category_names) ? r.category_names : [];
       }
     } catch {
       categories = [];
     }
 
-    // id may be bigint (returned as number or string) — keep as string to be safe, or number if you prefer
-    const id =
-      typeof r.id === "bigint" || typeof r.id === "string"
-        ? String(r.id)
-        : r.id;
+    const id = r.id === null || r.id === undefined ? null : String(r.id);
 
     return {
       id,
@@ -53,45 +98,12 @@ export async function searchStores({ q, limit = 6 }) {
       slug: r.slug || "",
       logo_url: r.logo_url || null,
       category_names: categories,
+      active_coupons_count:
+        typeof r.active_coupons_count === "number"
+          ? r.active_coupons_count
+          : typeof r.active_coupons === "number"
+          ? r.active_coupons
+          : undefined,
     };
   });
 }
-
-// async function searchCoupons(q, limit) {
-//   const { data, error } = await supabase
-//     .from("coupons")
-//     .select("id, title, coupon_type, merchants:merchant_id ( slug, name )")
-//     .eq("is_publish", true)
-//     .ilike("title", `%${q}%`)
-//     .limit(limit);
-//   if (error) throw error;
-//   return (data || []).map((r) => ({
-//     id: r.id,
-//     title: r.title,
-//     coupon_type: r.coupon_type,
-//     merchant: { slug: r.merchants?.slug, name: r.merchants?.name },
-//   }));
-// }
-
-// async function searchBlogs(q, limit) {
-//   const { data, error } = await supabase
-//     .from("blogs")
-//     .select("id, slug, title, category:category_id ( id, name )")
-//     .eq("is_publish", true)
-//     .ilike("title", `%${q}%`)
-//     .limit(limit);
-//   if (error) throw error;
-//   return (data || []).map((b) => ({
-//     id: b.id,
-//     slug: b.slug,
-//     title: b.title,
-//     category: b.category ? { id: b.category.id, name: b.category.name } : null,
-//   }));
-// }
-
-// export async function searchAll({ q, limit }) {
-//   const stores = await searchStores(q, limit);
-//   const coupons = await searchCoupons(q, limit);
-//   const blogs = await searchBlogs(q, limit);
-//   return { stores, coupons, blogs };
-// }

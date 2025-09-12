@@ -34,16 +34,37 @@ type BlogsResponse = {
 
 let resp: BlogsResponse | null = null;
 try {
-  resp = await api.get<BlogsResponse>("/blogs");
+  // use retries + timeout so transient API failures don't break the page
+  resp = await api.get<BlogsResponse>(
+    "/blogs",
+    {},
+    { retries: 2, timeout: 8000 }
+  );
 } catch (e) {
-  resp = null;
+  console.error("Error fetching blogs:", e);
+  // safe fallback so template bindings never crash
+  resp = {
+    data: [],
+    meta: {
+      page: 1,
+      limit: 0,
+      total: 0,
+      prev: null,
+      next: null,
+      total_pages: 1,
+      title: "Blog - Saving Harbor",
+      description: "Blog temporarily unavailable.",
+      canonical: undefined,
+      jsonld: undefined,
+    },
+  };
 }
 
 const blogs = resp?.data || [];
 const meta = resp?.meta || {};
-const pageTitle = meta.title || "Blog - HandPicked";
+const pageTitle = meta.title || "Blog - Saving Harbor";
 const pageDesc =
-  meta.description || "Guides, tips, and insights from the HandPicked team.";
+  meta.description || "Guides, tips, and insights from the Saving Harbor team.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 ---

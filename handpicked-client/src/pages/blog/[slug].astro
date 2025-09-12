@@ -1,9 +1,11 @@
 ---
+// src/pages/blogs/[slug].astro (replace)
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import { api } from "../../lib/api";
+import DOMPurify from "isomorphic-dompurify";
 
 type BlogDetail = {
   id: string | number;
@@ -37,9 +39,20 @@ const { slug } = Astro.params as { slug: string };
 
 let resp: BlogDetailResponse | null = null;
 try {
-  resp = await api.get<BlogDetailResponse>(`/blogs/${slug}`);
+  // retries + timeout to reduce transient failures
+  resp = await api.get<BlogDetailResponse>(`/blogs/${slug}`, {}, { retries: 2, timeout: 8000 });
 } catch (e) {
-  resp = null;
+  console.error("Error fetching blog detail:", e);
+  // safe fallback shape so UI bindings don't break
+  resp = {
+    data: null,
+    meta: {
+      title: "Blog - HandPicked",
+      description: "Blog temporarily unavailable.",
+      canonical: undefined,
+      jsonld: undefined,
+    },
+  };
 }
 
 const post = resp?.data || null;
@@ -50,6 +63,9 @@ const pageTitle =
 const pageDesc = meta.description || "HandPicked editorial.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
+
+// sanitize body_html once for safe rendering
+const safeBodyHtml = post?.body_html ? DOMPurify.sanitize(post.body_html) : null;
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -58,7 +74,6 @@ const jsonld = meta.jsonld;
     {
       post ? (
         <>
-          {" "}
           <Breadcrumbs breadcrumbs={post.breadcrumbs} />
           <header class="mt-4">
             <h1 class="text-3xl font-bold tracking-tight">{post.title}</h1>
@@ -101,6 +116,7 @@ const jsonld = meta.jsonld;
               </div>
             )}
           </header>
+
           {post.hero_image_url && (
             <figure class="mt-6">
               <img
@@ -111,9 +127,10 @@ const jsonld = meta.jsonld;
               />
             </figure>
           )}
-          {post.body_html ? (
+
+          {safeBodyHtml ? (
             <article class="prose max-w-none mt-8">
-              <div set:html={post.body_html} />
+              <div set:html={safeBodyHtml} />
             </article>
           ) : (
             <p class="mt-8 text-gray-600">This article has no content.</p>

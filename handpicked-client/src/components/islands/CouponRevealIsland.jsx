@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 /**
- * CouponRevealIsland.jsx
+ * CouponRevealIsland.jsx (PROD-READY)
  */
 
 function Toast({ message, onClose }) {
@@ -21,13 +21,26 @@ function Toast({ message, onClose }) {
   );
 }
 
+// helper with retries
+async function fetchWithRetry(url, options, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.ok || resp.status === 429) return resp; // stop on success or rate limit
+    } catch (err) {
+      if (i === retries) throw err;
+    }
+  }
+  throw new Error("Fetch failed after retries");
+}
+
 export default function CouponRevealIsland({ coupon, storeSlug }) {
   const c = coupon || {};
   const sSlug = storeSlug || null;
 
   // states
   const [loading, setLoading] = useState(false);
-  const [revealedCode, setRevealedCode] = useState(null); // only set after click
+  const [revealedCode, setRevealedCode] = useState(null);
   const [disabled, setDisabled] = useState(false);
   const [error, setError] = useState(null);
   const [toasts, setToasts] = useState([]);
@@ -48,27 +61,17 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
   const fallbackRedirect = () => {
     const m = c?.merchant || {};
-    if (
-      m.affl_url &&
-      (m.affl_url.startsWith("http://") || m.affl_url.startsWith("https://"))
-    )
-      return m.affl_url;
-    if (
-      m.web_url &&
-      (m.web_url.startsWith("http://") || m.web_url.startsWith("https://"))
-    )
-      return m.web_url;
+    if (m.affl_url?.startsWith("http")) return m.affl_url;
+    if (m.web_url?.startsWith("http")) return m.web_url;
     return null;
   };
 
-  // Helper to open a URL in a new tab safely
   const openInNewTab = (href) => {
     try {
       const a = document.createElement("a");
       a.href = href;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      // Append, click, remove to ensure it's treated as a user-initiated navigation
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -87,21 +90,22 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
     setError(null);
     const base = import.meta.env.PUBLIC_API_BASE_URL || "";
     const endpoint = base + `/offers/${encodeURIComponent(String(c.id))}/click`;
-    console.log("offer endpoint :: ", endpoint);
-    try {
-      const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // If you use cookie-based auth, uncomment the next line:
-        // credentials: "include",
-        body: JSON.stringify({
-          store_slug: sSlug,
-          referrer: "store_page",
-          platform: "web",
-        }),
-      });
 
-      // rate-limit handling
+    try {
+      const resp = await fetchWithRetry(
+        endpoint,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            store_slug: sSlug,
+            referrer: "store_page",
+            platform: "web",
+          }),
+        },
+        2
+      );
+
       if (resp.status === 429) {
         const msg = "Too many requests. Please try again later.";
         setError(msg);
@@ -110,37 +114,19 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
         return;
       }
 
-      if (!resp.ok) {
-        // try to surface server message if present
-        let txt = null;
-        try {
-          txt = await resp.text();
-        } catch (_) {}
-        console.error("Reveal endpoint returned error:", resp.status, txt);
-        const msg = "Failed to reveal. Please try again.";
-        setError(msg);
-        pushToast(msg);
-        setLoading(false);
-        return;
-      }
-
-      // try parse json; if not JSON, we still proceed for deals (server may redirect)
       let data = null;
       try {
         data = await resp.json();
-      } catch (e) {
-        // non-json response — safe fallback: treat as success for deal-type if redirect available
-        console.warn("Reveal: server returned non-JSON response", e);
-        data = null;
+      } catch (_) {
+        console.warn("Reveal: non-JSON response");
       }
 
       const serverCode = data?.code ?? null;
       const serverRedirect = data?.redirect_url ?? null;
 
-      // Determine code to reveal:
-      // Prefer serverCode; if not present and initial payload had c.code, reveal that after click.
+      // always guarantee a code or fallback message
       const codeToReveal =
-        serverCode ?? (c.code ? String(c.code).trim() : null);
+        serverCode ?? (c.code ? String(c.code).trim() : "NO CODE AVAILABLE");
 
       if (codeToReveal) {
         setRevealedCode(codeToReveal);
@@ -153,16 +139,14 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
         }
       }
 
-      // Open redirect if available (server-provided preferred, otherwise fallback from merchant)
       const redirectTo = serverRedirect || fallbackRedirect();
       if (redirectTo) {
-        openInNewTab(redirectTo);
-      } else {
-        // If no redirect and no code, notify; if code revealed but no redirect it's fine.
-        if (!codeToReveal) pushToast("No redirect available for this offer");
+        // async fire-and-forget to feel instant
+        setTimeout(() => openInNewTab(redirectTo), 100);
+      } else if (!codeToReveal) {
+        pushToast("No redirect available for this offer");
       }
 
-      // disable further interactions for this item
       setDisabled(true);
     } catch (err) {
       console.error("Reveal error:", err);
@@ -173,7 +157,6 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
     }
   };
 
-  // UI labels
   const isCoupon = Boolean(c && (c.code || c.coupon_type === "code"));
   const revealLabel = "Reveal Code";
   const activateLabel = "Activate Deal";
@@ -209,7 +192,6 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
         {/* CTA area */}
         <div className="mt-2">
-          {/* Show revealed code block only after click */}
           {revealedCode ? (
             <div
               className="w-full border border-dashed border-blue-400 rounded-md px-3 py-2 text-sm text-center font-mono text-blue-700 bg-blue-50"
@@ -219,24 +201,21 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
               {revealedCode}
             </div>
           ) : (
-            <>
-              <button
-                type="button"
-                className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed`}
-                onClick={handleReveal}
-                aria-label={isCoupon ? "Reveal coupon code" : "Activate deal"}
-                disabled={disabled || loading}
-              >
-                {loading
-                  ? "Please wait…"
-                  : isCoupon
-                  ? revealLabel
-                  : activateLabel}
-              </button>
-            </>
+            <button
+              type="button"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={handleReveal}
+              aria-label={isCoupon ? "Reveal coupon code" : "Activate deal"}
+              disabled={disabled || loading}
+            >
+              {loading
+                ? "Please wait…"
+                : isCoupon
+                ? revealLabel
+                : activateLabel}
+            </button>
           )}
 
-          {/* Footer info */}
           {c.ends_at && (
             <p className="text-xs text-gray-500 text-right mt-2">
               {new Date(c.ends_at).toLocaleDateString(undefined, {

@@ -1,34 +1,95 @@
 import { supabase } from "../dbhelper/dbclient.js";
 import { sanitize } from "../utils/sanitize.js";
 
-export async function list({ q, categoryId, sort, page, limit }) {
+/**
+ * list(params)
+ * params: { q, categoryId, sort, page, limit, skipCount = false, mode = "default" }
+ * - mode === "homepage" => lightweight select (no counts).
+ * returns: { rows, total }
+ */
+export async function list({
+  q,
+  categoryId,
+  sort,
+  page,
+  limit,
+  skipCount = false,
+  mode = "default",
+}) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  // count
-  let cQuery = supabase
-    .from("blogs")
-    .select("id", { count: "exact", head: true })
-    .eq("is_publish", true);
-  if (q) cQuery = cQuery.ilike("title", `%${q}%`);
-  if (categoryId) cQuery = cQuery.eq("category_id", categoryId);
-  const { count, error: cErr } = await cQuery;
-  if (cErr) throw cErr;
+  // HOMEPAGE mode: lightweight and fast (no counts, minimal fields)
+  if (mode === "homepage") {
+    let qBuilder = supabase
+      .from("blogs")
+      .select(
+        "id, slug, title, featured_image_url, featured_thumb_url, created_at"
+      )
+      .eq("is_publish", true)
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
-  // rows
+    if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+    if (categoryId) qBuilder = qBuilder.eq("category_id", categoryId);
+
+    const { data, error } = await qBuilder;
+    if (error) throw error;
+
+    const rows = (data || []).map((b) => ({
+      id: b.id,
+      slug: b.slug,
+      title: b.title,
+      excerpt: b.excerpt || "",
+      hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
+      category: b.category_id
+        ? { id: b.category_id, name: b.top_category_name }
+        : null,
+      created_at: b.created_at,
+      updated_at: b.updated_at,
+      is_featured: !!b.is_featured,
+    }));
+
+    return { rows, total: rows.length };
+  }
+
+  // DEFAULT mode: full listing (count optional)
+  // Count only when requested
+  let total = null;
+  if (!skipCount) {
+    let cQuery = supabase
+      .from("blogs")
+      .select("id", { count: "exact", head: true })
+      .eq("is_publish", true);
+
+    if (q) cQuery = cQuery.ilike("title", `%${q}%`);
+    if (categoryId) cQuery = cQuery.eq("category_id", categoryId);
+
+    const { count, error: cErr } = await cQuery;
+    if (cErr) throw cErr;
+    total = count || 0;
+  }
+
+  // Rows: select only required fields
   let query = supabase
     .from("blogs")
     .select(
-      "id, slug, title, content, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
+      "id, slug, title, excerpt, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
     )
     .eq("is_publish", true)
-    .order(sort === "featured" ? "is_featured" : "created_at", {
-      ascending: false,
-    })
     .range(from, to);
 
   if (q) query = query.ilike("title", `%${q}%`);
   if (categoryId) query = query.eq("category_id", categoryId);
+
+  // ordering
+  if (sort === "featured") {
+    query = query
+      .order("is_featured", { ascending: false })
+      .order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
 
   const { data, error } = await query;
   if (error) throw error;
@@ -39,26 +100,48 @@ export async function list({ q, categoryId, sort, page, limit }) {
     title: b.title,
     excerpt: b.excerpt || "",
     hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
-    category: b.category_id ? { id: b.category_id, name: b.top_category_name } : null,
+    category: b.category_id
+      ? { id: b.category_id, name: b.top_category_name }
+      : null,
     created_at: b.created_at,
     updated_at: b.updated_at,
     is_featured: !!b.is_featured,
   }));
 
-  return { rows, total: count || 0 };
+  return { rows, total: total || rows.length };
 }
 
 export async function getBySlug(slug) {
+  if (!slug) return null;
+
   const { data, error } = await supabase
     .from("blogs")
     .select(
-      "id, slug, title, featured_image_url, featured_thumb_url, created_at, updated_at, meta_title, meta_description, content, category_id, top_category_name, author_id" //, author_avatar_url, author_bio_html    
+      `id,
+       slug,
+       title,
+       featured_image_url,
+       featured_thumb_url,
+       created_at,
+       updated_at,
+       meta_title,
+       meta_description,
+       content,
+       excerpt,
+       category_id,
+       top_category_name,
+       author_id,
+       author_name,
+       author_avatar_url,
+       author_bio_html`
     )
     .eq("slug", slug)
     .eq("is_publish", true)
     .maybeSingle();
+
   if (error) throw error;
   if (!data) return null;
+
   return {
     id: data.id,
     slug: data.slug,
@@ -69,10 +152,12 @@ export async function getBySlug(slug) {
     seo_title: data.meta_title || "",
     meta_description: data.meta_description || "",
     content_html: sanitize(data.content || ""),
+    excerpt: data.excerpt || "",
     category: data.category_id
-      ? { id: data.category.id, name: data.top_category_name }
+      ? { id: data.category_id, name: data.top_category_name }
       : null,
     author: {
+      id: data.author_id || null,
       name: data.author_name || "",
       avatar_url: data.author_avatar_url || null,
       bio_html: sanitize(data.author_bio_html || ""),
@@ -100,16 +185,28 @@ export function buildBreadcrumbs(blog, { origin }) {
 }
 
 export async function related(blog, limit = 6) {
+  if (!blog || !blog.category?.id) return [];
+
   const { data, error } = await supabase
     .from("blogs")
-    .select("id, slug, title")
+    .select(
+      "id, slug, title, featured_image_url, featured_thumb_url, created_at"
+    )
     .eq("is_publish", true)
     .neq("id", blog.id)
-    .eq("category_id", blog.category?.id || 0)
+    .eq("category_id", blog.category.id)
     .order("created_at", { ascending: false })
     .limit(limit);
+
   if (error) throw error;
-  return data || [];
+
+  return (data || []).map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    hero_image_url: r.featured_image_url || r.featured_thumb_url || null,
+    created_at: r.created_at,
+  }));
 }
 
 export async function listSlugs() {
@@ -117,6 +214,7 @@ export async function listSlugs() {
     .from("blogs")
     .select("slug, updated_at")
     .eq("is_publish", true);
+
   if (error) throw error;
   return { slugs: data || [] };
 }

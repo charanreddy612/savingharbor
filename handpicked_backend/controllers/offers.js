@@ -1,4 +1,5 @@
 // src/controllers/offers.js
+import { LRUCache } from "lru-cache";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { supabase } from "../dbhelper/dbclient.js";
 
@@ -6,55 +7,57 @@ import { supabase } from "../dbhelper/dbclient.js";
  * POST /api/offers/:offerId/click
  * Records a click, increments click_count, returns coupon code (for coupons) and redirect_url.
  *
- * NOTE: This uses a simple in-memory rate limiter as a safety net. Replace with Redis/middleware
- * rate limiter in production.
+ * Uses an in-process LRU rate limiter (ttl) as a safety net. Replace with Redis limiter in multi-instance prod.
  */
+
+// create a single global LRU rate cache (max keys + ttl)
+if (!global.__offerClickRateCache) {
+  // keep up to 50k keys, entries expire after 60s
+  global.__offerClickRateCache = new LRUCache({ max: 50000, ttl: 60 * 1000 });
+}
+const rateCache = global.__offerClickRateCache;
+
 export async function click(req, res) {
   try {
-    const offerId = String(req.params.offerId || "").trim();
-    if (!offerId)
+    const offerIdRaw = String(req.params.offerId || "").trim();
+    if (!offerIdRaw) {
       return res.status(400).json({ ok: false, message: "Invalid offer id" });
-
-    // --------- Simple in-memory rate limiter (per IP + offer) ----------
-    const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-    const MAX_REQUESTS_PER_WINDOW = 12; // adjust as needed
-
-    if (!global.__offerClickRate) global.__offerClickRate = new Map();
-    const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
-    const key = `${ip}:${offerId}`;
-    const now = Date.now();
-    const entry = global.__offerClickRate.get(key) || {
-      count: 0,
-      firstTs: now,
-    };
-    if (now - entry.firstTs > RATE_LIMIT_WINDOW_MS) {
-      entry.count = 0;
-      entry.firstTs = now;
     }
-    entry.count += 1;
-    global.__offerClickRate.set(key, entry);
+    const offerId = offerIdRaw; // keep as string to remain compatible with your repo
 
-    if (entry.count > MAX_REQUESTS_PER_WINDOW) {
+    // ------- robust IP extraction -------
+    const forwarded = req.headers["x-forwarded-for"];
+    const ipFromHeader = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    const ip =
+      (ipFromHeader || req.ip || req.socket?.remoteAddress || "unknown")
+        .toString()
+        .split(",")[0]
+        .trim();
+
+    // --------- Simple LRU-based rate limiter (per IP + offer) ----------
+    const MAX_REQUESTS_PER_WINDOW = 12; // adjust as needed
+    const key = `${ip}:${offerId}`;
+    const cur = (rateCache.get(key) || 0) + 1;
+    rateCache.set(key, cur);
+    if (cur > MAX_REQUESTS_PER_WINDOW) {
       return res
         .status(429)
-        .json({
-          ok: false,
-          message: "Too many requests, please try again later",
-        });
+        .json({ ok: false, message: "Too many requests, please try again later" });
     }
     // ------------------------------------------------------------------
 
     // Fetch the offer (includes merchant info if present)
     const offer = await CouponsRepo.getById(offerId);
-    if (!offer)
+    if (!offer) {
       return res.status(404).json({ ok: false, message: "Offer not found" });
+    }
 
     // Determine redirect_url priority: aff_url -> web_url -> null
     const merch = offer.merchant || {};
-    let redirectUrl = null;
     const aff = merch.aff_url || null;
     const web = merch.web_url || null;
 
+    let redirectUrl = null;
     const pick = aff || web || null;
     if (pick && (pick.startsWith("http://") || pick.startsWith("https://"))) {
       redirectUrl = pick;
@@ -64,28 +67,30 @@ export async function click(req, res) {
 
     // Increment click count (repo handles RPC/fallback)
     try {
+      // This uses your existing repo function which should call your RPC
       await CouponsRepo.incrementClickCount(offerId);
     } catch (e) {
       // non-fatal: log but continue to return code/redirect
       console.warn("incrementClickCount failed for", offerId, e);
     }
 
-    // Best-effort audit log (optional) — create an 'offer_clicks' table if you want structured logs
-    try {
-      // Try inserting a lightweight audit record; ignore failures
-      await supabase.from("offer_clicks").insert([
-        {
-          offer_id: offerId,
-          merchant_id: offer.merchant_id || merch.id || null,
-          ip: ip,
-          user_agent: req.headers["user-agent"] || null,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    } catch (auditErr) {
-      // ignore
-      console.warn("Failed to insert audit offer_clicks record:", auditErr);
-    }
+    // Best-effort audit insert (fire-and-forget, non-blocking)
+    (async () => {
+      try {
+        await supabase.from("offer_clicks").insert([
+          {
+            offer_id: offerId,
+            merchant_id: offer.merchant_id || merch.id || null,
+            ip: ip,
+            user_agent: req.headers["user-agent"] || null,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } catch (auditErr) {
+        // don't let analytics failures affect main response
+        console.warn("Failed to insert audit offer_clicks record:", auditErr);
+      }
+    })();
 
     // Prepare response: include code only here (do NOT include in GET /stores responses)
     const code = offer.code || null;

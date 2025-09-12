@@ -78,17 +78,18 @@ const { slug } = Astro.params as { slug: string };
 
 let resp: StoreDetailResponse | null = null;
 try {
-  resp = await api.get<StoreDetailResponse>(`/stores/${slug}`);
+  resp = await api.get<StoreDetailResponse>(`/stores/${slug}`, {}, { retries: 2, timeout: 8000 });
 } catch (e) {
-  resp = null;
+  console.error("Error fetching store detail:", e);
+  // Fallback so UI still renders gracefully
+  resp = { data: null, meta: { title: "Store - Saving Harbor", description: "Store details unavailable." } };
 }
-
 const store = resp?.data || null;
 const meta = resp?.meta || {};
-const pageTitle = meta?.title || (store?.name ? `${store.name} - HandPicked` : "Store - HandPicked");
+const pageTitle = meta?.title || (store?.name ? `${store.name} - Saving Harbor` : "Store - Saving Harbor");
 const pageDesc =
   meta?.description ||
-  (store?.name ? `Handpicked coupons and deals for ${store.name}.` : "Handpicked store coupons and deals.");
+  (store?.name ? `Saving Harbor coupons and deals for ${store.name}.` : "Saving Harbor store coupons and deals.");
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
 const safeSideHtml = store?.about_html

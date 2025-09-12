@@ -122,15 +122,6 @@ export async function list(req, res) {
 
 /** Store Detail — enriched for frontend needs
  *
- *
- * Relies on repo helpers:
- *  - StoresRepo.getBySlug(slug)
- *  - CouponsRepo.listForStore({ merchantId, type, page, limit, sort })
- *  - StoresRepo.relatedByCategories({ merchantId, categoryNames, limit })
- *  - TestimonialsRepo.getTopForStore({ merchantId, limit }) [optional]
- *  - ActivityRepo.recentOffersForStore({ merchantId, days, limit }) [optional]
- *
- * If some repos are not implemented, stub them or implement small wrappers.
  */
 
 export async function detail(req, res) {
@@ -165,19 +156,102 @@ export async function detail(req, res) {
     const result = await withCache(
       req,
       async () => {
-        // Fetch store
+        // Fetch store (single fast lookup)
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
         console.info("Store detail controller method: Store", store);
-        // Primary coupons list for page (ensure codes omitted in mapping below)
-        const { items: rawItems = [], total = 0 } =
-          (await CouponsRepo.listForStore({
-            merchantId: store.id,
-            type,
-            page,
-            limit,
-            sort,
-          })) || { items: [], total: 0 };
+
+        //
+        // Run heavy/auxiliary calls in parallel so a slow helper doesn't block the whole payload
+        // Primary coupons (we need total for pagination) is still included as the primary Promise
+        //
+        const couponsPromise = CouponsRepo.listForStore({
+          merchantId: store.id,
+          type,
+          page,
+          limit,
+          sort,
+          skipCount: false, // need totals for pagination
+        }).catch((e) => {
+          console.warn("Coupons listForStore failed:", e);
+          return { items: [], total: 0 };
+        });
+
+        const relatedPromise = StoresRepo.relatedByCategories({
+          merchantId: store.id,
+          categoryNames: store.category_names || [],
+          limit: 8,
+        }).catch((e) => {
+          console.warn("relatedByCategories failed:", e);
+          return [];
+        });
+
+        const testimonialsPromise =
+          typeof TestimonialsRepo?.getTopForStore === "function"
+            ? TestimonialsRepo.getTopForStore({
+                merchantId: store.id,
+                limit: 3,
+              }).catch((e) => {
+                console.warn("getTopForStore failed:", e);
+                return null;
+              })
+            : Promise.resolve(null);
+
+        const trendingPromise = CouponsRepo.listForStore({
+          merchantId: store.id,
+          type: "all",
+          page: 1,
+          limit: 3,
+          sort: "trending",
+          skipCount: true,
+        }).catch((e) => {
+          console.warn("trending listForStore failed:", e);
+          return null;
+        });
+
+        const recentActivityPromise =
+          typeof ActivityRepo?.recentOffersForStore === "function"
+            ? ActivityRepo.recentOffersForStore({
+                merchantId: store.id,
+                days: 30,
+                limit: 10,
+              }).catch((e) => {
+                console.warn("recentOffersForStore failed:", e);
+                return { total_offers_added_last_30d: 0, recent: [] };
+              })
+            : typeof CouponsRepo?.countRecentForStore === "function"
+            ? CouponsRepo.countRecentForStore({
+                merchantId: store.id,
+                days: 30,
+                limit: 10,
+              }).catch((e) => {
+                console.warn("countRecentForStore failed:", e);
+                return { total_offers_added_last_30d: 0, recent: [] };
+              })
+            : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
+
+        // Await all concurrently
+        const [
+          couponsResult,
+          relatedResult,
+          testimonialsResult,
+          trendingResult,
+          recentResult,
+        ] = await Promise.all([
+          couponsPromise,
+          relatedPromise,
+          testimonialsPromise,
+          trendingPromise,
+          recentActivityPromise,
+        ]);
+
+        // Primary coupons: ensure shape and fallback
+        const rawItems =
+          couponsResult && couponsResult.items ? couponsResult.items : [];
+        const total =
+          couponsResult && typeof couponsResult.total === "number"
+            ? couponsResult.total
+            : 0;
 
         // Map coupons: keep fields but remove/omit coupon_code
         const couponsItems = (rawItems || []).map((r) => ({
@@ -192,88 +266,57 @@ export async function detail(req, res) {
           show_proof: !!r.show_proof,
           proof_image_url: r.proof_image_url || null,
           is_editor: !!r.is_editor,
-          // other fields if needed for UI (but no raw codes)
         }));
         console.info("Store detail controller method: Coupons ", couponsItems);
 
-        // Related stores (existing)
-        const related = await StoresRepo.relatedByCategories({
-          merchantId: store.id,
-          categoryNames: store.category_names || [],
-          limit: 8,
-        });
+        // Related stores (already normalized by repo or fallback to empty array)
+        const related = relatedResult || [];
 
-        // Parse FAQs from store row (merchants table)
+        // Parse FAQs from store row
         console.info("FAQs from DB : ", store.faqs);
-
-        let faqs = [];
-        faqs = normalizeFaqsFromColumn(store.faqs);
-        // sanitize answers (and questions) to remove any unsafe HTML
+        let faqs = normalizeFaqsFromColumn(store.faqs);
         faqs = faqs.map((f) => ({
           question: DOMPurify.sanitize(f.question),
           answer: DOMPurify.sanitize(f.answer),
         }));
         console.info("Store detail controller method: FAQs ", faqs);
 
-        // Testimonials (optional repo) — get top 3 and stats
+        // Testimonials handling (normalize various possible shapes)
         let testimonials = [];
         let avgRating = null;
         let reviewsCount = 0;
-        /*
-         *To be Implemented
-         */
+        if (testimonialsResult) {
+          const tRes = testimonialsResult;
+          if (Array.isArray(tRes)) {
+            testimonials = tRes.slice(0, 3);
+          } else if (tRes.items) {
+            testimonials = tRes.items || [];
+            if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
+            if (tRes.totalReviews !== undefined)
+              reviewsCount = tRes.totalReviews;
+          }
+        }
 
-        // try {
-        //   if (typeof TestimonialsRepo?.getTopForStore === "function") {
-        //     const tRes = await TestimonialsRepo.getTopForStore({
-        //       merchantId: store.id,
-        //       limit: 3,
-        //     });
-        //     // Expect shape { items: [...], avgRating: x, totalReviews: n } or fallback
-        //     if (tRes) {
-        //       testimonials = tRes.items || tRes || [];
-        //       if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
-        //       if (tRes.totalReviews !== undefined) reviewsCount = tRes.totalReviews;
-        //     }
-        //   } else if (store.reviews && Array.isArray(store.reviews)) {
-        //     // fallback: if store row includes reviews array
-        //     testimonials = (store.reviews || []).slice(0, 3);
-        //     reviewsCount = store.reviews?.length || 0;
-        //     // compute avg
-        //     const sum = (store.reviews || []).reduce((s, r) => s + (r.rating || 0), 0);
-        //     avgRating = reviewsCount ? sum / reviewsCount : null;
-        //   }
-        // } catch (tErr) {
-        //   console.warn("Failed to load testimonials for store", store.id, tErr);
-        //   testimonials = [];
-        // }
-
-        // Trending offers (1-3) — try to call coupons repo with sort 'trending' or by click_count
+        // Trending offers: try repo result first, otherwise fallback to listTopByClicks if implemented
         let trendingOffers = [];
-        try {
-          // Try repo call with sort 'trending' if supported
-          const trendingRes =
-            (await CouponsRepo.listForStore({
-              merchantId: store.id,
-              type: "all",
-              page: 1,
-              limit: 3,
-              sort: "trending",
-            })) || {};
-          if (trendingRes.items && trendingRes.items.length > 0) {
-            trendingOffers = trendingRes.items.map((r) => ({
-              id: r.id,
-              title: r.title,
-              coupon_type: r.coupon_type,
-              short_desc: r.description,
-              banner_image: r.proof_image_url || null,
-              expires_at: r.ends_at,
-              is_active: true,
-              click_count: r.click_count || null,
-              code: null, // do not include codes in GET responses
-            }));
-          } else {
-            // Fallback: fetch by ordering by click_count via supabase raw query (if needed)
+        if (
+          trendingResult &&
+          trendingResult.items &&
+          trendingResult.items.length > 0
+        ) {
+          trendingOffers = trendingResult.items.map((r) => ({
+            id: r.id,
+            title: r.title,
+            coupon_type: r.coupon_type,
+            short_desc: r.description,
+            banner_image: r.proof_image_url || null,
+            expires_at: r.ends_at,
+            is_active: true,
+            click_count: r.click_count || null,
+            code: null,
+          }));
+        } else {
+          try {
             if (typeof CouponsRepo.listTopByClicks === "function") {
               const top = await CouponsRepo.listTopByClicks(store.id, 3);
               trendingOffers = (top || []).map((r) => ({
@@ -288,46 +331,17 @@ export async function detail(req, res) {
                 code: null,
               }));
             }
+          } catch (tbErr) {
+            console.warn("Trending fallback failed:", tbErr);
+            trendingOffers = [];
           }
-        } catch (tErr) {
-          console.warn(
-            "Failed to load trending offers for store",
-            store.id,
-            tErr
-          );
-          trendingOffers = [];
         }
 
-        // Recent activity (offers added in last N days) — try ActivityRepo or derive from coupons table
-        let recentActivity = { total_offers_added_last_30d: 0, recent: [] };
-        try {
-          if (typeof ActivityRepo?.recentOffersForStore === "function") {
-            recentActivity = await ActivityRepo.recentOffersForStore({
-              merchantId: store.id,
-              days: 30,
-              limit: 10,
-            });
-          } else {
-            // fallback: derive from coupons table via CouponsRepo (e.g., count where published_at >= now()-30d)
-            if (typeof CouponsRepo.countRecentForStore === "function") {
-              recentActivity = await CouponsRepo.countRecentForStore({
-                merchantId: store.id,
-                days: 30,
-                limit: 10,
-              });
-            } else {
-              // final fallback: empty structure
-              recentActivity = { total_offers_added_last_30d: 0, recent: [] };
-            }
-          }
-        } catch (aErr) {
-          console.warn(
-            "Failed to load recent activity for store",
-            store.id,
-            aErr
-          );
-          recentActivity = { total_offers_added_last_30d: 0, recent: [] };
-        }
+        // Recent activity (already returned or fallback)
+        const recentActivity = recentResult || {
+          total_offers_added_last_30d: 0,
+          recent: [],
+        };
 
         // Build SEO, breadcrumbs, jsonld (existing helpers)
         const seo = StoresRepo.buildSeo(store, params);

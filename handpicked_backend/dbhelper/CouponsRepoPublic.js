@@ -1,6 +1,7 @@
 // dbhelper/CouponsRepoPublic.js
 import { supabase } from "../dbhelper/dbclient.js";
 
+// CouponsRepo.list(params)
 export async function list({
   q,
   categorySlug,
@@ -8,8 +9,10 @@ export async function list({
   type,
   status,
   sort,
-  page,
-  limit,
+  page = 1,
+  limit = 20,
+  skipCount = false, // important: default false (pages that need pagination)
+  mode = "default", // "homepage" | "default"
 }) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -38,25 +41,192 @@ export async function list({
     merchantId = store?.id || null;
   }
 
-  // Base query
-  let query = supabase
+  // ---------- HOMEPAGE mode: lightweight, no counts ----------
+  if (mode === "homepage") {
+    // minimal select — reduce payload and join cost
+    let qBuilder = supabase
+      .from("coupons")
+      .select("id, coupon_type, title, coupon_code, ends_at, merchant_id")
+      .eq("is_publish", true)
+      .order("id", { ascending: false })
+      .range(from, to);
+
+    if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+    if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
+    if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
+    if (status !== "all") {
+      qBuilder = qBuilder.or(
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+      );
+    }
+    // category filter: filter by merchant category if requested (avoid expensive relation joins)
+    if (categoryName) {
+      // This relies on Supabase/Postgres JSONB contains on merchants via relationship is not trivial here.
+      // Safer approach: resolve merchant ids for category first (cheap if category indexed)
+      const { data: mids, error: mErr } = await supabase
+        .from("merchants")
+        .select("id")
+        .contains("category_names", [categoryName]);
+      if (!mErr && Array.isArray(mids) && mids.length) {
+        const ids = mids.map((m) => m.id);
+        qBuilder = qBuilder.in("merchant_id", ids);
+      } else if (mErr) {
+        console.warn(
+          "Coupons.list(homepage): category merchant lookup failed",
+          mErr
+        );
+      }
+    }
+
+    const { data, error } = await qBuilder;
+    if (error) throw error;
+
+    // Minimal mapping for homepage widgets
+    const rows = (data || []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+      ends_at: r.ends_at,
+      merchant_id: r.merchant_id || null,
+      coupon_type: r.coupon_type,
+    }));
+
+    return { data: rows, meta: { page, limit, total: rows.length } };
+  }
+
+  // ---------- DEFAULT mode: full listing for /coupons page ----------
+  // Build main query (select only necessary fields for the coupons page UI)
+  let mainQuery = supabase
     .from("coupons")
     .select(
-      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, merchants:merchant_id ( slug, name, logo_url, category_names )"
+      `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, merchant_id`
     )
     .eq("is_publish", true)
     .range(from, to);
 
-  if (q) query = query.ilike("title", `%${q}%`);
-  if (merchantId) query = query.eq("merchant_id", merchantId);
-  if (type && type !== "all") query = query.eq("coupon_type", type);
-  if (status !== "all")
-    query = query.or(`ends_at.is.null,ends_at.gt.${new Date().toISOString()}`);
+  if (q) mainQuery = mainQuery.ilike("title", `%${q}%`);
+  if (merchantId) mainQuery = mainQuery.eq("merchant_id", merchantId);
+  if (type && type !== "all") mainQuery = mainQuery.eq("coupon_type", type);
+  if (status !== "all") {
+    mainQuery = mainQuery.or(
+      `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+    );
+  }
   if (categoryName) {
-    query = query.contains("merchants.category_names", [categoryName]);
+    // filter by merchant category: resolve merchant ids first (uses index on merchants.category_names)
+    const { data: mids, error: mErr } = await supabase
+      .from("merchants")
+      .select("id")
+      .contains("category_names", [categoryName]);
+    if (!mErr && Array.isArray(mids) && mids.length) {
+      const ids = mids.map((m) => m.id);
+      mainQuery = mainQuery.in("merchant_id", ids);
+    } else if (mErr) {
+      console.warn("Coupons.list: category merchant lookup failed", mErr);
+    }
   }
 
   // Sorting
+  if (sort === "ending") {
+    mainQuery = mainQuery.order("ends_at", {
+      ascending: true,
+      nullsFirst: false,
+    });
+  } else if (sort === "trending") {
+    // trending relies on a click_count column or similar - prefer pre-aggregated metric
+    mainQuery = mainQuery
+      .order("click_count", { ascending: false })
+      .order("id", { ascending: false });
+  } else if (sort === "editor") {
+    mainQuery = mainQuery
+      .order("is_editor", { ascending: false })
+      .order("id", { ascending: false });
+  } else {
+    mainQuery = mainQuery.order("id", { ascending: false });
+  }
+
+  const { data, error } = await mainQuery;
+  if (error) throw error;
+
+  // Count only when required (skipCount === false)
+  let total = null;
+  if (!skipCount) {
+    let cQuery = supabase
+      .from("coupons")
+      .select("id", { count: "exact", head: true })
+      .eq("is_publish", true);
+
+    if (q) cQuery = cQuery.ilike("title", `%${q}%`);
+    if (merchantId) cQuery = cQuery.eq("merchant_id", merchantId);
+    if (type && type !== "all") cQuery = cQuery.eq("coupon_type", type);
+    if (status !== "all") {
+      cQuery = cQuery.or(
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+      );
+    }
+    if (categoryName) {
+      // same merchant ids resolution as above
+      const { data: mids2, error: mErr2 } = await supabase
+        .from("merchants")
+        .select("id")
+        .contains("category_names", [categoryName]);
+      if (!mErr2 && Array.isArray(mids2) && mids2.length) {
+        const ids2 = mids2.map((m) => m.id);
+        cQuery = cQuery.in("merchant_id", ids2);
+      } else if (mErr2) {
+        console.warn(
+          "Coupons.list: category merchant lookup for count failed",
+          mErr2
+        );
+      }
+    }
+
+    const { count, error: cErr } = await cQuery;
+    if (cErr) throw cErr;
+    total = count || 0;
+  }
+
+  // Shape result (map merchants' minimal info where needed on UI; join later on client or via separate merchant fetch)
+  const rows = (data || []).map((r) => ({
+    id: r.id,
+    title: r.title,
+    code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+    ends_at: r.ends_at,
+    merchant_id: r.merchant_id || null,
+    coupon_type: r.coupon_type,
+    description: r.description,
+    type_text: r.type_text,
+    show_proof: !!r.show_proof,
+    proof_image_url: r.proof_image_url || null,
+    is_editor: !!r.is_editor,
+  }));
+
+  return { data: rows, meta: { total: total || rows.length, page, limit } };
+}
+
+export async function listForStore({
+  merchantId,
+  type,
+  page,
+  limit,
+  sort,
+  skipCount = false,
+}) {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from("coupons")
+    .select(
+      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor"
+    )
+    .eq("merchant_id", merchantId)
+    .eq("is_publish", true)
+    .range(from, to);
+
+  if (type !== "all") query = query.eq("coupon_type", type);
+
+  // Sorting optimizations
   if (sort === "ending") {
     query = query.order("ends_at", { ascending: true, nullsFirst: false });
   } else if (sort === "editor") {
@@ -70,92 +240,20 @@ export async function list({
   const { data, error } = await query;
   if (error) throw error;
 
-  // Count query for meta — **APPLY THE SAME FILTERS** (categoryName added here)
-  let cQuery = supabase
-    .from("coupons")
-    .select("id", { count: "exact", head: true })
-    .eq("is_publish", true);
+  // Count query only if needed
+  let total = null;
+  if (!skipCount) {
+    let cQuery = supabase
+      .from("coupons")
+      .select("id", { count: "exact", head: true })
+      .eq("merchant_id", merchantId)
+      .eq("is_publish", true);
+    if (type !== "all") cQuery = cQuery.eq("coupon_type", type);
 
-  if (q) cQuery = cQuery.ilike("title", `%${q}%`);
-  if (merchantId) cQuery = cQuery.eq("merchant_id", merchantId);
-  if (type && type !== "all") cQuery = cQuery.eq("coupon_type", type);
-  if (status !== "all") {
-    cQuery = cQuery.or(
-      `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
-    );
+    const { count, error: cErr } = await cQuery;
+    if (cErr) throw cErr;
+    total = count || 0;
   }
-  if (categoryName) {
-    cQuery = cQuery.contains("merchants.category_names", [categoryName]);
-  }
-
-  const { count, error: cErr } = await cQuery;
-  if (cErr) throw cErr;
-
-  // Shape result
-  const rows = (data || []).map((r) => ({
-    id: r.id,
-    title: r.title,
-    code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
-    ends_at: r.ends_at,
-    merchant_name: r.merchants?.name || null,
-
-    // Extra fields preserved
-    coupon_type: r.coupon_type,
-    description: r.description,
-    type_text: r.type_text,
-    show_proof: !!r.show_proof,
-    proof_image_url: r.proof_image_url || null,
-    is_editor: !!r.is_editor,
-    merchant: {
-      slug: r.merchants?.slug,
-      logo_url: r.merchants?.logo_url,
-    },
-  }));
-
-  return {
-    data: rows,
-    meta: {
-      total: count || rows.length,
-      page,
-      limit,
-    },
-  };
-}
-
-export async function listForStore({ merchantId, type, page, limit, sort }) {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
-  let query = supabase
-    .from("coupons")
-    .select(
-      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor"
-    )
-    .eq("merchant_id", merchantId)
-    .eq("is_publish", true)
-    .range(from, to);
-
-  if (type !== "all") query = query.eq("coupon_type", type);
-
-  if (sort === "ending")
-    query = query.order("ends_at", { ascending: true, nullsFirst: false });
-  else if (sort === "editor")
-    query = query
-      .order("is_editor", { ascending: false })
-      .order("id", { ascending: false });
-  else query = query.order("id", { ascending: false });
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  // Count exact
-  let cQuery = supabase
-    .from("coupons")
-    .select("id", { count: "exact", head: true })
-    .eq("merchant_id", merchantId)
-    .eq("is_publish", true);
-  if (type !== "all") cQuery = cQuery.eq("coupon_type", type);
-  const { count, error: cErr } = await cQuery;
-  if (cErr) throw cErr;
 
   const items = (data || []).map((r) => ({
     id: r.id,
@@ -170,7 +268,7 @@ export async function listForStore({ merchantId, type, page, limit, sort }) {
     is_editor: !!r.is_editor,
   }));
 
-  return { items, total: count || 0 };
+  return { items, total: total ?? items.length };
 }
 
 /**
@@ -238,93 +336,31 @@ export async function getById(offerId) {
 }
 
 /**
- * Increment click_count for an offer.
- *
- * Preferred: create a Postgres function named `increment_coupon_click_count(offer_id bigint)`
- * that atomically increments click_count and returns the new value. This function can be
- * invoked via supabase.rpc('increment_coupon_click_count', { offer_id }).
- *
- * Fallback: if RPC doesn't exist, perform a fetch+update (not strictly atomic).
- *
- * Returns the updated click_count (number) on success.
+ * Increment click_count for an offer (atomic, RPC only).
+ * Assumes increment_coupon_click_count(p_id bigint) RETURNS TABLE(click_count bigint).
  */
 export async function incrementClickCount(offerId) {
   if (!offerId) throw new Error("offerId required");
 
-  // Try RPC first (recommended for atomic increment)
-  try {
-    // This assumes you created a SQL function like:
-    // CREATE FUNCTION public.increment_coupon_click_count(p_id bigint)
-    // RETURNS bigint LANGUAGE plpgsql AS $$
-    // BEGIN
-    //   UPDATE coupons SET click_count = COALESCE(click_count,0) + 1 WHERE id = p_id;
-    //   RETURN (SELECT click_count FROM coupons WHERE id = p_id);
-    // END;
-    // $$;
-    const { data, error } = await supabase.rpc("increment_coupon_click_count", {
-      p_id: Number(offerId),
-    });
+  const { data, error } = await supabase.rpc("increment_coupon_click_count", {
+    p_id: Number(offerId),
+  });
 
-    if (!error && data !== undefined && data !== null) {
-      // Supabase rpc returns data in various shapes depending on function; handle common cases
-      // If function returns a single scalar, `data` may be that scalar.
-      // If it returns a rowset, it may be an array. Normalize below.
-      if (Array.isArray(data) && data.length > 0) {
-        const val = data[0];
-        // if val has click_count property
-        if (val.click_count !== undefined) return Number(val.click_count);
-        // otherwise return first scalar
-        return Number(Object.values(val)[0]);
-      }
-      // scalar
-      return Number(data);
-    }
-    // If rpc had an error, fall through to fallback
-    if (error) {
-      console.warn(
-        "incrementClickCount: rpc error, falling back to fetch+update:",
-        error
-      );
-    }
-  } catch (rpcErr) {
-    console.warn("incrementClickCount: rpc exception, falling back:", rpcErr);
+  if (error) {
+    console.error("incrementClickCount: rpc error:", error);
+    throw error;
   }
 
-  // Fallback: fetch current count then update (not perfectly atomic)
-  // This is OK for low-volume scenarios but for heavy traffic prefer RPC/atomic update.
-  try {
-    const { data: row, error: getErr } = await supabase
-      .from("coupons")
-      .select("click_count")
-      .eq("id", offerId)
-      .maybeSingle();
-
-    if (getErr) {
-      console.error("incrementClickCount: failed to read click_count:", getErr);
-      throw getErr;
-    }
-    if (!row) throw new Error("Offer not found");
-
-    const newCount = (row.click_count || 0) + 1;
-    const { data: updated, error: updErr } = await supabase
-      .from("coupons")
-      .update({ click_count: newCount })
-      .eq("id", offerId)
-      .select("click_count")
-      .maybeSingle();
-
-    if (updErr) {
-      console.error(
-        "incrementClickCount: failed to update click_count:",
-        updErr
-      );
-      throw updErr;
-    }
-    return updated?.click_count ?? newCount;
-  } catch (e) {
-    console.error("incrementClickCount fallback error:", e);
-    throw e;
+  if (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    data[0].click_count !== undefined
+  ) {
+    return Number(data[0].click_count);
   }
+
+  // fallback for unexpected shapes
+  return Number(Array.isArray(data) ? data[0] : data);
 }
 
 export async function listTopByClicks(merchantId, limit = 3) {

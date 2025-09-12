@@ -63,16 +63,32 @@ type CouponsResponse = {
 
 let resp = null,
   cresp = null;
+
 try {
-  const [r, c] = await Promise.allSettled([
-    api.get<StoresResponse>("/stores?limit=8"),
-    api.get<CouponsResponse>("/coupons?limit=8"),
+  // Always retry + timeout already handled in api.ts
+  const [r, c] = await Promise.all([
+    api.get<StoresResponse>(
+      "/stores?limit=8&mode=homepage",
+      {},
+      { retries: 2, timeout: 8000 }
+    ),
+    api.get<CouponsResponse>(
+      "/coupons?limit=8&mode=homepage",
+      {},
+      { retries: 2, timeout: 8000 }
+    ),
   ]);
-  if (r.status === "fulfilled") resp = r.value;
-  if (c.status === "fulfilled") cresp = c.value;
+
+  resp = r;
+  cresp = c;
 } catch (err) {
   console.error("Landing fetch error", err);
+
+  // Fallback: at least show empty arrays with meta
+  resp = { data: [], meta: {} };
+  cresp = { data: [], meta: {} };
 }
+
 const stores = resp?.data || [];
 const meta = resp?.meta || {};
 const coupons = cresp?.data || [];

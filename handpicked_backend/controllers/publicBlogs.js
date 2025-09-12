@@ -180,7 +180,7 @@ export async function detail(req, res) {
           throw err;
         }
       },
-      { ttlSeconds: 60 }
+      { ttlSeconds: 300 }
     );
 
     if (!result?.data) return notFound(res, "Blog not found");
