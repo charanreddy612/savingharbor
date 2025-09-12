@@ -110,57 +110,71 @@ export async function list({
   return { rows, total: total || rows.length };
 }
 
+// blogsRepo.getBySlug - uses authors relation from authors table only
 export async function getBySlug(slug) {
   if (!slug) return null;
 
-  const { data, error } = await supabase
-    .from("blogs")
-    .select(
-      `id,
-       slug,
-       title,
-       featured_image_url,
-       featured_thumb_url,
-       created_at,
-       updated_at,
-       meta_title,
-       meta_description,
-       content,
-       category_id,
-       top_category_name,
-       author_id,
-       author_name,
-       author_avatar_url,
-       author_bio_html`
-    )
-    .eq("slug", slug)
-    .eq("is_publish", true)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from("blogs")
+      .select(
+        `
+        id,
+        slug,
+        title,
+        featured_image_url,
+        featured_thumb_url,
+        created_at,
+        updated_at,
+        meta_title,
+        meta_description,
+        content,
+        category_id,
+        top_category_name,
+        author_id,
+        authors ( id, name, avatar_url, bio_html )
+      `
+      )
+      .eq("slug", slug)
+      .eq("is_publish", true)
+      .limit(1)
+      .maybeSingle();
 
-  if (error) throw error;
-  if (!data) return null;
+    if (error) {
+      console.error("getBySlug supabase error:", error);
+      return null;
+    }
+    if (!data) return null;
 
-  return {
-    id: data.id,
-    slug: data.slug,
-    title: data.title,
-    hero_image_url: data.featured_image_url || data.featured_thumb_url || null,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-    seo_title: data.meta_title || "",
-    meta_description: data.meta_description || "",
-    content_html: sanitize(data.content || ""),
-    // content: data.content || "",
-    category: data.category_id
-      ? { id: data.category_id, name: data.top_category_name }
-      : null,
-    author: {
-      id: data.author_id || null,
-      name: data.author_name || "",
-      avatar_url: data.author_avatar_url || null,
-      bio_html: sanitize(data.author_bio_html || ""),
-    },
-  };
+    const authorRow = data.authors || null;
+
+    return {
+      id: data.id,
+      slug: data.slug,
+      title: data.title,
+      hero_image_url:
+        data.featured_image_url || data.featured_thumb_url || null,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      seo_title: data.meta_title || "",
+      meta_description: data.meta_description || "",
+      content_html: sanitize(data.content || ""), // map DB column -> expected prop
+      category: data.category_id
+        ? { id: data.category_id, name: data.top_category_name }
+        : null,
+      author: authorRow
+        ? {
+            id: authorRow.id ?? data.author_id ?? null,
+            name: authorRow.name ?? "Editorial Team",
+            avatar_url: authorRow.avatar_url ?? null,
+            bio_html: sanitize(authorRow.bio_html ?? ""),
+          }
+        : null,
+    };
+  } catch (e) {
+    console.error("getBySlug exception for slug=%s: %o", slug, e);
+    return null;
+  }
 }
 
 export function buildSeo(blog, { origin, path, locale }) {
