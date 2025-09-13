@@ -10,29 +10,53 @@ type Store = {
 
 const { store } = Astro.props as { store: Store };
 ---
+
 <a
   href={`/stores/${store.slug}`}
-  class="block bg-white border border-gray-200 rounded-lg p-6 hover:shadow-store-card hover:-translate-y-1 transition duration-200 text-center"
+  class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200"
+  aria-label={`Open ${store.name}`}
 >
-  <div class="w-20 h-20 mx-auto flex items-center justify-center mb-3 rounded-md bg-brand-dark/5">
-    {store.logo_url ? (
-      <img
-        src={store.logo_url}
-        alt={store.name}
-        loading="lazy"
-        class="object-contain w-full h-full"
-      />
-    ) : (
-      <div class="text-xs text-gray-400">Logo</div>
-    )}
+  <div class="flex flex-col h-full">
+    <!-- Logo area: flexible height, no forced square; divider underneath -->
+    <div
+      class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3"
+    >
+      {
+        store.logo_url ? (
+          <img
+            src={store.logo_url}
+            alt={store.name}
+            loading="lazy"
+            class="max-h-full max-w-full object-contain"
+          />
+        ) : (
+          <div class="w-full flex items-center justify-center text-xs text-gray-400">
+            Logo
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Content: vertically centered if content height allows -->
+    <div class="flex-1 flex flex-col justify-center">
+      <div class="flex items-center justify-center gap-2">
+        <h3
+          class="font-semibold text-brand-primary text-sm md:text-base truncate text-center"
+        >
+          {store.name}
+        </h3>
+      </div>
+
+      {
+        store.stats?.active_coupons !== undefined && (
+          <div class="mt-2 flex justify-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">
+              {store.stats.active_coupons}{" "}
+              {store.stats.active_coupons === 1 ? "deal" : "deals"}
+            </span>
+          </div>
+        )
+      }
+    </div>
   </div>
-
-  <h3 class="font-semibold text-brand-primary truncate">{store.name}</h3>
-
-  {store.stats?.active_coupons !== undefined && (
-    <p class="text-xs text-brand-secondary mt-1">
-      {store.stats.active_coupons}{" "}
-      {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
-    </p>
-  )}
 </a>

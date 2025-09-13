@@ -1,92 +1,183 @@
 <footer class="w-full bg-brand-dark text-white">
-  <div class="container py-12 grid gap-10 md:grid-cols-4">
-    <!-- Brand -->
-    <div>
-      <a href="/" class="flex items-center gap-3 mb-3">
-        <img src="/logo.png" alt="Saving Harbor" width="36" height="36" />
-        <span class="font-semibold text-lg tracking-tight text-brand-primary">
-          Saving Harbor
-        </span>
-      </a>
-      <p class="text-sm text-gray-400">
-        Verified coupons, trusted stores, and savings you can count on.
-      </p>
-    </div>
-
-    <!-- Company -->
-    <div>
-      <h4 class="font-semibold mb-3 text-brand-secondary">Company</h4>
-      <ul class="space-y-2 text-sm">
-        <li><a href="/about" class="hover:text-brand-primary">About</a></li>
-        <li><a href="/contact" class="hover:text-brand-primary">Contact</a></li>
-        <li><a href="/privacy" class="hover:text-brand-primary">Privacy</a></li>
-        <li><a href="/terms" class="hover:text-brand-primary">Terms</a></li>
-      </ul>
-    </div>
-
-    <!-- Resources -->
-    <div>
-      <h4 class="font-semibold mb-3 text-brand-secondary">Resources</h4>
-      <ul class="space-y-2 text-sm">
-        <li><a href="/stores" class="hover:text-brand-primary">Stores</a></li>
-        <li><a href="/coupons" class="hover:text-brand-primary">Coupons</a></li>
-        <li><a href="/blog" class="hover:text-brand-primary">Blog</a></li>
-      </ul>
-    </div>
-
-    <!-- Social -->
-    <div>
-      <h4 class="font-semibold mb-3 text-brand-secondary">Connect</h4>
-      <div class="flex gap-4 text-gray-400">
-        <a href="#" aria-label="Twitter" class="hover:text-brand-primary">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M8.29 20c7.55 0 11.68-6.26 11.68-11.68 0-.18 0-.36-.01-.54A8.36 8.36 0 0022.46 6a8.19 8.19 0 01-2.36.65A4.13 4.13 0 0021.9 4.1a8.27 8.27 0 01-2.61 1 4.13 4.13 0 00-7 3.76A11.7 11.7 0 013 5.1a4.12 4.12 0 001.28 5.5A4.06 4.06 0 012.8 10v.05a4.13 4.13 0 003.3 4 4.2 4.2 0 01-1.86.07 4.14 4.14 0 003.86 2.86A8.3 8.3 0 012 18.57a11.7 11.7 0 006.29 1.84"
-            ></path>
-          </svg>
+  <div class="container mx-auto px-4 py-12">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 items-start"
+    >
+      <!-- Brand -->
+      <div>
+        <a href="/" class="flex items-center gap-3 mb-3">
+          <img src="/logo.png" alt="Saving Harbor" width="36" height="36" />
+          <span class="font-semibold text-lg tracking-tight text-brand-primary">
+            Saving Harbor
+          </span>
         </a>
-        <a href="#" aria-label="LinkedIn" class="hover:text-brand-primary">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
+        <p class="text-sm text-gray-400 max-w-sm leading-relaxed">
+          Verified coupons, trusted stores, and savings you can count on.
+        </p>
+      </div>
+
+      <!-- Company -->
+      <div>
+        <h4 class="font-semibold mb-3 text-brand-secondary">Company</h4>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="/about" class="hover:text-brand-primary transition"
+              >About</a>
+          </li>
+          <li>
+            <a href="/contact" class="hover:text-brand-primary transition"
+              >Contact</a>
+          </li>
+          <li>
+            <a href="/privacy" class="hover:text-brand-primary transition"
+              >Privacy</a>
+          </li>
+          <li>
+            <a href="/terms" class="hover:text-brand-primary transition"
+              >Terms</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Resources -->
+      <div>
+        <h4 class="font-semibold mb-3 text-brand-secondary">Resources</h4>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="/stores" class="hover:text-brand-primary transition"
+              >Stores</a>
+          </li>
+          <li>
+            <a href="/coupons" class="hover:text-brand-primary transition"
+              >Coupons</a>
+          </li>
+          <li>
+            <a href="/blog" class="hover:text-brand-primary transition">Blog</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Social (desktop) -->
+      <div class="hidden md:block">
+        <h4 class="font-semibold mb-3 text-brand-secondary">Connect</h4>
+        <div class="flex gap-4 text-gray-400">
+          <a
+            href="#"
+            aria-label="Twitter"
+            class="p-2 rounded hover:bg-white/5 hover:text-brand-primary transition"
           >
-            <path
-              d="M4.98 3.5C4.98 4.88 3.86 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM.5 8h4V24h-4zM8.5 8h3.6v2.2h.05c.5-.95 1.7-2 3.5-2 3.7 0 4.4 2.4 4.4 5.5V24h-4v-7.9c0-1.9-.03-4.4-2.7-4.4-2.7 0-3.1 2.1-3.1 4.3V24h-4z"
-            ></path>
-          </svg>
-        </a>
-        <a href="#" aria-label="YouTube" class="hover:text-brand-primary">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              ><path
+                d="M8.29 20c7.55 0 11.68-6.26 11.68-11.68 0-.18 0-.36-.01-.54A8.36 8.36 0 0022.46 6a8.19 8.19 0 01-2.36.65A4.13 4.13 0 0021.9 4.1a8.27 8.27 0 01-2.61 1 4.13 4.13 0 00-7 3.76A11.7 11.7 0 013 5.1a4.12 4.12 0 001.28 5.5A4.06 4.06 0 012.8 10v.05a4.13 4.13 0 003.3 4 4.2 4.2 0 01-1.86.07 4.14 4.14 0 003.86 2.86A8.3 8.3 0 012 18.57a11.7 11.7 0 006.29 1.84"
+              ></path></svg
+            >
+          </a>
+          <a
+            href="#"
+            aria-label="LinkedIn"
+            class="p-2 rounded hover:bg-white/5 hover:text-brand-primary transition"
           >
-            <path
-              d="M23.5 6.2a3 3 0 00-2.1-2.1C19.2 3.5 12 3.5 12 3.5s-7.2 0-9.4.6A3 3 0 00.5 6.2 31.2 31.2 0 000 12a31.2 31.2 0 00.5 5.8 3 3 0 002.1 2.1c2.2.6 9.4.6 9.4.6s7.2 0 9.4-.6a3 3 0 002.1-2.1A31.2 31.2 0 0024 12a31.2 31.2 0 00-.5-5.8zM9.5 15.6V8.4l6.2 3.6-6.2 3.6z"
-            ></path>
-          </svg>
-        </a>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              ><path
+                d="M4.98 3.5C4.98 4.88 3.86 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM.5 8h4V24h-4zM8.5 8h3.6v2.2h.05c.5-.95 1.7-2 3.5-2 3.7 0 4.4 2.4 4.4 5.5V24h-4v-7.9c0-1.9-.03-4.4-1.87-4.4-1.87 0-2.16 1.46-2.16 2.96v5.7h-3v-10h2.88v1.37h.04c.4-.76 1.38-1.55 2.85-1.55 3.05 0 3.61 2.01 3.61 4.62v5.56z"
+              ></path></svg
+            >
+          </a>
+          <a
+            href="#"
+            aria-label="YouTube"
+            class="p-2 rounded hover:bg-white/5 hover:text-brand-primary transition"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              ><path
+                d="M23.5 6.2a3 3 0 00-2.1-2.1C19.2 3.5 12 3.5 12 3.5s-7.2 0-9.4.6A3 3 0 00.5 6.2 31.2 31.2 0 000 12a31.2 31.2 0 00.5 5.8 3 3 0 002.1 2.1c2.2.6 9.4.6 9.4.6s7.2 0 9.4-.6a3 3 0 002.1-2.1A31.2 31.2 0 0024 12a31.2 31.2 0 00-.5-5.8zM9.5 15.6V8.4l6.2 3.6-6.2 3.6z"
+              ></path></svg
+            >
+          </a>
+        </div>
       </div>
     </div>
-    <!-- Copyright + Back to top -->
-    <div
-      class="border-t border-white/10 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 container"
-    >
-      <p>© {new Date().getFullYear()} Saving Harbor. All rights reserved.</p>
-      <a
-        href="#top"
-        class="mt-2 sm:mt-0 inline-flex items-center gap-1 text-brand-secondary hover:text-brand-primary transition"
+
+    <!-- Bottom bar with responsive social placement -->
+    <div class="mt-8 border-t border-white/10 pt-4">
+      <div
+        class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4"
       >
-        ↑ Back to top
-      </a>
+        <div class="text-xs text-gray-400">
+          © {new Date().getFullYear()} Saving Harbor. All rights reserved.
+        </div>
+
+        <!-- On small screens: show social icons here -->
+        <div class="flex items-center gap-4">
+          <nav class="hidden md:flex items-center gap-4">
+            <a
+              href="#top"
+              class="text-brand-secondary hover:text-brand-primary transition text-xs"
+              >↑ Back to top</a
+            >
+          </nav>
+
+          <div class="md:hidden flex items-center gap-3">
+            <a
+              href="#"
+              aria-label="Twitter"
+              class="p-1 rounded hover:bg-white/5 hover:text-brand-primary transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                ><path
+                  d="M8.29 20c7.55 0 11.68-6.26 11.68-11.68 0-.18 0-.36-.01-.54A8.36 8.36 0 0022.46 6a8.19 8.19 0 01-2.36.65A4.13 4.13 0 0021.9 4.1a8.27 8.27 0 01-2.61 1 4.13 4.13 0 00-7 3.76A11.7 11.7 0 013 5.1a4.12 4.12 0 001.28 5.5A4.06 4.06 0 012.8 10v.05a4.13 4.13 0 003.3 4 4.2 4.2 0 01-1.86.07 4.14 4.14 0 003.86 2.86A8.3 8.3 0 012 18.57a11.7 11.7 0 006.29 1.84"
+                ></path></svg
+              >
+            </a>
+            <a
+              href="#"
+              aria-label="LinkedIn"
+              class="p-1 rounded hover:bg-white/5 hover:text-brand-primary transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                ><path
+                  d="M4.98 3.5C4.98 4.88 3.86 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM.5 8h4V24h-4zM8.5 8h3.6v2.2h.05c.5-.95 1.7-2 3.5-2 3.7 0 4.4 2.4 4.4 5.5V24h-4v-7.9c0-1.9-.03-4.4-1.87-4.4-1.87 0-2.16 1.46-2.16 2.96v5.7h-3v-10h2.88v1.37h.04c.4-.76 1.38-1.55 2.85-1.55 3.05 0 3.61 2.01 3.61 4.62v5.56z"
+                ></path></svg
+              >
+            </a>
+            <a
+              href="#"
+              aria-label="YouTube"
+              class="p-1 rounded hover:bg-white/5 hover:text-brand-primary transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                ><path
+                  d="M23.5 6.2a3 3 0 00-2.1-2.1C19.2 3.5 12 3.5 12 3.5s-7.2 0-9.4.6A3 3 0 00.5 6.2 31.2 31.2 0 000 12a31.2 31.2 0 00.5 5.8 3 3 0 002.1 2.1c2.2.6 9.4.6 9.4.6s7.2 0 9.4-.6a3 3 0 002.1-2.1A31.2 31.2 0 0024 12a31.2 31.2 0 00-.5-5.8zM9.5 15.6V8.4l6.2 3.6-6.2 3.6z"
+                ></path></svg
+              >
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </footer>
