@@ -18,6 +18,7 @@ import {
 } from "../constants/publicEnums.js";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
+import { makeListCacheKey } from "../utils/cache-keys.js";
 
 export async function list(req, res) {
   try {
@@ -48,6 +49,16 @@ export async function list(req, res) {
       origin,
       path,
     };
+
+    const cacheKey = makeListCacheKey("coupons", {
+      page,
+      limit,
+      q: params.q || "",
+      category: params.categorySlug || "",
+      sort: params.sort || "",
+      locale: params.locale || "",
+      type: params.type || "",
+    });
 
     const result = await withCache(
       req,
@@ -109,7 +120,7 @@ export async function list(req, res) {
           };
         }
       },
-      { ttlSeconds: 60, keyExtra: "coupons" }
+      { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
     return ok(res, result);

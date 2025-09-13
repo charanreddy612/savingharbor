@@ -13,6 +13,7 @@ import { badRequest } from "../utils/errors.js";
 import { buildArticleJsonLd } from "../utils/jsonld.js";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
+import { makeListCacheKey } from "../utils/cache-keys.js";
 
 export async function list(req, res) {
   try {
@@ -43,6 +44,16 @@ export async function list(req, res) {
       origin,
       path,
     };
+
+    const cacheKey = makeListCacheKey("blogs", {
+      page,
+      limit,
+      q: params.q || "",
+      category: params.categorySlug || "",
+      sort: params.sort || "",
+      locale: params.locale || "",
+      type: params.type || "",
+    });
 
     const result = await withCache(
       req,
@@ -89,7 +100,7 @@ export async function list(req, res) {
           throw err;
         }
       },
-      { ttlSeconds: 60, keyExtra: "blogs" }
+      { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
     return ok(res, result);
@@ -122,6 +133,16 @@ export async function detail(req, res) {
       locale,
       q: (req.query.q || "").toString().slice(0, 200),
     };
+
+    const cacheKey = makeListCacheKey("blogs", {
+      page,
+      limit,
+      q: params.q || "",
+      category: params.categorySlug || "",
+      sort: params.sort || "",
+      locale: params.locale || "",
+      type: params.type || "",
+    });
 
     const result = await withCache(
       req,
@@ -183,7 +204,7 @@ export async function detail(req, res) {
           throw err;
         }
       },
-      { ttlSeconds: 300, keyExtra: "blogs" }
+      { ttlSeconds: 300, keyExtra: cacheKey }
     );
 
     if (!result?.data) return notFound(res, "Blog not found");

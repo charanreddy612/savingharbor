@@ -18,6 +18,7 @@ import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
 import DOMPurify from "isomorphic-dompurify";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
+import { makeListCacheKey } from "../utils/cache-keys.js";
 
 // publicStores.js
 export async function list(req, res) {
@@ -44,6 +45,16 @@ export async function list(req, res) {
       origin,
       path,
     };
+
+    const cacheKey = makeListCacheKey("stores", {
+      page,
+      limit,
+      q: params.q || "",
+      category: params.categorySlug || "",
+      sort: params.sort || "",
+      locale: params.locale || "",
+      type: params.type || "",
+    });
 
     const result = await withCache(
       req,
@@ -89,7 +100,7 @@ export async function list(req, res) {
           },
         };
       },
-      { ttlSeconds: 60, keyExtra: "stores" }
+      { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
     return ok(res, result);
@@ -132,6 +143,16 @@ export async function detail(req, res) {
       origin,
       path,
     };
+
+    const cacheKey = makeListCacheKey("stores", {
+      page,
+      limit,
+      q: params.q || "",
+      category: params.categorySlug || "",
+      sort: params.sort || "",
+      locale: params.locale || "",
+      type: params.type || "",
+    });
 
     const result = await withCache(
       req,
@@ -418,7 +439,7 @@ export async function detail(req, res) {
           },
         };
       },
-      { ttlSeconds: 60, keyExtra: "stores" }
+      { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
     if (!result?.data) return notFound(res, "Store not found");
