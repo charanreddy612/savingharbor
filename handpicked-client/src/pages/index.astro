@@ -8,9 +8,10 @@ import BannerSlider from "../components/BannerSlider.jsx";
 import CouponRevealIsland from "../components/islands/CouponRevealIsland";
 import CardStore from "../components/CardStore.astro";
 import { api } from "../lib/api";
+import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland.jsx";
 
 const pageMeta = {
-  title: "HandPicked Deals | Verified Coupons & Discounts",
+  title: "Saving Harbor | Verified Coupons & Discounts",
   description:
     "Verified coupons, real savings, no expired junk — handpicked by real humans.",
 };
@@ -187,31 +188,12 @@ const cmeta = cresp?.meta || {};
     </section>
 
     <!-- Newsletter / CTA -->
-    <section
-      class="mt-16 rounded-lg bg-brand-dark text-white py-10 px-6 text-center"
-    >
-      <h4 class="text-xl font-semibold">
+    <section class="mt-16 card p-6 text-center">
+      <h2 class="text-xl font-semibold">
         Subscribe and stay ahead — no spam, ever.
-      </h4>
-      <p class="mt-2 text-gray-300">Get the best deals delivered weekly.</p>
-
-      <form
-        class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto"
-      >
-        <input
-          type="email"
-          name="email"
-          placeholder="you@domain.com"
-          class="w-full sm:flex-1 rounded-md px-4 py-2 text-black"
-          aria-label="Email address"
-        />
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-md bg-brand-primary text-white"
-        >
-          Subscribe
-        </button>
-      </form>
+      </h2>
+      <p class="mt-2 text-gray-600">Get the best deals delivered weekly.</p>
+      <LandingSubscribeIsland client:load />
     </section>
   </main>
 

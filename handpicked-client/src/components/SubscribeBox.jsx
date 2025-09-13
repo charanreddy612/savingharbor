@@ -1,14 +1,47 @@
 // src/components/SubscribeBox.jsx
-import React, { useState, useRef } from "react";
-
-/**
- * SubscribeBox.jsx
- */
+import React, { useState, useRef, useEffect } from "react";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
+/** shared helper for all pages */
+export async function doSubscribe(email, source = null) {
+  const val = (email || "").trim().toLowerCase();
+  if (!val || !EMAIL_REGEX.test(val)) {
+    return { ok: false, message: "Please enter a valid email address." };
+  }
+
+  try {
+    const base = import.meta.env.PUBLIC_API_BASE_URL || "";
+    const endpoint = base + "/subscribe";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: val, source, honeypot: "" }),
+    });
+
+    if (res.status === 429) {
+      return {
+        ok: false,
+        message: "Too many requests. Please try again later.",
+      };
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) {
+      const msg = data?.message || "Subscription failed. Try again.";
+      return { ok: false, message: msg, data };
+    }
+
+    return { ok: true, message: "Subscribed — thank you!", data };
+  } catch (err) {
+    console.error("subscribe error:", err);
+    return { ok: false, message: "An error occurred. Please try again." };
+  }
+}
+
+/* -------------------- Component stays same -------------------- */
 function Toast({ message, onClose }) {
-  React.useEffect(() => {
+  useEffect(() => {
     const t = setTimeout(onClose, 3000);
     return () => clearTimeout(t);
   }, [onClose]);
@@ -25,14 +58,14 @@ function Toast({ message, onClose }) {
 }
 
 export default function SubscribeBox({ source }) {
-  const src = source ?? null;
   const [email, setEmail] = useState("");
-  const [honeypot, setHoneypot] = useState(""); // hidden field
+  const [honeypot, setHoneypot] = useState("");
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [error, setError] = useState(null);
   const mountedRef = useRef(true);
-  React.useEffect(() => {
+
+  useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
@@ -49,15 +82,7 @@ export default function SubscribeBox({ source }) {
     e.preventDefault();
     setError(null);
 
-    const val = (email || "").trim().toLowerCase();
-    if (!val || !EMAIL_REGEX.test(val)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    // honeypot should be empty
     if (honeypot) {
-      // Silent success to confuse bots
       pushToast("Subscribed");
       setEmail("");
       return;
@@ -65,41 +90,15 @@ export default function SubscribeBox({ source }) {
 
     setLoading(true);
     try {
-      const base = import.meta.env.PUBLIC_API_BASE_URL || "";
-      const endpoint = base + "/subscribe";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: val,
-          source: src || null,
-          honeypot: "",
-        }),
-      });
-
-      if (res.status === 429) {
-        setError("Too many requests. Please try again later.");
-        pushToast("Too many requests — try again later");
-        setLoading(false);
+      const result = await doSubscribe(email, source);
+      if (!result.ok) {
+        setError(result.message);
+        pushToast(result.message);
         return;
       }
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        const msg = data?.message || "Subscription failed. Try again.";
-        setError(msg);
-        pushToast(msg);
-        setLoading(false);
-        return;
-      }
-
-      pushToast("Subscribed — thank you!");
+      pushToast(result.message);
       setEmail("");
       setError(null);
-    } catch (err) {
-      console.error("subscribe error:", err);
-      setError("An error occurred. Please try again.");
-      pushToast("An error occurred. Try again.");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -114,46 +113,30 @@ export default function SubscribeBox({ source }) {
         <div className="flex gap-2">
           <input
             type="email"
-            name="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200"
-            aria-label="Email address"
             required
           />
           <button
             type="submit"
             className="px-3 py-2 rounded bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
             disabled={loading}
-            aria-label="Subscribe"
           >
             {loading ? "Please wait…" : "Subscribe"}
           </button>
         </div>
 
-        {/* honeypot hidden field — visually hidden but present in DOM */}
-        <div
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "auto",
-            width: "1px",
-            height: "1px",
-            overflow: "hidden",
-          }}
-        >
-          <label htmlFor="hp_field">Leave this field empty</label>
-          <input
-            id="hp_field"
-            name="hp_field"
-            type="text"
-            value={honeypot}
-            onChange={(e) => setHoneypot(e.target.value)}
-            autoComplete="off"
-            tabIndex="-1"
-          />
-        </div>
+        {/* honeypot hidden field */}
+        <input
+          type="text"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          style={{ position: "absolute", left: "-9999px" }}
+          tabIndex="-1"
+          autoComplete="off"
+        />
 
         {error && (
           <p className="text-xs text-red-600 mt-2" role="alert">
@@ -162,7 +145,6 @@ export default function SubscribeBox({ source }) {
         )}
       </form>
 
-      {/* toasts */}
       {toasts.map((t) => (
         <Toast
           key={t.id}
