@@ -72,96 +72,151 @@ const safeBodyHtml = post?.content_html
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
-  <main class="container mx-auto px-4 py-10">
-    {
-      post ? (
-        <>
-          <Breadcrumbs breadcrumbs={post.breadcrumbs} />
+<main class="container mx-auto px-4 py-10">
+  {post ? (
+    <>
+      <Breadcrumbs breadcrumbs={post.breadcrumbs} />
 
-          <!-- Title + meta -->
-          <header class="mt-4">
-            <h1 class="text-3xl font-bold tracking-tight text-brand-primary">
+      <!-- Page grid: main article + sidebar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-4">
+        <!-- Main article column (centered, comfortable measure) -->
+        <article class="lg:col-span-2">
+          <!-- Hero / Title -->
+          <header class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold leading-tight text-brand-primary">
               {post.title}
             </h1>
-            <div class="mt-2 text-sm text-gray-500 flex flex-wrap items-center gap-2">
-              {post.category && (
-                <span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-xs">
-                  {post.category}
-                </span>
-              )}
-              {post.created_at && (
-                <span>{new Date(post.created_at).toLocaleDateString()}</span>
-              )}
-              {post.updated_at && (
-                <span>
-                  · Updated {new Date(post.updated_at).toLocaleDateString()}
-                </span>
-              )}
+
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+              {post.category && <span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-xs">{post.category}</span>}
+              {post.created_at && <span>{new Date(post.created_at).toLocaleDateString()}</span>}
+              {post.updated_at && <span>· Updated {new Date(post.updated_at).toLocaleDateString()}</span>}
             </div>
 
             {post.author && (
               <div class="mt-4 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                   {post.author.avatar_url ? (
-                    <img
-                      src={post.author.avatar_url}
-                      alt={post.author.name || "Author"}
-                      width="40"
-                      height="40"
-                      class="object-cover"
-                      loading="lazy"
-                    />
+                    <img src={post.author.avatar_url} alt={post.author.name || "Author"} class="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <div class="text-[10px] text-gray-400">Author</div>
+                    <div class="w-full h-full flex items-center justify-center text-xs text-gray-400">Author</div>
                   )}
                 </div>
-                <div class="text-sm">
-                  <div class="font-medium text-gray-900">
-                    {post.author.name || "Editorial Team"}
-                  </div>
-                  {post.author.role && (
-                    <div class="text-gray-500">{post.author.role}</div>
-                  )}
+                <div>
+                  <div class="font-medium text-gray-900">{post.author.name || "Editorial Team"}</div>
+                  {post.author.role && <div class="text-sm text-gray-500">{post.author.role}</div>}
                 </div>
               </div>
             )}
           </header>
 
-          <!-- Hero image -->
+          <!-- Optional hero image -->
           {post.hero_image_url && (
-            <figure class="mt-6">
-              <img
-                src={post.hero_image_url}
-                alt={post.title}
-                class="w-full h-auto rounded-lg border border-gray-200 shadow-sm"
-                loading="lazy"
-              />
+            <figure class="mb-6">
+              <img src={post.hero_image_url} alt={post.title} class="w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
             </figure>
           )}
 
-          <!-- Body -->
+          <!-- Article body: centered measure using prose -->
           {safeBodyHtml ? (
-            <article class="prose prose-gray max-w-none mt-8">
+            <div class="prose prose-lg prose-gray max-w-none">
               <div set:html={safeBodyHtml} />
-            </article>
+            </div>
           ) : (
-            <p class="mt-8 text-gray-600">This article has no content.</p>
+            <p class="text-gray-600">This article has no content.</p>
           )}
-        </>
-      ) : (
-        <section class="py-20 text-center">
-          <h1 class="text-2xl font-bold text-brand-primary">Post not found</h1>
-          <p class="text-gray-600 mt-2">
-            Please check the URL or browse all posts.
-          </p>
-          <div class="mt-4">
-            <a href="/blog" class="btn btn-outline">
-              Back to Blog
-            </a>
+
+          <!-- Share / CTA bar -->
+          <div class="mt-8 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600">Share:</span>
+              <div class="flex items-center gap-2">
+                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition" href="#" aria-label="Share on Twitter">Twitter</a>
+                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition" href="#" aria-label="Share on LinkedIn">LinkedIn</a>
+              </div>
+            </div>
+
+            <div>
+              <a href="/blog" class="btn btn-outline text-sm">Back to Blog</a>
+            </div>
           </div>
-        </section>
-      )
-    }
-  </main>
+
+          <!-- Optional Related posts preview (keeps non-breaking) -->
+          <section class="mt-12">
+            <h3 class="text-xl font-semibold text-brand-primary mb-4">Related posts</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Replace these placeholders with real related posts when available -->
+              <a href="/blog/sample-slug" class="block p-4 border rounded hover:shadow-sm">
+                <div class="font-medium">Sample related post title</div>
+                <div class="text-xs text-gray-500 mt-1">Quick summary or date</div>
+              </a>
+              <a href="/blog/sample-slug-2" class="block p-4 border rounded hover:shadow-sm">
+                <div class="font-medium">Another article</div>
+                <div class="text-xs text-gray-500 mt-1">Short excerpt</div>
+              </a>
+            </div>
+          </section>
+        </article>
+
+        <!-- Right sidebar: sticky on desktop, stacks below on mobile -->
+        <aside class="lg:col-span-1">
+          <div class="space-y-6">
+            <!-- Subscribe box -->
+            <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
+              <h4 class="font-semibold text-sm text-brand-primary mb-2">Get updates</h4>
+              <p class="text-sm text-gray-600 mb-3">Subscribe for the latest articles and deals.</p>
+              <!-- Keep your existing subscribe component if present -->
+              <form class="flex gap-2">
+                <input type="email" placeholder="you@domain.com" class="flex-1 px-3 py-2 border rounded text-sm" />
+                <button class="btn btn-primary text-sm">Subscribe</button>
+              </form>
+            </div>
+
+            <!-- Sticky quick nav (table of contents) -->
+            <div class="hidden lg:block sticky top-28">
+              <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
+                <h4 class="font-semibold text-sm text-brand-secondary mb-2">On this page</h4>
+                <nav class="text-sm text-gray-600 space-y-2">
+                  <!-- Optionally generate TOC from headings; placeholders for now -->
+                  <a href="#what-are-ai-driven-coupons" class="block hover:text-brand-primary">What are AI-Driven Coupons?</a>
+                  <a href="#predictive-algorithms" class="block hover:text-brand-primary">Predictive Algorithms</a>
+                  <a href="#case-study" class="block hover:text-brand-primary">Case Study</a>
+                </nav>
+              </div>
+            </div>
+
+            <!-- Small author / about card -->
+            {post.author && (
+              <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                    {post.author.avatar_url ? (
+                      <img src={post.author.avatar_url} alt={post.author.name || "Author"} class="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center text-xs text-gray-400">A</div>
+                    )}
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-900">{post.author.name || "Editorial Team"}</div>
+                    {post.author.role && <div class="text-xs text-gray-500">{post.author.role}</div>}
+                  </div>
+                </div>
+                <p class="mt-3 text-sm text-gray-600">Author bio or a short blurb can go here. Keep it concise.</p>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    </>
+  ) : (
+    <section class="py-20 text-center">
+      <h1 class="text-2xl font-bold text-brand-primary">Post not found</h1>
+      <p class="text-gray-600 mt-2">Please check the URL or browse all posts.</p>
+      <div class="mt-4">
+        <a href="/blog" class="btn btn-outline">Back to Blog</a>
+      </div>
+    </section>
+  )}
+</main>
   <Footer />
 </Base>
