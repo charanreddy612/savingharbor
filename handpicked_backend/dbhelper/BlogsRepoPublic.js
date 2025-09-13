@@ -177,12 +177,14 @@ export async function getBySlug(slug) {
   }
 }
 
-export function buildSeo(blog, { origin, path, locale }) {
-  const canonical = `${origin}${path}`;
+/**
+ * Build SEO metadata
+ */
+export function buildSeo(blog, { canonical, locale } = {}) {
   return {
     seo_title: blog.seo_title || blog.title,
-    meta_description: blog.meta_description || "",
-    canonical,
+    meta_description: blog.meta_description || `Blog Article for ${blog.title}.`,
+    canonical: canonical,
     locale: locale || "en",
     hreflang: [locale || "en"],
   };

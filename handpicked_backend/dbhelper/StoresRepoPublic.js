@@ -167,14 +167,13 @@ export async function getBySlug(slug) {
 /**
  * Build SEO metadata
  */
-export function buildSeo(store, { origin, path, locale }) {
-  const canonical = `${origin}${path}`;
+export function buildSeo(store, { canonical, locale } = {}) {
   return {
     meta_title: store.meta_title || `${store.name} — Coupons & Deals`,
     meta_description:
       store.meta_description ||
       `Find verified coupons and deals for ${store.name}.`,
-    canonical,
+    canonical: canonical || "",
     locale: locale || "en",
     hreflang: [locale || "en"],
   };

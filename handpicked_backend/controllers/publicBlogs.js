@@ -51,9 +51,9 @@ export async function list(req, res) {
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
 
-    // Opt-in for trusting proxy headers only if you know the provider is trusted
-    const origin = getOrigin(req, { trustProxy: false });
-    const path = getPath(req);
+    // Resolve origin/path safely (getOrigin/getPath might be sync or async)
+    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+    const path = await Promise.resolve(getPath(req));
 
     const params = {
       q: q.trim(),
@@ -84,14 +84,23 @@ export async function list(req, res) {
               locale: params.locale || undefined,
             },
           });
-
+          // Await buildCanonical because it is async and may resolve Promises internally
+          const canonical = await buildCanonical({
+            origin: params.origin,
+            path: params.path,
+            page,
+            limit,
+            q: params.q,
+            categorySlug: params.categorySlug,
+            sort: params.sort,
+          });
           return {
             data: rows,
             meta: {
               page,
               limit,
               total,
-              canonical: buildCanonical({ ...params }),
+              canonical,
               prev: nav.prev,
               next: nav.next,
               total_pages: nav.totalPages,
@@ -119,8 +128,8 @@ export async function detail(req, res) {
       .toLowerCase();
     if (!slug) return badRequest(res, "Invalid blog slug");
     // Opt-in for trusting proxy headers only if you know the provider is trusted
-    const origin = getOrigin(req, { trustProxy: false });
-    const path = getPath(req);
+    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+    const path = await Promise.resolve(getPath(req));
 
     const locale = valLocale(req.query.locale) || deriveLocale(req);
     const params = { slug, locale, origin, path };
@@ -132,7 +141,17 @@ export async function detail(req, res) {
           const blog = await BlogsRepo.getBySlug(slug);
           if (!blog) return { data: null, meta: { status: 404 } };
 
-          const seo = BlogsRepo.buildSeo(blog, params);
+          const canonical = await buildCanonical({
+            origin: params.origin,
+            path: params.path,
+            page,
+            limit,
+            q: params.q,
+            categorySlug: params.categorySlug,
+            sort: params.sort,
+          });
+
+          const seo = BlogsRepo.buildSeo(blog, { canonical, locale: params.locale });
           const breadcrumbs = BlogsRepo.buildBreadcrumbs(blog, params);
 
           const articleJsonLd = buildArticleJsonLd(blog, params.origin);
@@ -148,7 +167,6 @@ export async function detail(req, res) {
           };
 
           const related = await BlogsRepo.related(blog, 6);
-
           return {
             data: {
               id: blog.id,
@@ -165,7 +183,7 @@ export async function detail(req, res) {
               related,
             },
             meta: {
-              canonical: buildCanonical({ ...params }),
+              canonical,
               jsonld: { article: articleJsonLd, breadcrumb: breadcrumbJsonLd },
             },
           };
