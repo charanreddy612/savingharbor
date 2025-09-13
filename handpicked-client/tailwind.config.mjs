@@ -28,6 +28,7 @@ export default {
         "brand-secondary": "#2E86DE", // Blue
         "brand-accent": "#1282A2", // Gradient midpoint
         "brand-dark": "#0B1220", // Navy background
+        'brand-muted': '#0C324F', // muted dark (muted backgrounds)
       },
     },
   },
