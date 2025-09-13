@@ -3,7 +3,6 @@ import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CardBlog from "../../components/CardBlog.astro";
-
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 
@@ -34,7 +33,6 @@ type BlogsResponse = {
 
 let resp: BlogsResponse | null = null;
 try {
-  // use retries + timeout so transient API failures don't break the page
   resp = await api.get<BlogsResponse>(
     "/blogs",
     {},
@@ -42,7 +40,6 @@ try {
   );
 } catch (e) {
   console.error("Error fetching blogs:", e);
-  // safe fallback so template bindings never crash
   resp = {
     data: [],
     meta: {
@@ -71,25 +68,29 @@ const jsonld = meta.jsonld;
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
-  <main class="container py-10">
-    <h1 class="text-2xl font-bold mb-6">Blog</h1>
+  <main class="container mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold text-brand-primary">Blog</h1>
+    <p class="mt-2 text-sm text-gray-500 max-w-2xl">{pageDesc}</p>
+
     {
       blogs.length > 0 ? (
-        <div class="grid-2-equal">
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogs.map((b) => (
             <CardBlog blog={b} />
           ))}
         </div>
       ) : (
-        <p class="text-gray-600">No posts found.</p>
+        <p class="mt-6 text-gray-500">No posts found.</p>
       )
     }
 
-    <Pagination
-      prev={meta.prev}
-      next={meta.next}
-      total_pages={meta.total_pages}
-    />
+    <div class="mt-10">
+      <Pagination
+        prev={meta.prev}
+        next={meta.next}
+        total_pages={meta.total_pages}
+      />
+    </div>
   </main>
   <Footer />
 </Base>

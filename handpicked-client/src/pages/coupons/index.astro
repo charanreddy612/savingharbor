@@ -38,7 +38,6 @@ type CouponsResponse = {
 
 let resp: CouponsResponse | null = null;
 try {
-  // Use request-level retries + timeout (api.get supports these options)
   resp = await api.get<CouponsResponse>(
     "/coupons",
     {},
@@ -46,7 +45,6 @@ try {
   );
 } catch (e) {
   console.error("Error fetching coupons:", e);
-  // Safe fallback so UI always receives a valid shape (no crashes / null deref)
   resp = {
     data: [],
     meta: {
@@ -75,13 +73,14 @@ const jsonld = meta.jsonld;
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
-  <main class="container py-10">
-    <h1 class="text-2xl font-bold mb-6">Coupons</h1>
+  <main class="container mx-auto px-4 py-10">
+    <h1 class="text-2xl font-bold text-brand-primary">Coupons</h1>
+    <p class="mt-2 text-sm text-gray-500 max-w-2xl">{pageDesc}</p>
+
     {
       coupons.length > 0 ? (
-        <div class="grid-2-equal">
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {coupons.map((c) => (
-            // <CardCoupon coupon={c} />
             <CouponRevealIsland
               client:load
               coupon={c}
@@ -90,17 +89,19 @@ const jsonld = meta.jsonld;
           ))}
         </div>
       ) : (
-        <p class="text-gray-600">
+        <p class="mt-6 text-gray-500">
           No coupons available right now. Check back soon.
         </p>
       )
     }
 
-    <Pagination
-      prev={meta.prev}
-      next={meta.next}
-      total_pages={meta.total_pages}
-    />
+    <div class="mt-10">
+      <Pagination
+        prev={meta.prev}
+        next={meta.next}
+        total_pages={meta.total_pages}
+      />
+    </div>
   </main>
   <Footer />
 </Base>

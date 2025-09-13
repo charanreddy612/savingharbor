@@ -14,7 +14,7 @@ const {
 ---
 
 <div class="flex items-center justify-between mt-6">
-  <div class="text-sm text-gray-600">
+  <div class="text-sm text-gray-500">
     {
       typeof total_pages === "number" && total_pages > 0
         ? `Total pages: ${total_pages}`
@@ -24,23 +24,29 @@ const {
   <div class="flex items-center gap-2">
     {
       prev ? (
-        <a href={prev} class="px-3 py-1.5 text-sm border rounded">
-          <ChevronLeft size={18} class="mr-1" />Prev
+        <a
+          href={prev}
+          class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition"
+        >
+          <ChevronLeft size={18} /> Prev
         </a>
       ) : (
-        <span class="px-3 py-1.5 text-sm text-gray-400 border rounded">
-          Prev
+        <span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed">
+          <ChevronLeft size={18} /> Prev
         </span>
       )
     }
     {
       next ? (
-        <a href={next} class="px-3 py-1.5 text-sm border rounded">
-          Next<ChevronRight size={18} class="ml-1" />
+        <a
+          href={next}
+          class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition"
+        >
+          Next <ChevronRight size={18} />
         </a>
       ) : (
-        <span class="px-3 py-1.5 text-sm text-gray-400 border rounded">
-          Next
+        <span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed">
+          Next <ChevronRight size={18} />
         </span>
       )
     }

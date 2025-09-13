@@ -1,5 +1,4 @@
 ---
-// src/pages/blogs/[slug].astro (replace)
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
@@ -39,7 +38,6 @@ const { slug } = Astro.params as { slug: string };
 
 let resp: BlogDetailResponse | null = null;
 try {
-  // retries + timeout to reduce transient failures
   resp = await api.get<BlogDetailResponse>(
     `/blogs/${slug}`,
     {},
@@ -47,7 +45,6 @@ try {
   );
 } catch (e) {
   console.error("Error fetching blog detail:", e);
-  // safe fallback shape so UI bindings don't break
   resp = {
     data: null,
     meta: {
@@ -68,7 +65,6 @@ const pageDesc = meta.description || "HandPicked editorial.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 
-// sanitize body_html once for safe rendering
 const safeBodyHtml = post?.content_html
   ? DOMPurify.sanitize(post.content_html)
   : null;
@@ -76,21 +72,29 @@ const safeBodyHtml = post?.content_html
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
-  <main class="container py-10">
+  <main class="container mx-auto px-4 py-10">
     {
       post ? (
         <>
           <Breadcrumbs breadcrumbs={post.breadcrumbs} />
+
+          <!-- Title + meta -->
           <header class="mt-4">
-            <h1 class="text-3xl font-bold tracking-tight">{post.title}</h1>
-            <div class="mt-2 text-sm text-gray-600 flex items-center gap-2">
-              {post.category && <span>{post.category}</span>}
+            <h1 class="text-3xl font-bold tracking-tight text-brand-primary">
+              {post.title}
+            </h1>
+            <div class="mt-2 text-sm text-gray-500 flex flex-wrap items-center gap-2">
+              {post.category && (
+                <span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-xs">
+                  {post.category}
+                </span>
+              )}
               {post.created_at && (
-                <span>- {new Date(post.created_at).toLocaleDateString()}</span>
+                <span>{new Date(post.created_at).toLocaleDateString()}</span>
               )}
               {post.updated_at && (
                 <span>
-                  - Updated {new Date(post.updated_at).toLocaleDateString()}
+                  · Updated {new Date(post.updated_at).toLocaleDateString()}
                 </span>
               )}
             </div>
@@ -112,30 +116,32 @@ const safeBodyHtml = post?.content_html
                   )}
                 </div>
                 <div class="text-sm">
-                  <div class="font-medium">
+                  <div class="font-medium text-gray-900">
                     {post.author.name || "Editorial Team"}
                   </div>
                   {post.author.role && (
-                    <div class="text-gray-600">{post.author.role}</div>
+                    <div class="text-gray-500">{post.author.role}</div>
                   )}
                 </div>
               </div>
             )}
           </header>
 
+          <!-- Hero image -->
           {post.hero_image_url && (
             <figure class="mt-6">
               <img
                 src={post.hero_image_url}
                 alt={post.title}
-                class="w-full h-auto rounded-lg border"
+                class="w-full h-auto rounded-lg border border-gray-200 shadow-sm"
                 loading="lazy"
               />
             </figure>
           )}
 
+          <!-- Body -->
           {safeBodyHtml ? (
-            <article class="prose max-w-none mt-8">
+            <article class="prose prose-gray max-w-none mt-8">
               <div set:html={safeBodyHtml} />
             </article>
           ) : (
@@ -144,7 +150,7 @@ const safeBodyHtml = post?.content_html
         </>
       ) : (
         <section class="py-20 text-center">
-          <h1 class="text-2xl font-bold">Post not found</h1>
+          <h1 class="text-2xl font-bold text-brand-primary">Post not found</h1>
           <p class="text-gray-600 mt-2">
             Please check the URL or browse all posts.
           </p>

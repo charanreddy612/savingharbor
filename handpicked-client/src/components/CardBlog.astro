@@ -13,8 +13,9 @@ const { blog } = Astro.props as { blog: Blog };
 
 <a
   href={`/blog/${blog.slug}`}
-  class="block border rounded-lg overflow-hidden hover:shadow-sm transition"
+  class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:-translate-y-1 transition duration-200"
 >
+  <!-- Hero image -->
   <div class="aspect-[16/9] bg-gray-100">
     {
       blog.hero_image_url ? (
@@ -27,13 +28,23 @@ const { blog } = Astro.props as { blog: Blog };
       ) : null
     }
   </div>
+
+  <!-- Content -->
   <div class="p-4">
-    <h3 class="font-semibold line-clamp-2">{blog.title}</h3>
-    <div class="mt-1 text-xs text-gray-600 flex items-center gap-2">
-      {blog.category && <span>{blog.category}</span>}
+    <h3 class="font-semibold text-brand-primary line-clamp-2">
+      {blog.title}
+    </h3>
+    <div class="mt-2 text-xs text-gray-500 flex flex-wrap items-center gap-2">
+      {
+        blog.category && (
+          <span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary">
+            {blog.category}
+          </span>
+        )
+      }
       {
         blog.created_at && (
-          <span>- {new Date(blog.created_at).toLocaleDateString()}</span>
+          <span>{new Date(blog.created_at).toLocaleDateString()}</span>
         )
       }
     </div>

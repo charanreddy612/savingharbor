@@ -10,3 +10,49 @@
 }
 
 .card-accent-top { border-top: 3px solid var(--brand-accent); }
+
+/* Base buttons */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+
+/* Primary button */
+.btn-primary {
+  @apply bg-brand-primary text-white border border-brand-primary hover:bg-brand-secondary hover:border-brand-secondary;
+}
+
+/* Outline button */
+.btn-outline {
+  @apply border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white;
+}
+
+/* Secondary button (optional, for less emphasis) */
+.btn-secondary {
+  @apply bg-brand-secondary text-white border border-brand-secondary hover:bg-brand-primary hover:border-brand-primary;
+}
+
+/* Disabled state */
+.btn:disabled,
+.btn-disabled {
+  @apply opacity-60 cursor-not-allowed;
+}
+
+/* Swiper pagination bullets */
+.swiper-pagination-bullet {
+  @apply bg-gray-300 opacity-80;
+}
+
+.swiper-pagination-bullet-active {
+  @apply bg-brand-primary opacity-100;
+}
+
+/* Swiper navigation arrows */
+.swiper-button-next,
+.swiper-button-prev {
+  @apply text-brand-primary;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  @apply text-brand-secondary;
+}
