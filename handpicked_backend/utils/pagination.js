@@ -1,17 +1,37 @@
 // utils/pagination.js
+
+/**
+ * Normalize a backend path into a frontend route.
+ * Strips common API prefixes (e.g. /api, /api/v1, /public, /public/v1, /public/vX)
+ * Strips .json suffixes and querystrings, ensures leading slash and no trailing slash.
+ *
+ * Example:
+ *  "/public/v1/coupons?type=all" -> "/coupons"
+ */
 function normalizePathToFrontend(rawPath, fallback = "/") {
   if (!rawPath) return fallback;
   let p = String(rawPath).trim();
 
-  // strip querystring
+  // discard querystring
   p = p.split("?")[0];
 
-  // strip /api or /api/vX prefixes (backend routes)
-  p = p.replace(/^\/api(\/v\d+)?/, "");
+  // Common API prefixes to strip:
+  // /api, /api/v1, /public, /public/v1, /public/v2, /public/v123, /api/v123
+  p = p.replace(/^\/(api|public)(\/v?\d+)?/, "");
 
-  if (!p) return fallback;
+  // Also handle possible prefix like /public/v1/public/... (double) by collapsing repeated prefixes
+  p = p.replace(/^(\/(api|public)(\/v?\d+)?)+/, "");
+
+  // strip file suffixes like .json
+  p = p.replace(/\.json$/i, "");
+
+  // ensure leading slash
   if (!p.startsWith("/")) p = `/${p}`;
-  return p.replace(/\/+$/, "");
+
+  // remove trailing slash except for root "/"
+  if (p !== "/") p = p.replace(/\/+$/, "");
+
+  return p || fallback;
 }
 
 function buildQueryString(paramsObj = {}) {
@@ -26,8 +46,10 @@ function buildQueryString(paramsObj = {}) {
 
 /**
  * buildPrevNext
- * - Returns relative frontend routes (/stores?page=2)
- * - If PUBLIC_SITE_URL is set, returns absolute canonical URLs
+ * - path: may be API path (will be normalized to frontend path)
+ * - page, limit, total, extraParams are used to generate querystring
+ * - returns relative paths by default (e.g. /coupons?page=2)
+ * - if PUBLIC_SITE_URL env var is set, returns absolute canonical links
  */
 export function buildPrevNext({
   path,
@@ -53,16 +75,25 @@ export function buildPrevNext({
   const prevPage = page > 1 ? page - 1 : null;
   const nextPage = page < totalPages ? page + 1 : null;
 
-  const canonicalOrigin = (process.env.PUBLIC_SITE_URL || "").replace(
-    /\/+$/,
-    ""
-  );
-  const makeCanonical = (rel) =>
-    rel ? (canonicalOrigin ? `${canonicalOrigin}${rel}` : rel) : null;
+  // Optional absolute canonical link: PUBLIC_SITE_URL + optional PUBLIC_BASE_PATH
+  const canonicalOrigin = (process.env.PUBLIC_SITE_URL || "")
+    .toString()
+    .trim()
+    .replace(/\/+$/, "");
+  const basePath = (process.env.PUBLIC_BASE_PATH || "")
+    .toString()
+    .trim()
+    .replace(/\/+$/, "");
+
+  const maybeAbsolute = (rel) => {
+    if (!rel) return null;
+    if (canonicalOrigin) return `${canonicalOrigin}${basePath}${rel}`;
+    return rel; // relative by default
+  };
 
   return {
-    prev: prevPage ? makeCanonical(makeRelUrl(prevPage)) : null,
-    next: nextPage ? makeCanonical(makeRelUrl(nextPage)) : null,
+    prev: prevPage ? maybeAbsolute(makeRelUrl(prevPage)) : null,
+    next: nextPage ? maybeAbsolute(makeRelUrl(nextPage)) : null,
     totalPages,
   };
 }
