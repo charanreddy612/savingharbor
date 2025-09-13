@@ -205,15 +205,10 @@ export function buildBreadcrumbs(blog, { origin }) {
 
   return [
     { name: "Home", url: homeUrl },
-    { name: "Stores", url: blogsUrl },
+    { name: "Blogs", url: blogsUrl },
     { name: safeName, url: blogUrl},
   ];
 
-  // return [
-  //   { name: "Home", url: `${origin}/` },
-  //   { name: "Blog", url: `${origin}/blog` },
-  //   { name: blog.title, url: `${origin}/blog/${blog.slug}` },
-  // ];
 }
 
 export async function related(blog, limit = 6) {

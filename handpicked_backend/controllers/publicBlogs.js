@@ -127,12 +127,23 @@ export async function detail(req, res) {
       .trim()
       .toLowerCase();
     if (!slug) return badRequest(res, "Invalid blog slug");
+    // Ensure page/limit are defined before any async blocks
+    const page = valPage(req.query.page);
+    const limit = valLimit(req.query.limit);
     // Opt-in for trusting proxy headers only if you know the provider is trusted
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
     const locale = valLocale(req.query.locale) || deriveLocale(req);
-    const params = { slug, locale, origin, path };
+    const params = {
+      slug,
+      page,
+      limit,
+      origin,
+      path,
+      locale,
+      q: (req.query.q || "").toString().slice(0, 200),
+    };
 
     const result = await withCache(
       req,
@@ -144,11 +155,16 @@ export async function detail(req, res) {
           const canonical = await buildCanonical({
             origin: params.origin,
             path: params.path,
+            path: params.path,
+            page: params.page,
             categorySlug: params.categorySlug,
             sort: params.sort,
           });
 
-          const seo = BlogsRepo.buildSeo(blog, { canonical, locale: params.locale });
+          const seo = BlogsRepo.buildSeo(blog, {
+            canonical,
+            locale: params.locale,
+          });
           const breadcrumbs = BlogsRepo.buildBreadcrumbs(blog, params);
 
           const articleJsonLd = buildArticleJsonLd(blog, params.origin);
