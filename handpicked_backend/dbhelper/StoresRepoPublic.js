@@ -184,11 +184,28 @@ export function buildSeo(store, { origin, path, locale }) {
  * Build breadcrumbs
  */
 export function buildBreadcrumbs(store, { origin }) {
+    const SITE_ORIGIN = origin || "";
+
+  const safeName = store && store.name ? String(store.name) : "Store";
+  const safeSlug =
+    store && store.slug ? encodeURIComponent(String(store.slug)) : "";
+
+  const homeUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/` : "/";
+  const storesUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/stores` : "/stores";
+  const storeUrl = SITE_ORIGIN
+    ? `${SITE_ORIGIN}/stores/${safeSlug}`
+    : `/stores/${safeSlug}`;
+
   return [
-    { name: "Home", url: `${origin}/` },
-    { name: "Stores", url: `${origin}/stores` },
-    { name: store.name, url: `${origin}/stores/${store.slug}` },
+    { name: "Home", url: homeUrl },
+    { name: "Stores", url: storesUrl },
+    { name: safeName, url: storeUrl },
   ];
+  // return [
+  //   { name: "Home", url: `${origin}/` },
+  //   { name: "Stores", url: `${origin}/stores` },
+  //   { name: store.name, url: `${origin}/stores/${store.slug}` },
+  // ];
 }
 
 /**

@@ -11,20 +11,7 @@ import {
 } from "../utils/validation.js";
 import { badRequest } from "../utils/errors.js";
 import { buildArticleJsonLd } from "../utils/jsonld.js";
-
-function getOrigin(req) {
-  return (
-    (req.headers["x-forwarded-proto"]
-      ? String(req.headers["x-forwarded-proto"])
-      : req.protocol) +
-    "://" +
-    req.get("host")
-  );
-}
-
-function getPath(req) {
-  return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
-}
+import { getOrigin, getPath } from "../utils/request-helper.js";
 
 // Build prev/next/total_pages navigation URLs
 function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
@@ -64,6 +51,10 @@ export async function list(req, res) {
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
 
+    // Opt-in for trusting proxy headers only if you know the provider is trusted
+    const origin = getOrigin(req, { trustProxy: false });
+    const path = getPath(req);
+
     const params = {
       q: q.trim(),
       categoryId,
@@ -71,8 +62,8 @@ export async function list(req, res) {
       locale,
       page,
       limit,
-      origin: getOrigin(req),
-      path: getPath(req),
+      origin,
+      path,
     };
 
     const result = await withCache(
@@ -127,9 +118,12 @@ export async function detail(req, res) {
       .trim()
       .toLowerCase();
     if (!slug) return badRequest(res, "Invalid blog slug");
+    // Opt-in for trusting proxy headers only if you know the provider is trusted
+    const origin = getOrigin(req, { trustProxy: false });
+    const path = getPath(req);
 
     const locale = valLocale(req.query.locale) || deriveLocale(req);
-    const params = { slug, locale, origin: getOrigin(req), path: getPath(req) };
+    const params = { slug, locale, origin, path };
 
     const result = await withCache(
       req,

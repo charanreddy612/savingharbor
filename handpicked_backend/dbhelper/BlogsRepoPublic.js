@@ -189,11 +189,29 @@ export function buildSeo(blog, { origin, path, locale }) {
 }
 
 export function buildBreadcrumbs(blog, { origin }) {
+  const SITE_ORIGIN = origin || "";
+
+  const safeName = blog && blog.title ? String(blog.title) : "Blog";
+  const safeSlug =
+    blog && blog.slug ? encodeURIComponent(String(blog.slug)) : "";
+
+  const homeUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/` : "/";
+  const blogsUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/blogs` : "/blogs";
+  const blogUrl = SITE_ORIGIN
+    ? `${SITE_ORIGIN}/blogs/${safeSlug}`
+    : `/blogs/${safeSlug}`;
+
   return [
-    { name: "Home", url: `${origin}/` },
-    { name: "Blog", url: `${origin}/blog` },
-    { name: blog.title, url: `${origin}/blog/${blog.slug}` },
+    { name: "Home", url: homeUrl },
+    { name: "Stores", url: blogsUrl },
+    { name: safeName, url: blogUrl},
   ];
+
+  // return [
+  //   { name: "Home", url: `${origin}/` },
+  //   { name: "Blog", url: `${origin}/blog` },
+  //   { name: blog.title, url: `${origin}/blog/${blog.slug}` },
+  // ];
 }
 
 export async function related(blog, limit = 6) {

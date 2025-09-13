@@ -16,26 +16,8 @@ import { STORE_SORTS, STORE_COUPON_TYPES } from "../constants/publicEnums.js";
 import * as TestimonialsRepo from "../dbhelper/TestimonialsRepo.js";
 import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
 import DOMPurify from "isomorphic-dompurify";
+import { getOrigin, getPath } from "../utils/request-helper.js";
 
-/** Helpers */
-function getOrigin(req) {
-  try {
-    return (
-      (req.headers["x-forwarded-proto"] || req.protocol) +
-      "://" +
-      req.get("host")
-    );
-  } catch {
-    return "";
-  }
-}
-function getPath(req) {
-  try {
-    return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
-  } catch {
-    return "/";
-  }
-}
 function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
   const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
   const makeUrl = (p) => {
@@ -68,6 +50,10 @@ export async function list(req, res) {
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const categorySlug = String(req.query.category || "").trim();
 
+    // Opt-in for trusting proxy headers only if you know the provider is trusted
+    const origin = getOrigin(req, { trustProxy: false });
+    const path = getPath(req);
+
     const params = {
       q: q.trim(),
       categorySlug,
@@ -75,8 +61,8 @@ export async function list(req, res) {
       locale,
       page,
       limit,
-      origin: getOrigin(req),
-      path: getPath(req),
+      origin,
+      path,
     };
 
     const result = await withCache(
@@ -132,6 +118,8 @@ export async function detail(req, res) {
       .toLowerCase();
     if (!slug) return badRequest(res, "Invalid store slug");
 
+    const origin = getOrigin(req, { trustProxy: false });
+    const path = getPath(req);
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const type = valEnum(req.query.type, STORE_COUPON_TYPES, "all");
@@ -149,8 +137,8 @@ export async function detail(req, res) {
       locale,
       page,
       limit,
-      origin: getOrigin(req),
-      path: getPath(req),
+      origin,
+      path,
     };
 
     const result = await withCache(
