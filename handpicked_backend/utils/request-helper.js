@@ -20,7 +20,7 @@ function normalizeOrigin(raw) {
  * Note: set PUBLIC_SITE_URL on Render to your frontend's canonical URL:
  *   PUBLIC_SITE_URL=https://handpickedclient.vercel.app
  */
-function getOrigin(req, { trustProxy = false } = {}) {
+export async function getOrigin(req, { trustProxy = false } = {}) {
   // 1) canonical override (recommended)
   if (
     typeof process !== "undefined" &&
@@ -73,7 +73,7 @@ function getOrigin(req, { trustProxy = false } = {}) {
  * - Uses originalUrl if available (removes querystring)
  * - Falls back to req.path or req.url
  */
-function getPath(req) {
+export async function getPath(req) {
   try {
     if (!req) return "";
     const original = req.originalUrl || req.url || req.path || "";
@@ -82,5 +82,3 @@ function getPath(req) {
     return "";
   }
 }
-
-module.exports = { getOrigin, getPath};
