@@ -144,9 +144,6 @@ export async function detail(req, res) {
           const canonical = await buildCanonical({
             origin: params.origin,
             path: params.path,
-            page,
-            limit,
-            q: params.q,
             categorySlug: params.categorySlug,
             sort: params.sort,
           });

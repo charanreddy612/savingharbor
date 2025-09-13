@@ -198,10 +198,10 @@ export function buildBreadcrumbs(blog, { origin }) {
     blog && blog.slug ? encodeURIComponent(String(blog.slug)) : "";
 
   const homeUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/` : "/";
-  const blogsUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/blogs` : "/blogs";
+  const blogsUrl = SITE_ORIGIN ? `${SITE_ORIGIN}/blog` : "/blog";
   const blogUrl = SITE_ORIGIN
-    ? `${SITE_ORIGIN}/blogs/${safeSlug}`
-    : `/blogs/${safeSlug}`;
+    ? `${SITE_ORIGIN}/blog/${safeSlug}`
+    : `/blog/${safeSlug}`;
 
   return [
     { name: "Home", url: homeUrl },
