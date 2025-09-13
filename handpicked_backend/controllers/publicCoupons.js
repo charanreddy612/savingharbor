@@ -16,50 +16,8 @@ import {
   COUPON_STATUS,
   COUPON_TYPES,
 } from "../constants/publicEnums.js";
-
-function getOrigin(req) {
-  try {
-    return (
-      (req.headers["x-forwarded-proto"]
-        ? String(req.headers["x-forwarded-proto"])
-        : req.protocol) +
-      "://" +
-      req.get("host")
-    );
-  } catch (err) {
-    console.error("Failed to get origin:", err);
-    return "";
-  }
-}
-
-function getPath(req) {
-  try {
-    return req.originalUrl ? req.originalUrl.split("?")[0] : req.path;
-  } catch (err) {
-    console.error("Failed to get path:", err);
-    return "/";
-  }
-}
-
-function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
-  const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
-  const makeUrl = (p) => {
-    try {
-      const url = new URL(`${origin}${path}`);
-      Object.entries({ ...extraParams, page: p, limit }).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && v !== "")
-          url.searchParams.set(k, String(v));
-      });
-      return url.toString();
-    } catch (err) {
-      console.error("Failed to build URL for pagination:", err);
-      return "";
-    }
-  };
-  const prev = page > 1 ? makeUrl(page - 1) : null;
-  const next = page < totalPages ? makeUrl(page + 1) : null;
-  return { prev, next, totalPages };
-}
+import { getOrigin, getPath } from "../utils/request-helper.js";
+import { buildPrevNext } from "../utils/pagination.js";
 
 export async function list(req, res) {
   try {
@@ -73,6 +31,9 @@ export async function list(req, res) {
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const categorySlug = String(req.query.category || "").slice(0, 100);
     const storeSlug = String(req.query.store || "").slice(0, 100);
+    // Resolve origin/path safely (getOrigin/getPath might be sync or async)
+    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+    const path = await Promise.resolve(getPath(req));
 
     const params = {
       q: q.trim(),
@@ -84,8 +45,8 @@ export async function list(req, res) {
       locale,
       page,
       limit,
-      origin: getOrigin(req),
-      path: getPath(req),
+      origin,
+      path,
     };
 
     const result = await withCache(

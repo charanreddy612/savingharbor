@@ -17,27 +17,7 @@ import * as TestimonialsRepo from "../dbhelper/TestimonialsRepo.js";
 import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
 import DOMPurify from "isomorphic-dompurify";
 import { getOrigin, getPath } from "../utils/request-helper.js";
-
-function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
-  const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
-  const makeUrl = (p) => {
-    try {
-      const url = new URL(`${origin}${path}`);
-      Object.entries({ ...extraParams, page: p, limit }).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && v !== "")
-          url.searchParams.set(k, String(v));
-      });
-      return url.toString();
-    } catch {
-      return null;
-    }
-  };
-  return {
-    prev: page > 1 ? makeUrl(page - 1) : null,
-    next: page < totalPages ? makeUrl(page + 1) : null,
-    totalPages,
-  };
-}
+import { buildPrevNext } from "../utils/pagination.js";
 
 // publicStores.js
 export async function list(req, res) {
@@ -355,7 +335,10 @@ export async function detail(req, res) {
         });
 
         // Build SEO, breadcrumbs, jsonld (existing helpers)
-        const seo = StoresRepo.buildSeo(store, { canonical, locale: params.locale });
+        const seo = StoresRepo.buildSeo(store, {
+          canonical,
+          locale: params.locale,
+        });
         const breadcrumbs = StoresRepo.buildBreadcrumbs(store, params);
         const jsonld = {
           organization: buildStoreJsonLd(store, params.origin),

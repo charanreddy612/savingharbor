@@ -12,29 +12,7 @@ import {
 import { badRequest } from "../utils/errors.js";
 import { buildArticleJsonLd } from "../utils/jsonld.js";
 import { getOrigin, getPath } from "../utils/request-helper.js";
-
-// Build prev/next/total_pages navigation URLs
-function buildPrevNext({ origin, path, page, limit, total, extraParams = {} }) {
-  const totalPages = Math.max(Math.ceil((total || 0) / (limit || 1)), 1);
-  const makeUrl = (p) => {
-    try {
-      const url = new URL(`${origin}${path}`);
-      Object.entries({ ...extraParams, page: p, limit }).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && v !== "")
-          url.searchParams.set(k, String(v));
-      });
-      return url.toString();
-    } catch (err) {
-      console.error("Failed to build URL:", err);
-      return null;
-    }
-  };
-  return {
-    prev: page > 1 ? makeUrl(page - 1) : null,
-    next: page < totalPages ? makeUrl(page + 1) : null,
-    totalPages,
-  };
-}
+import { buildPrevNext } from "../utils/pagination.js";
 
 export async function list(req, res) {
   try {
