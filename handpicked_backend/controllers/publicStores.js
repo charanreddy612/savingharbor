@@ -18,7 +18,7 @@ import * as ActivityRepo from "../dbhelper/ActivityRepo.js";
 import DOMPurify from "isomorphic-dompurify";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
-import { makeListCacheKey } from "../utils/cache-keys.js";
+import { makeListCacheKey } from "../utils/cacheKey.js";
 
 // publicStores.js
 export async function list(req, res) {

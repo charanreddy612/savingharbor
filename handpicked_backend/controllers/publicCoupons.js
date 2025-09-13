@@ -18,7 +18,7 @@ import {
 } from "../constants/publicEnums.js";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
-import { makeListCacheKey } from "../utils/cache-keys.js";
+import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
