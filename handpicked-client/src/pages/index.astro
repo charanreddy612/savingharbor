@@ -188,14 +188,16 @@ const cmeta = cresp?.meta || {};
     </section>
 
     <!-- Newsletter / CTA -->
-    <section class="mt-16 card p-6 text-center">
+    <section
+      class="mt-16 bg-primary text-white rounded-xl p-6 text-center shadow-md"
+    >
       <h2 class="text-xl font-semibold">
         Subscribe and stay ahead — no spam, ever.
       </h2>
-      <p class="mt-2 text-gray-600">Get the best deals delivered weekly.</p>
+      <p class="mt-2 opacity-90">Get the best deals delivered weekly.</p>
       <LandingSubscribeIsland client:load />
     </section>
-  </main>
 
+  </main>
   <Footer />
 </Base>

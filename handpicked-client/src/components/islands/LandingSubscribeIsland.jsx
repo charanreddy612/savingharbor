@@ -39,7 +39,7 @@ export default function LandingSubscribeIsland() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           required
-          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-indigo-200"
+          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-2 ring-primary focus:border-primary"
         />
         <button type="submit" disabled={loading} className="btn btn-primary">
           {loading ? "Please wait…" : "Subscribe"}
