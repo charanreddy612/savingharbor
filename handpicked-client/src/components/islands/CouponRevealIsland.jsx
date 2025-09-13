@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 /**
- * CouponRevealIsland.jsx (PROD-READY)
+ * CouponRevealIsland.jsx (styled - non-breaking)
  */
 
 function Toast({ message, onClose }) {
@@ -14,19 +14,18 @@ function Toast({ message, onClose }) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-3 py-2 rounded shadow"
+      className="fixed bottom-6 right-6 bg-brand-dark text-white text-sm px-3 py-2 rounded shadow"
     >
       {message}
     </div>
   );
 }
 
-// helper with retries
 async function fetchWithRetry(url, options, retries = 2) {
   for (let i = 0; i <= retries; i++) {
     try {
       const resp = await fetch(url, options);
-      if (resp.ok || resp.status === 429) return resp; // stop on success or rate limit
+      if (resp.ok || resp.status === 429) return resp;
     } catch (err) {
       if (i === retries) throw err;
     }
@@ -38,7 +37,6 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
   const c = coupon || {};
   const sSlug = storeSlug || null;
 
-  // states
   const [loading, setLoading] = useState(false);
   const [revealedCode, setRevealedCode] = useState(null);
   const [disabled, setDisabled] = useState(false);
@@ -76,7 +74,6 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
       a.click();
       a.remove();
     } catch (e) {
-      console.warn("openInNewTab failed:", e);
       try {
         window.open(href, "_blank", "noopener,noreferrer");
       } catch (_) {}
@@ -117,14 +114,11 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
       let data = null;
       try {
         data = await resp.json();
-      } catch (_) {
-        console.warn("Reveal: non-JSON response");
-      }
+      } catch (_) {}
 
       const serverCode = data?.code ?? null;
       const serverRedirect = data?.redirect_url ?? null;
 
-      // always guarantee a code or fallback message
       const codeToReveal =
         serverCode ?? (c.code ? String(c.code).trim() : "NO CODE AVAILABLE");
 
@@ -135,13 +129,11 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
           pushToast("Code copied to clipboard");
         } catch (e) {
           pushToast("Code revealed — copy manually");
-          console.warn("Clipboard write failed:", e);
         }
       }
 
       const redirectTo = serverRedirect || fallbackRedirect();
       if (redirectTo) {
-        // async fire-and-forget to feel instant
         setTimeout(() => openInNewTab(redirectTo), 100);
       } else if (!codeToReveal) {
         pushToast("No redirect available for this offer");
@@ -149,7 +141,6 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
       setDisabled(true);
     } catch (err) {
-      console.error("Reveal error:", err);
       setError("An error occurred. Please try again.");
       pushToast("An error occurred. Try again.");
     } finally {
@@ -163,8 +154,7 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition p-4 flex flex-col gap-3">
-        {/* Store info */}
+      <div className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
             {c.merchant?.logo_url ? (
@@ -180,8 +170,9 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
               <div className="text-[10px] text-gray-400">Logo</div>
             )}
           </div>
-          <div className="flex flex-col">
-            <h3 className="font-semibold text-gray-900 text-sm">
+
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm text-brand-primary truncate">
               {c.merchant_name}
             </h3>
             <p className="text-xs text-gray-500 truncate">
@@ -190,20 +181,19 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
           </div>
         </div>
 
-        {/* CTA area */}
-        <div className="mt-2">
+        <div className="mt-1 flex-1">
           {revealedCode ? (
             <div
-              className="w-full border border-dashed border-blue-400 rounded-md px-3 py-2 text-sm text-center font-mono text-blue-700 bg-blue-50"
+              className="w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto"
               role="status"
               aria-live="polite"
             >
-              {revealedCode}
+              <span className="inline-block min-w-full">{revealedCode}</span>
             </div>
           ) : (
             <button
               type="button"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={handleReveal}
               aria-label={isCoupon ? "Reveal coupon code" : "Activate deal"}
               disabled={disabled || loading}
@@ -215,26 +205,27 @@ export default function CouponRevealIsland({ coupon, storeSlug }) {
                 : activateLabel}
             </button>
           )}
+        </div>
 
-          {c.ends_at && (
-            <p className="text-xs text-gray-500 text-right mt-2">
-              {new Date(c.ends_at).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          )}
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-xs text-gray-500">
+            {c.ends_at
+              ? new Date(c.ends_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : null}
+          </div>
 
           {error && (
-            <p className="text-xs text-red-600 mt-2" role="alert">
+            <div className="text-xs text-red-600" role="alert">
               {error}
-            </p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Toasts */}
       {toasts.map((t) => (
         <Toast
           key={t.id}

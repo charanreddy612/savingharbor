@@ -10,12 +10,11 @@ type Store = {
 
 const { store } = Astro.props as { store: Store };
 ---
-
 <a
   href={`/stores/${store.slug}`}
-  class="block bg-white border rounded-lg p-6 hover:shadow-md transition-shadow duration-200 text-center"
+  class="block bg-white border border-gray-200 rounded-lg p-6 hover:shadow-store-card hover:-translate-y-1 transition duration-200 text-center"
 >
-  <div class="w-20 h-20 mx-auto flex items-center justify-center mb-3">
+  <div class="w-20 h-20 mx-auto flex items-center justify-center mb-3 rounded-md bg-brand-dark/5">
     {store.logo_url ? (
       <img
         src={store.logo_url}
@@ -24,15 +23,15 @@ const { store } = Astro.props as { store: Store };
         class="object-contain w-full h-full"
       />
     ) : (
-      <div class="text-[10px] text-gray-400">Logo</div>
+      <div class="text-xs text-gray-400">Logo</div>
     )}
   </div>
 
-  <h3 class="font-semibold text-gray-900 truncate">{store.name}</h3>
+  <h3 class="font-semibold text-brand-primary truncate">{store.name}</h3>
 
   {store.stats?.active_coupons !== undefined && (
-    <p class="text-xs text-green-600 mt-1">
-      {store.stats.active_coupons} 
+    <p class="text-xs text-brand-secondary mt-1">
+      {store.stats.active_coupons}{" "}
       {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
     </p>
   )}
