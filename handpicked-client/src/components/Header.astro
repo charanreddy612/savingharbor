@@ -8,24 +8,39 @@ const nav = [
 ];
 ---
 
-<header class="site-header w-full">
+<header id="top" class="w-full border-b border-gray-200 bg-white">
   <div class="container py-4 flex items-center justify-between">
+    <!-- Logo -->
     <a href="/" class="flex items-center gap-3">
       <img src="/logo.png" alt="HandPicked" width="36" height="36" />
-      <span class="font-semibold text-lg tracking-tight">HandPicked</span>
+      <span class="font-semibold text-lg tracking-tight text-brand-primary">
+        Saving Harbor
+      </span>
     </a>
+
+    <!-- Desktop nav -->
     <nav class="hidden md:flex items-center gap-6">
       <HeaderSearchIsland client:load />
       {
         nav.map((n) => (
-          <a href={n.href} class="text-sm text-gray-700 hover:text-black">
+          <a
+            href={n.href}
+            class="text-sm text-brand-secondary hover:text-brand-primary transition"
+          >
             {n.label}
           </a>
         ))
       }
     </nav>
+
+    <!-- Mobile -->
     <div class="md:hidden">
-      <a href="/stores" class="btn btn-outline text-sm">Browse</a>
+      <a
+        href="/stores"
+        class="px-3 py-1.5 text-sm rounded-md border border-brand-accent text-brand-secondary hover:bg-brand-secondary/5"
+      >
+        Browse
+      </a>
     </div>
   </div>
 </header>

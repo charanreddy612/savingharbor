@@ -1,26 +1,90 @@
-<footer class="site-footer w-full">
-  <div class="container py-10 grid gap-8 md:grid-cols-3">
+<footer class="w-full bg-brand-dark text-white">
+  <div class="container py-12 grid gap-10 md:grid-cols-4">
+    <!-- Brand -->
     <div>
-      <h3 class="font-semibold mb-2">HandPicked</h3>
-      <p class="text-sm text-gray-600">Because your trust means everything.</p>
-    </div>
-    <div>
-      <h4 class="font-medium mb-2">Company</h4>
-      <ul class="space-y-2 text-sm">
-        <li><a href="/about" class="hover:underline">About</a></li>
-        <li><a href="/contact" class="hover:underline">Contact</a></li>
-        <li><a href="/privacy" class="hover:underline">Privacy</a></li>
-        <li><a href="/terms" class="hover:underline">Terms</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4 class="font-medium mb-2">Stay Updated</h4>
-      <p class="text-sm text-gray-600">
-        Subscribe and stay ahead — no spam, ever.
+      <a href="/" class="flex items-center gap-3 mb-3">
+        <img src="/logo.png" alt="Saving Harbor" width="36" height="36" />
+        <span class="font-semibold text-lg tracking-tight text-brand-primary">
+          Saving Harbor
+        </span>
+      </a>
+      <p class="text-sm text-gray-400">
+        Verified coupons, trusted stores, and savings you can count on.
       </p>
     </div>
+
+    <!-- Company -->
+    <div>
+      <h4 class="font-semibold mb-3 text-brand-secondary">Company</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/about" class="hover:text-brand-primary">About</a></li>
+        <li><a href="/contact" class="hover:text-brand-primary">Contact</a></li>
+        <li><a href="/privacy" class="hover:text-brand-primary">Privacy</a></li>
+        <li><a href="/terms" class="hover:text-brand-primary">Terms</a></li>
+      </ul>
+    </div>
+
+    <!-- Resources -->
+    <div>
+      <h4 class="font-semibold mb-3 text-brand-secondary">Resources</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/stores" class="hover:text-brand-primary">Stores</a></li>
+        <li><a href="/coupons" class="hover:text-brand-primary">Coupons</a></li>
+        <li><a href="/blog" class="hover:text-brand-primary">Blog</a></li>
+      </ul>
+    </div>
+
+    <!-- Social -->
+    <div>
+      <h4 class="font-semibold mb-3 text-brand-secondary">Connect</h4>
+      <div class="flex gap-4 text-gray-400">
+        <a href="#" aria-label="Twitter" class="hover:text-brand-primary">
+          <!-- Twitter SVG -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.18..."></path>
+          </svg>
+        </a>
+        <a href="#" aria-label="LinkedIn" class="hover:text-brand-primary">
+          <!-- LinkedIn SVG -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0..."></path>
+          </svg>
+        </a>
+        <a href="#" aria-label="YouTube" class="hover:text-brand-primary">
+          <!-- YouTube SVG -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M19.6 3.2H4.4A4.4 4.4 0 000 7.6v8.8..."></path>
+          </svg>
+        </a>
+      </div>
+    </div>
   </div>
-  <div class="copyright text-center text-xs text-gray-500 py-4">
-    © {new Date().getFullYear()} HandPicked
+
+  <!-- Copyright + Back to top -->
+  <div
+    class="border-t border-white/10 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 container"
+  >
+    <p>© {new Date().getFullYear()} Saving Harbor. All rights reserved.</p>
+    <a
+      href="#top"
+      class="mt-2 sm:mt-0 inline-flex items-center gap-1 text-brand-secondary hover:text-brand-primary transition"
+    >
+      ↑ Back to top
+    </a>
   </div>
 </footer>

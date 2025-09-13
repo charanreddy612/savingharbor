@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 
-/**
- * HeaderSearchIsland.jsx
- */
-
 const DEFAULT_API_BASE = "https://handpickedclient.onrender.com/public/v1";
 const DEBOUNCE_MS = 250;
 const MAX_RESULTS = 6;
@@ -18,7 +14,7 @@ function highlight(name = "", q = "") {
   return (
     <>
       {name.slice(0, idx)}
-      <span className="bg-indigo-100 rounded px-0.5">
+      <span className="bg-brand-accent/20 text-brand-accent rounded px-0.5">
         {name.slice(idx, idx + q.length)}
       </span>
       {name.slice(idx + q.length)}
@@ -44,7 +40,6 @@ export default function HeaderSearchIsland() {
     DEFAULT_API_BASE;
   const base = rawBase.replace(/\/+$/, "");
 
-  // click outside closes
   useEffect(() => {
     const onDoc = (e) => {
       if (!containerRef.current) return;
@@ -57,7 +52,6 @@ export default function HeaderSearchIsland() {
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
-  // cleanup on unmount: clear debounce and abort
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -65,12 +59,9 @@ export default function HeaderSearchIsland() {
     };
   }, []);
 
-  // Debounced search
   useEffect(() => {
-    // clear previous debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // if query too short, clear results and abort inflight fetch
     if (!q || q.trim().length < MIN_QUERY_LEN) {
       if (abortRef.current) {
         try {
@@ -86,7 +77,6 @@ export default function HeaderSearchIsland() {
     }
 
     debounceRef.current = setTimeout(async () => {
-      // abort prior
       if (abortRef.current) {
         try {
           abortRef.current.abort();
@@ -98,7 +88,6 @@ export default function HeaderSearchIsland() {
       setLoading(true);
       setErrMsg(null);
 
-      // build endpoint with URLSearchParams
       const params = new URLSearchParams({
         q: q.trim(),
         limit: String(MAX_RESULTS),
@@ -108,7 +97,7 @@ export default function HeaderSearchIsland() {
       try {
         const res = await fetch(endpoint, { method: "GET", signal });
         if (res.status === 404) {
-          setErrMsg("Search endpoint not found (404). Check server route.");
+          setErrMsg("Search endpoint not found (404).");
           setItems([]);
           setOpen(true);
           setActive(-1);
@@ -126,7 +115,6 @@ export default function HeaderSearchIsland() {
         const json = await res.json().catch(() => null);
         const list = (json?.data?.stores || []).slice(0, MAX_RESULTS);
 
-        // normalize entries defensively
         const normalized = list.map((s) => ({
           id: s.id,
           slug: s.slug,
@@ -142,7 +130,6 @@ export default function HeaderSearchIsland() {
         setActive(-1);
       } catch (err) {
         if (err && err.name === "AbortError") return;
-        console.error("Search fetch error:", err);
         setErrMsg("Network error while searching");
         setItems([]);
         setOpen(true);
@@ -157,7 +144,6 @@ export default function HeaderSearchIsland() {
     };
   }, [q, base]);
 
-  // keyboard
   const onKeyDown = (e) => {
     if (!open) {
       if (e.key === "ArrowDown" && items.length > 0) {
@@ -183,12 +169,11 @@ export default function HeaderSearchIsland() {
   };
 
   const onClickItem = (s) => {
-    // onMouseDown used during render to avoid blur; here normal navigation
     if (s && s.slug) window.location.href = `/stores/${s.slug}`;
   };
 
   return (
-    <div ref={containerRef} className="relative" style={{ minWidth: "16rem" }}>
+    <div ref={containerRef} className="relative min-w-[16rem]">
       <label htmlFor="header-search" className="sr-only">
         Search stores
       </label>
@@ -206,13 +191,13 @@ export default function HeaderSearchIsland() {
           aria-controls="header-search-listbox"
           aria-activedescendant={active >= 0 ? `hs-item-${active}` : undefined}
           role="combobox"
-          className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 w-64"
+          className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary w-64"
         />
 
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {loading ? (
             <svg
-              className="w-4 h-4 animate-spin text-gray-500"
+              className="w-4 h-4 animate-spin text-brand-accent"
               viewBox="0 0 24 24"
             >
               <circle
@@ -260,8 +245,10 @@ export default function HeaderSearchIsland() {
                 role="option"
                 aria-selected={i === active}
                 onMouseDown={() => onClickItem(s)}
-                className={`flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-50 ${
-                  i === active ? "bg-gray-100" : ""
+                className={`flex items-center gap-3 p-2 cursor-pointer ${
+                  i === active
+                    ? "bg-brand-primary/10 text-brand-primary"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
@@ -293,7 +280,7 @@ export default function HeaderSearchIsland() {
           <li className="p-2 text-sm border-t">
             <a
               href={`/stores?q=${encodeURIComponent(q)}`}
-              className="text-indigo-600 hover:underline"
+              className="text-brand-secondary hover:underline"
             >
               See all results
             </a>
