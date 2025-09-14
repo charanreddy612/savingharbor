@@ -14,9 +14,12 @@ export function makeListCacheKey(prefix, params = {}) {
   ];
   const parts = [prefix];
   for (const k of ordered) {
-    if (k in params)
-      parts.push(`${k}=${encodeURIComponent(String(params[k] ?? ""))}`);
-    else parts.push(`${k}=`);
+    if (k in params) {
+      let v = params[k];
+      if (k === "page" || k === "limit")
+        v = String(Number.parseInt(v, 10) || 0);
+      parts.push(`${k}=${encodeURIComponent(String(v ?? ""))}`);
+    } else parts.push(`${k}=`);
   }
   return parts.join("|"); // e.g. stores|page=2|limit=20|q=foo...
 }

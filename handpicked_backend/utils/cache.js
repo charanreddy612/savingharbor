@@ -48,9 +48,11 @@ export async function withCache(req, compute, options = {}) {
   }
 
   // If controllers passed a deterministic keyExtra (recommended), prefer it.
-  const key = keyExtra
-    ? `${buildCacheKey(req)}:${keyExtra}`
-    : buildCacheKey(req);
+  // const key = keyExtra
+  //   ? `${buildCacheKey(req)}:${keyExtra}`
+  //   : buildCacheKey(req);
+
+  const key = keyExtra ? String(keyExtra) : buildCacheKey(req);
 
   // DEBUG: log key and query to detect collisions (remove in prod)
   try {
