@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    { "source": "/coupons", "destination": "/public/v1/coupons" },
+    { "source": "/coupons/:path*", "destination": "/public/v1/coupons/:path*" },
+
+    { "source": "/stores", "destination": "/public/v1/stores" },
+    { "source": "/stores/:path*", "destination": "/public/v1/stores/:path*" },
+
+    { "source": "/blogs", "destination": "/public/v1/blogs" },
+    { "source": "/blogs/:path*", "destination": "/public/v1/blogs/:path*" }
+  ]
+}
