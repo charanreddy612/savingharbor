@@ -6,7 +6,10 @@ import Footer from "../../components/Footer.astro";
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
-const clientScriptUrl = new URL("../../client/cursor-pagination.js", import.meta.url).href;
+const clientScriptUrl = new URL(
+  "../../client/cursor-pagination.js",
+  import.meta.url
+).href;
 type merchant = {
   slug: string | null;
   logo_url: String | null;
@@ -71,6 +74,7 @@ const pageDesc =
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 ---
+
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
   <main class="container mx-auto px-4 py-10">
@@ -106,7 +110,9 @@ const jsonld = meta.jsonld;
       />
     </div>
   </main>
-
   <Footer />
-  <script type="module" src={clientScriptUrl}></script>
+  <!-- load client pagination module (let Vite/Astro bundle & resolve it) -->
+  <script type="module">
+    import("../../client/cursor-pagination.js");
+  </script>
 </Base>
