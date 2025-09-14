@@ -51,6 +51,9 @@ export async function list(req, res) {
       limitRaw = sp2.get("limit");
     }
 
+    if (pageRaw === null) pageRaw = undefined;
+    if (limitRaw === null) limitRaw = undefined;
+
     // normalize and validate
     const page = valPage(pageRaw);
     const limit = valLimit(limitRaw);
