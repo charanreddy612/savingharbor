@@ -6,10 +6,7 @@ import Footer from "../../components/Footer.astro";
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
-const clientScriptUrl = new URL(
-  "../../client/cursor-pagination.js",
-  import.meta.url
-).href;
+
 type merchant = {
   slug: string | null;
   logo_url: String | null;
@@ -113,6 +110,6 @@ const jsonld = meta.jsonld;
   <Footer />
   <!-- load client pagination module (let Vite/Astro bundle & resolve it) -->
   <script type="module">
-    import("../../client/cursor-pagination.js");
+    import("/js/cursor-pagination.js");
   </script>
 </Base>

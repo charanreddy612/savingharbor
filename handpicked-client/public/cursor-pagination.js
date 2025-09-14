@@ -1,7 +1,7 @@
 // src/client/cursor-pagination.js
 import React from "react";
 import { createRoot } from "react-dom/client";
-import CouponReveal from "../components/CouponReveal.jsx";
+import CouponReveal from "../src/components/couponReveal";
 
 /**
  * Client cursor pagination (bundled by Astro/Vite).
