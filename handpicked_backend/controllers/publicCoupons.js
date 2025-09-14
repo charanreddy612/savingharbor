@@ -138,7 +138,7 @@ export async function list(req, res) {
           };
         }
       },
-      { ttlSeconds: 60, keyExtra: cacheKey }
+      { ttlSeconds: 0, keyExtra: cacheKey }
     );
 
     res.setHeader(
