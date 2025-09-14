@@ -22,8 +22,24 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
-    const page = valPage(req.query.page);
-    const limit = valLimit(req.query.limit);
+  console.info("[publicCoupons.list] req.method=", req.method);
+  console.info("[publicCoupons.list] req.originalUrl=", req.originalUrl);
+  console.info("[publicCoupons.list] req.url=", req.url);
+  console.info("[publicCoupons.list] req.query=", req.query);
+    const rawPage =
+      req.query && req.query.page
+        ? req.query.page
+        : typeof req.originalUrl === "string"
+        ? new URL(req.originalUrl, "http://dummy").searchParams.get("page")
+        : null;
+    const page = valPage(rawPage);
+    const rawLimit =
+      req.query && req.query.page
+        ? req.query.limit
+        : typeof req.originalUrl === "string"
+        ? new URL(req.originalUrl, "http://dummy").searchParams.get("limit")
+        : null;
+    const limit = valLimit(rawLimit);
     const type = valEnum(req.query.type, COUPON_TYPES, "all");
     const status = valEnum(req.query.status, COUPON_STATUS, "active");
     const sort = valEnum(req.query.sort, COUPON_SORTS, "latest");
@@ -123,6 +139,10 @@ export async function list(req, res) {
       { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
+    res.setHeader(
+      "Cache-Control",
+      "no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0"
+    );
     return ok(res, result);
   } catch (e) {
     console.error("Error in coupons.list:", e);
