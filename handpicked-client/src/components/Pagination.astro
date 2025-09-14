@@ -11,9 +11,12 @@ const {
   next?: string | null;
   total_pages?: number;
 };
+
+// Read the public env var at build-time and expose to the template
+const BACKEND = (import.meta.env.PUBLIC_API_BASE_URL || "").toString().trim().replace(/\/+$/, "");
 ---
 
-<div class="flex items-center justify-between mt-6">
+<div class="flex items-center justify-between mt-6" data-backend={BACKEND}>
   <div class="text-sm text-gray-500">
     {
       typeof total_pages === "number" && total_pages > 0
@@ -52,3 +55,27 @@ const {
     }
   </div>
 </div>
+
+<script is:inline>
+  (function () {
+    if (typeof window === 'undefined') return;
+    try {
+      const container = document.querySelector('[data-backend]');
+      if (!container) return;
+      const backend = container.getAttribute('data-backend') || '';
+      if (!backend) return;
+      // rewrite any internal /coupons links inside this container to backend origin
+      const anchors = container.querySelectorAll('a[href*="/coupons"]');
+      anchors.forEach(a => {
+        try {
+          const u = new URL(a.href, location.origin);
+          // only rewrite links that are frontend-hosted (avoid rewriting already-correct backend links)
+          if (u.origin === location.origin) {
+            const newHref = backend.replace(/\/+$/, '') + u.pathname + u.search;
+            a.setAttribute('href', newHref);
+          }
+        } catch (err) { /* ignore individual parse errors */ }
+      });
+    } catch (e) {}
+  })();
+</script>
