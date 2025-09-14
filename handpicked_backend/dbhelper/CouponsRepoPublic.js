@@ -1,7 +1,19 @@
 // dbhelper/CouponsRepoPublic.js
 import { supabase } from "../dbhelper/dbclient.js";
 
-// CouponsRepo.list(params)
+/**
+ * CouponsRepo.list(params)
+ *
+ * Supports:
+ * - cursor-based (keyset) pagination when `cursor` is provided (fast, recommended)
+ * - fallback to page/limit (OFFSET) when `cursor` is not provided (keeps SSR page links working)
+ *
+ * Params:
+ * { q, categorySlug, storeSlug, type, status, sort, page=1, limit=20, cursor=null, skipCount=false, mode="default" }
+ *
+ * Returns:
+ * { data: [...], meta: { total, page, limit, next_cursor, prev_cursor, has_more } }
+ */
 export async function list({
   q,
   categorySlug,
@@ -11,11 +23,40 @@ export async function list({
   sort,
   page = 1,
   limit = 20,
+  cursor = null, // new: opaque cursor string (base64 JSON)
   skipCount = false, // important: default false (pages that need pagination)
   mode = "default", // "homepage" | "default"
-}) {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+} = {}) {
+  // normalize input
+  const _limit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  const _page = Math.max(Number(page) || 1, 1);
+
+  // helpers to encode/decode opaque cursors
+  const encodeCursor = (row) => {
+    if (!row) return null;
+    try {
+      // store id and an optional key field (ends_at or created_at) if needed later
+      const payload = {
+        id: row.id,
+        key: row.ends_at || row.published_at || null,
+      };
+      return Buffer.from(JSON.stringify(payload)).toString("base64");
+    } catch (e) {
+      return null;
+    }
+  };
+  const decodeCursor = (c) => {
+    if (!c) return null;
+    try {
+      return JSON.parse(Buffer.from(String(c), "base64").toString());
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // compute offset range for fallback (page)
+  const from = (_page - 1) * _limit;
+  const to = from + _limit - 1;
 
   // Resolve category name if filter present
   let categoryName = null;
@@ -63,7 +104,6 @@ export async function list({
     }
     // category filter: filter by merchant category if requested (avoid expensive relation joins)
     if (categoryName) {
-      // This relies on Supabase/Postgres JSONB contains on merchants via relationship is not trivial here.
       // Safer approach: resolve merchant ids for category first (cheap if category indexed)
       const { data: mids, error: mErr } = await supabase
         .from("merchants")
@@ -101,11 +141,96 @@ export async function list({
       merchant_name: r.merchants?.name || null,
     }));
 
-    return { data: rows, meta: { page, limit, total: rows.length } };
+    return {
+      data: rows,
+      meta: { page: _page, limit: _limit, total: rows.length },
+    };
   }
 
-  // ---------- DEFAULT mode: full listing for /coupons page ----------
-  // Build main query (select only necessary fields for the coupons page UI)
+  // ---------- DEFAULT mode: support cursor (keyset) OR fallback to OFFSET ----------
+  // If a cursor is provided, use keyset pagination (id DESC)
+  if (cursor) {
+    const decoded = decodeCursor(cursor);
+
+    let qBuilder = supabase
+      .from("coupons")
+      .select(
+        `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, merchant_id, merchants:merchant_id ( slug, name, logo_url )`
+      )
+      .eq("is_publish", true)
+      .order("id", { ascending: false })
+      .limit(_limit);
+
+    // Apply keyset: id < decoded.id (fetch older rows)
+    if (decoded && decoded.id) {
+      qBuilder = qBuilder.lt("id", decoded.id);
+    }
+
+    if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+    if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
+    if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
+    if (status !== "all") {
+      qBuilder = qBuilder.or(
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+      );
+    }
+    if (categoryName) {
+      const { data: mids, error: mErr } = await supabase
+        .from("merchants")
+        .select("id")
+        .contains("category_names", [categoryName]);
+      if (!mErr && Array.isArray(mids) && mids.length) {
+        const ids = mids.map((m) => m.id);
+        qBuilder = qBuilder.in("merchant_id", ids);
+      } else if (mErr) {
+        console.warn("Coupons.list: category merchant lookup failed", mErr);
+      }
+    }
+
+    const { data, error } = await qBuilder;
+    if (error) throw error;
+
+    const rows = (data || []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+      ends_at: r.ends_at,
+      merchant_id: r.merchant_id || null,
+      coupon_type: r.coupon_type,
+      description: r.description,
+      type_text: r.type_text,
+      show_proof: !!r.show_proof,
+      proof_image_url: r.proof_image_url || null,
+      is_editor: !!r.is_editor,
+      merchant: r.merchants
+        ? {
+            slug: r.merchants.slug,
+            name: r.merchants.name,
+            logo_url: r.merchants.logo_url,
+          }
+        : null,
+      merchant_name: r.merchants?.name || null,
+    }));
+
+    const lastRow = rows.length ? rows[rows.length - 1] : null;
+    const nextCursor = encodeCursor(lastRow);
+    const hasMore = rows.length === _limit;
+
+    // For cursor mode, total count may be expensive — keep null to indicate unknown
+    return {
+      data: rows,
+      meta: {
+        page: _page,
+        limit: _limit,
+        total: null,
+        next_cursor: nextCursor,
+        prev_cursor: null,
+        has_more: hasMore,
+      },
+    };
+  }
+
+  // FALLBACK: existing OFFSET pagination for SSR (page param)
   let mainQuery = supabase
     .from("coupons")
     .select(
@@ -219,7 +344,10 @@ export async function list({
     merchant_name: r.merchants?.name || null,
   }));
 
-  return { data: rows, meta: { total: total || rows.length, page, limit } };
+  return {
+    data: rows,
+    meta: { total: total || rows.length, page: _page, limit: _limit },
+  };
 }
 
 export async function listForStore({

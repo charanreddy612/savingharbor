@@ -1,7 +1,9 @@
+// src/components/CouponReveal.jsx
 import React, { useState, useRef, useEffect } from "react";
 
 /**
- * CouponRevealIsland.jsx (styled - non-breaking)
+ * CouponReveal — shared React component used for island SSR + client mounts.
+ * This is adapted from your pasted CouponRevealIsland.jsx.
  */
 
 function Toast({ message, onClose }) {
@@ -33,7 +35,7 @@ async function fetchWithRetry(url, options, retries = 2) {
   throw new Error("Fetch failed after retries");
 }
 
-export default function CouponRevealIsland({ coupon, storeSlug }) {
+export default function CouponReveal({ coupon, storeSlug }) {
   const c = coupon || {};
   const sSlug = storeSlug || null;
 
