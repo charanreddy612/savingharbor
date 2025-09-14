@@ -26,6 +26,7 @@ const {
       prev ? (
         <a
           href={prev}
+          data-force-nav
           class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition"
         >
           <ChevronLeft size={18} /> Prev
@@ -40,6 +41,7 @@ const {
       next ? (
         <a
           href={next}
+          data-force-nav
           class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition"
         >
           Next <ChevronRight size={18} />
@@ -52,3 +54,27 @@ const {
     }
   </div>
 </div>
+
+<script is:inline>
+  (function () {
+    if (typeof window === "undefined") return;
+    document.addEventListener(
+      "click",
+      function (e) {
+        try {
+          const a = e.target.closest && e.target.closest("a[data-force-nav]");
+          if (!a) return;
+          // If meta/ctrl/cmd/shift click — let browser handle (open in new tab/window)
+          if (e.metaKey || e.ctrlKey || e.shiftKey || a.target === "_blank")
+            return;
+          e.preventDefault();
+          // Use assign so history behaves like normal navigation
+          window.location.assign(a.href);
+        } catch (err) {
+          // fallback: let default click happen
+        }
+      },
+      { passive: false }
+    );
+  })();
+</script>
