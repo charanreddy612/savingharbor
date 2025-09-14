@@ -39,7 +39,10 @@ type CouponsResponse = {
 
 let resp: CouponsResponse | null = null;
 try {
-  resp = await api.get<CouponsResponse>("/coupons", {}, { retries: 2, timeout: 8000 });
+  // resp = await api.get<CouponsResponse>("/coupons", {}, { retries: 2, timeout: 8000 });
+  const currentUrl = new URL(Astro.request.url);
+  const query = currentUrl.search || ""; // includes leading '?' or empty string
+  resp = await api.get<CouponsResponse>(`/coupons${query}`, {}, { retries: 2, timeout: 8000 });
 } catch (e) {
   console.error("Error fetching coupons:", e);
   resp = {

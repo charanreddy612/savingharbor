@@ -202,10 +202,7 @@
 
     try {
       btn.disabled = true;
-      const endpoint = `${BACKEND_API_BASE.replace(
-        /\/public\/v1$/,
-        ""
-      )}/offers/${encodeURIComponent(id)}/click`;
+      const endpoint = `${BACKEND_API_BASE.replace(/\/+$/, "")}/offers/${encodeURIComponent(id)}/click`;
       const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
