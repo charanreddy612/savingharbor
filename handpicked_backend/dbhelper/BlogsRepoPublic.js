@@ -1,3 +1,4 @@
+// dbhelper/blogsRepoPublic.js
 import { supabase } from "../dbhelper/dbclient.js";
 import { sanitize } from "../utils/sanitize.js";
 
@@ -24,7 +25,18 @@ export async function list({
     let qBuilder = supabase
       .from("blogs")
       .select(
-        "id, slug, title, featured_image_url, featured_thumb_url, created_at"
+        `
+        id,
+        slug,
+        title,
+        featured_image_url,
+        featured_thumb_url,
+        created_at,
+        updated_at,
+        is_featured,
+        category_id,
+        blog_categories(name)
+      `
       )
       .eq("is_publish", true)
       .order("created_at", { ascending: false })
@@ -41,9 +53,7 @@ export async function list({
       slug: b.slug,
       title: b.title,
       hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
-      category: b.category_id
-        ? { id: b.category_id, name: b.top_category_name }
-        : null,
+      category: b.blog_categories?.name || null, // ✅ plain string from blog_categories
       created_at: b.created_at,
       updated_at: b.updated_at,
       is_featured: !!b.is_featured,
@@ -53,7 +63,6 @@ export async function list({
   }
 
   // DEFAULT mode: full listing (count optional)
-  // Count only when requested
   let total = null;
   if (!skipCount) {
     let cQuery = supabase
@@ -69,11 +78,21 @@ export async function list({
     total = count || 0;
   }
 
-  // Rows: select only required fields
   let query = supabase
     .from("blogs")
     .select(
-      "id, slug, title, featured_image_url, featured_thumb_url, created_at, updated_at, is_featured, category_id, top_category_name"
+      `
+      id,
+      slug,
+      title,
+      featured_image_url,
+      featured_thumb_url,
+      created_at,
+      updated_at,
+      is_featured,
+      category_id,
+      blog_categories(name)
+    `
     )
     .eq("is_publish", true)
     .range(from, to);
@@ -81,7 +100,6 @@ export async function list({
   if (q) query = query.ilike("title", `%${q}%`);
   if (categoryId) query = query.eq("category_id", categoryId);
 
-  // ordering
   if (sort === "featured") {
     query = query
       .order("is_featured", { ascending: false })
@@ -97,11 +115,8 @@ export async function list({
     id: b.id,
     slug: b.slug,
     title: b.title,
-    // content: b.content || "",
     hero_image_url: b.featured_image_url || b.featured_thumb_url || null,
-    category: b.category_id
-      ? { id: b.category_id, name: b.top_category_name }
-      : null,
+    category: b.blog_categories?.name || null, // ✅ plain string
     created_at: b.created_at,
     updated_at: b.updated_at,
     is_featured: !!b.is_featured,
@@ -110,7 +125,7 @@ export async function list({
   return { rows, total: total || rows.length };
 }
 
-// blogsRepo.getBySlug - uses authors relation from authors table only
+// blogsRepo.getBySlug
 export async function getBySlug(slug) {
   if (!slug) return null;
 
@@ -130,7 +145,7 @@ export async function getBySlug(slug) {
         meta_description,
         content,
         category_id,
-        top_category_name,
+        blog_categories(name),
         author_id,
         authors ( id, name, avatar_url, bio_html )
       `
@@ -158,10 +173,8 @@ export async function getBySlug(slug) {
       updated_at: data.updated_at,
       seo_title: data.meta_title || "",
       meta_description: data.meta_description || "",
-      content_html: sanitize(data.content || ""), // map DB column -> expected prop
-      category: data.category_id
-        ? { id: data.category_id, name: data.top_category_name }
-        : null,
+      content_html: sanitize(data.content || ""),
+      category: data.blog_categories?.name || null, // ✅ plain string
       author: authorRow
         ? {
             id: authorRow.id ?? data.author_id ?? null,
@@ -183,7 +196,8 @@ export async function getBySlug(slug) {
 export function buildSeo(blog, { canonical, locale } = {}) {
   return {
     seo_title: blog.seo_title || blog.title,
-    meta_description: blog.meta_description || `Blog Article for ${blog.title}.`,
+    meta_description:
+      blog.meta_description || `Blog Article for ${blog.title}.`,
     canonical: canonical,
     locale: locale || "en",
     hreflang: [locale || "en"],
@@ -206,22 +220,28 @@ export function buildBreadcrumbs(blog, { origin }) {
   return [
     { name: "Home", url: homeUrl },
     { name: "Blogs", url: blogsUrl },
-    { name: safeName, url: blogUrl},
+    { name: safeName, url: blogUrl },
   ];
-
 }
 
 export async function related(blog, limit = 6) {
-  if (!blog || !blog.category?.id) return [];
+  if (!blog?.category_id) return [];
 
   const { data, error } = await supabase
     .from("blogs")
     .select(
-      "id, slug, title, featured_image_url, featured_thumb_url, created_at"
+      `
+      id,
+      slug,
+      title,
+      featured_image_url,
+      featured_thumb_url,
+      created_at
+    `
     )
     .eq("is_publish", true)
     .neq("id", blog.id)
-    .eq("category_id", blog.category.id)
+    .eq("category_id", blog.category_id)
     .order("created_at", { ascending: false })
     .limit(limit);
 

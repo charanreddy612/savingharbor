@@ -46,7 +46,9 @@ export async function list({
     // minimal select — reduce payload and join cost
     let qBuilder = supabase
       .from("coupons")
-      .select("id, coupon_type, title, coupon_code, ends_at, merchant_id")
+      .select(
+        "id, coupon_type, title, coupon_code, ends_at, merchant_id, merchants:merchant_id ( slug, name, logo_url )"
+      )
       .eq("is_publish", true)
       .order("id", { ascending: false })
       .range(from, to);
@@ -89,6 +91,14 @@ export async function list({
       ends_at: r.ends_at,
       merchant_id: r.merchant_id || null,
       coupon_type: r.coupon_type,
+      merchant: r.merchants
+        ? {
+            slug: r.merchants.slug,
+            name: r.merchants.name,
+            logo_url: r.merchants.logo_url,
+          }
+        : null,
+      merchant_name: r.merchants?.name || null,
     }));
 
     return { data: rows, meta: { page, limit, total: rows.length } };
@@ -99,7 +109,7 @@ export async function list({
   let mainQuery = supabase
     .from("coupons")
     .select(
-      `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, merchant_id`
+      `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, merchant_id, merchants:merchant_id ( slug, name, logo_url )`
     )
     .eq("is_publish", true)
     .range(from, to);
@@ -199,6 +209,14 @@ export async function list({
     show_proof: !!r.show_proof,
     proof_image_url: r.proof_image_url || null,
     is_editor: !!r.is_editor,
+    merchant: r.merchants
+      ? {
+          slug: r.merchants.slug,
+          name: r.merchants.name,
+          logo_url: r.merchants.logo_url,
+        }
+      : null,
+    merchant_name: r.merchants?.name || null,
   }));
 
   return { data: rows, meta: { total: total || rows.length, page, limit } };
