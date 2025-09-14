@@ -1,11 +1,11 @@
 ---
-// coupons/index.astro
+// src/pages/coupons/index.astro
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
-import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
+import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro"; // explicit .astro
 
 type merchant = {
   slug: string | null;
@@ -39,11 +39,7 @@ type CouponsResponse = {
 
 let resp: CouponsResponse | null = null;
 try {
-  resp = await api.get<CouponsResponse>(
-    "/coupons",
-    {},
-    { retries: 2, timeout: 8000 }
-  );
+  resp = await api.get<CouponsResponse>("/coupons", {}, { retries: 2, timeout: 8000 });
 } catch (e) {
   console.error("Error fetching coupons:", e);
   resp = {
@@ -66,8 +62,7 @@ try {
 const coupons = resp?.data || [];
 const meta = resp?.meta || {};
 const pageTitle = meta.title || "Coupons - HandPicked";
-const pageDesc =
-  meta.description || "Browse verified, handpicked coupons and deals.";
+const pageDesc = meta.description || "Browse verified, handpicked coupons and deals.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 ---
@@ -80,36 +75,27 @@ const jsonld = meta.jsonld;
 
     {
       coupons.length > 0 ? (
-        // <-- stable wrapper for client-side pagination updates -->
+        <!-- stable wrapper for client-side pagination updates -->
         <div id="resource-list" data-resource="coupons" class="mt-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {coupons.map((c) => (
-              <CouponRevealIsland
-                client:load
-                coupon={c}
-                storeSlug={c.merchant?.slug}
-              />
+              <CouponRevealIsland client:load coupon={c} storeSlug={c.merchant?.slug} />
             ))}
           </div>
         </div>
       ) : (
-        <p class="mt-6 text-gray-500">
-          No coupons available right now. Check back soon.
-        </p>
+        <p class="mt-6 text-gray-500">No coupons available right now. Check back soon.</p>
       )
     }
 
     <div class="mt-10">
-      <Pagination
-        prev={meta.prev}
-        next={meta.next}
-        total_pages={meta.total_pages}
-      />
+      <Pagination prev={meta.prev} next={meta.next} total_pages={meta.total_pages} />
     </div>
   </main>
   <Footer />
-  <!-- load client pagination module (let Vite/Astro bundle & resolve it) -->
+
+  <!-- Inline import so Vite bundles src/client/cursor-pagination.js and rewrites the path for prod -->
   <script type="module">
-    import("/js/cursor-pagination.js");
+    import('../../client/cursor-pagination.js');
   </script>
 </Base>
