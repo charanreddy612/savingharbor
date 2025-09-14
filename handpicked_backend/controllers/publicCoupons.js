@@ -22,8 +22,52 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
-    const page = valPage(req.query.page);
-    const limit = valLimit(req.query.limit);
+    // Robust page/limit extraction and immediate logging for debugging
+    function parseQs(raw) {
+      try {
+        return new URL(raw, "http://example.invalid").searchParams;
+      } catch (e) {
+        return new URLSearchParams();
+      }
+    }
+
+    // prefer parsed req.query, else try originalUrl, else referer
+    let pageRaw = null;
+    let limitRaw = null;
+
+    if (req.query && Object.keys(req.query).length > 0) {
+      pageRaw = req.query.page;
+      limitRaw = req.query.limit;
+    } else if (
+      typeof req.originalUrl === "string" &&
+      req.originalUrl.includes("?")
+    ) {
+      const sp = parseQs(req.originalUrl);
+      pageRaw = sp.get("page");
+      limitRaw = sp.get("limit");
+    } else if (req.headers && req.headers.referer) {
+      const sp2 = parseQs(req.headers.referer);
+      pageRaw = sp2.get("page");
+      limitRaw = sp2.get("limit");
+    }
+
+    // normalize and validate
+    const page = valPage(pageRaw);
+    const limit = valLimit(limitRaw);
+
+    // DEBUG: log the raw and normalized values (remove when done)
+    try {
+      console.info(
+        `[publicCoupons.list] rawPage=${String(pageRaw)} rawLimit=${String(
+          limitRaw
+        )} => page=${page} limit=${limit} req.originalUrl=${String(
+          req.originalUrl
+        )} referer=${String(req.headers && req.headers.referer)}`
+      );
+    } catch (_) {}
+
+    // const page = valPage(req.query.page);
+    // const limit = valLimit(req.query.limit);
     const type = valEnum(req.query.type, COUPON_TYPES, "all");
     const status = valEnum(req.query.status, COUPON_STATUS, "active");
     const sort = valEnum(req.query.sort, COUPON_SORTS, "latest");

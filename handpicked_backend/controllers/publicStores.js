@@ -267,6 +267,17 @@ export async function detail(req, res) {
           show_proof: !!r.show_proof,
           proof_image_url: r.proof_image_url || null,
           is_editor: !!r.is_editor,
+          merchant_id: data.merchant_id,
+          merchant: r.merchant
+          ? {
+            id: r.merchant.id,
+            slug: r.merchant.slug,
+            name: r.merchant.name,
+            aff_url: r.merchant.aff_url,
+            web_url: r.merchant.web_url,
+            logo_url: r.merchant.logo_url,
+          }
+        : null,
         }));
         console.info("Store detail controller method: Coupons ", couponsItems);
 
