@@ -1,38 +1,79 @@
+// src/components/FAQAccordion.jsx
 import React, { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 
 /**
- * FaqAccordion.jsx
+ * FaqAccordion.jsx — drop-in replacement
  *
- * Props:
- *  - faqs: Array<{ question: string, answer: string }>
- *  - defaultOpen: number | null (optional)
- *  - idPrefix: string (optional) - make ids unique on page if you have multiple accordions
+ * Props (unchanged):
+ *  - faqs: Array<{ question, answer }>
+ *  - defaultOpen: number | null
+ *  - idPrefix: string
  *
- * Notes:
- *  - Assumes backend sanitizes HTML. This component will still sanitize answers client-side
- *    if they contain HTML (defence in depth).
- *  - If answers are plain text, they will be rendered as text (safer).
+ * Behavior:
+ *  - Single-open by default (openIndex).
+ *  - Expand All / Collapse All toggles multi-open mode (openSet).
+ *  - Individual toggles work in single or multi mode.
+ *  - Smooth expand/collapse using measured scrollHeight.
  */
-
-export default function FaqAccordion({ faqs, defaultOpen = null, idPrefix = "faq" }) {
+export default function FaqAccordion({
+  faqs,
+  defaultOpen = null,
+  idPrefix = "faq",
+}) {
   const list = Array.isArray(faqs) ? faqs : [];
+  // single-open index (default mode)
   const [openIndex, setOpenIndex] = useState(
-    typeof defaultOpen === "number" && defaultOpen >= 0 && defaultOpen < list.length ? defaultOpen : null
+    typeof defaultOpen === "number" &&
+      defaultOpen >= 0 &&
+      defaultOpen < list.length
+      ? defaultOpen
+      : null
   );
+  // multi-open set for "Expand all" mode (store array of indexes)
+  const [openSet, setOpenSet] = useState([]);
+  // whether user activated expand-all (multi mode)
+  const [multiMode, setMultiMode] = useState(false);
 
-  // refs for headers
+  // refs for headers and panels
   const headersRef = useRef([]);
+  const panelsRef = useRef([]);
 
-  // keep headersRef current length in-sync with list length
   useEffect(() => {
     headersRef.current = headersRef.current.slice(0, list.length);
+    panelsRef.current = panelsRef.current.slice(0, list.length);
+    // keep openSet valid if list shrinks
+    setOpenSet((s) => s.filter((i) => i >= 0 && i < list.length));
+    if (openIndex !== null && (openIndex < 0 || openIndex >= list.length))
+      setOpenIndex(null);
   }, [list.length]);
 
-  const toggleIndex = (i) => {
-    setOpenIndex((prev) => (prev === i ? null : i));
+  // toggle single or multi depending on mode
+  const toggleItem = (i) => {
+    if (multiMode) {
+      setOpenSet((prev) => {
+        const exists = prev.includes(i);
+        if (exists) return prev.filter((x) => x !== i);
+        return [...prev, i];
+      });
+    } else {
+      setOpenIndex((prev) => (prev === i ? null : i));
+    }
   };
 
+  const expandAll = () => {
+    const all = Array.from({ length: list.length }, (_, i) => i);
+    setOpenSet(all);
+    setMultiMode(true);
+  };
+
+  const collapseAll = () => {
+    setOpenSet([]);
+    setMultiMode(false);
+    setOpenIndex(null);
+  };
+
+  // keyboard nav for headers (ARIA best-practices)
   const onKeyDownHeader = (e, i) => {
     const max = list.length - 1;
     const key = e.key;
@@ -51,57 +92,131 @@ export default function FaqAccordion({ faqs, defaultOpen = null, idPrefix = "faq
     } else if (key === "End") {
       e.preventDefault();
       headersRef.current[max]?.focus();
-    } else if (key === "Enter" || key === " " || key === "Spacebar" || code === "Space") {
-      // " " for modern, "Spacebar" for some older UA, code === "Space" for robustness
+    } else if (key === "Enter" || key === " " || code === "Space") {
       e.preventDefault();
-      toggleIndex(i);
+      toggleItem(i);
     }
   };
+
+  // animate panels using measured scrollHeight; respects reduced-motion
+  useEffect(() => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    panelsRef.current.forEach((panelEl, idx) => {
+      if (!panelEl) return;
+      const isOpen = multiMode ? openSet.includes(idx) : openIndex === idx;
+      if (isOpen) {
+        if (prefersReduced) {
+          panelEl.style.maxHeight = "none";
+        } else {
+          panelEl.style.maxHeight = panelEl.scrollHeight + "px";
+        }
+      } else {
+        panelEl.style.maxHeight = "0px";
+      }
+    });
+  }, [openIndex, openSet, multiMode, list.length]);
 
   if (!list || list.length === 0) return null;
 
   return (
     <div className="w-full bg-white border border-gray-100 rounded-md shadow-sm p-4">
-      <h2 className="text-lg font-semibold mb-3">FAQs</h2>
-      <div role="region" aria-label="Frequently asked questions" className="space-y-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold text-brand-primary">FAQs</h2>
+
+        <div className="flex items-center gap-2">
+          {/* Expand/Collapse controls */}
+          <button
+            type="button"
+            onClick={expandAll}
+            className="text-sm px-3 py-1 rounded-md border border-transparent bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+            aria-label="Expand all FAQs"
+          >
+            Expand all
+          </button>
+          <button
+            type="button"
+            onClick={collapseAll}
+            className="text-sm px-3 py-1 rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+            aria-label="Collapse all FAQs"
+          >
+            Collapse all
+          </button>
+        </div>
+      </div>
+
+      <div
+        role="region"
+        aria-label="Frequently asked questions"
+        className="space-y-3"
+      >
         {list.map((f, i) => {
-          // stable-ish key: prefer question text, fallback to index
-          const key = (f && f.question) ? `q-${f.question.slice(0, 40).replace(/\s+/g, "-")}` : `faq-${i}`;
-          const isOpen = openIndex === i;
+          const rawQ =
+            f && (f.question ?? f.q) ? String(f.question ?? f.q).trim() : "";
+          const safeKey = rawQ
+            ? rawQ
+                .slice(0, 60)
+                .replace(/\s+/g, "-")
+                .replace(/[^a-zA-Z0-9-_]/g, "")
+            : `faq-${i}`;
+          const key = `faq-${safeKey}-${i}`;
+
+          const isOpen = multiMode ? openSet.includes(i) : openIndex === i;
           const headerId = `${idPrefix}-header-${i}`;
           const panelId = `${idPrefix}-panel-${i}`;
 
-          const question = (f && (f.question ?? f.q)) ? String(f.question ?? f.q).trim() : "";
-          const answerRaw = f && (f.answer ?? f.a ?? f.ans) ? String(f.answer ?? f.a ?? f.ans).trim() : "";
+          const question = rawQ;
+          const answerRaw =
+            f && (f.answer ?? f.a ?? f.ans)
+              ? String(f.answer ?? f.a ?? f.ans).trim()
+              : "";
 
-          // detect if answer contains HTML-ish content
           const containsHtml = /<\/?[a-z][\s\S]*>/i.test(answerRaw);
-
-          // if HTML present, sanitize before injecting
           const safeHtml = containsHtml ? DOMPurify.sanitize(answerRaw) : null;
 
           return (
-            <div key={key} className="border border-gray-100 rounded">
+            <div
+              key={key}
+              className="border border-gray-100 rounded-lg overflow-hidden"
+            >
               <h3>
                 <button
                   ref={(el) => (headersRef.current[i] = el)}
                   id={headerId}
                   aria-controls={panelId}
                   aria-expanded={isOpen}
-                  onClick={() => toggleIndex(i)}
+                  onClick={() => toggleItem(i)}
                   onKeyDown={(e) => onKeyDownHeader(e, i)}
-                  className="w-full text-left p-3 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="w-full text-left p-3 flex items-center justify-between gap-4 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 >
-                  <span className="text-sm font-medium text-gray-900">{question}</span>
-                  <span className="ml-4 text-gray-500">
+                  <span className="text-sm md:text-base font-medium text-gray-900">
+                    {question}
+                  </span>
+
+                  <span
+                    className={`ml-4 flex-shrink-0 transition-transform duration-200 ${
+                      isOpen
+                        ? "rotate-180 text-brand-primary"
+                        : "rotate-0 text-gray-400"
+                    }`}
+                  >
                     <svg
-                      className={`w-5 h-5 transform transition-transform ${isOpen ? "rotate-180" : "rotate-0"}`}
+                      className="w-5 h-5"
                       viewBox="0 0 20 20"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                       aria-hidden="true"
                     >
-                      <path d="M5 7l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M5 7l5 5 5-5"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 </button>
@@ -112,15 +227,22 @@ export default function FaqAccordion({ faqs, defaultOpen = null, idPrefix = "faq
                 role="region"
                 aria-labelledby={headerId}
                 aria-hidden={!isOpen}
-                className={`px-3 pb-3 text-sm text-gray-700 transition-max-h duration-200 overflow-hidden ${isOpen ? "max-h-96" : "max-h-0"}`}
+                ref={(el) => (panelsRef.current[i] = el)}
+                className="px-3 pb-3 text-sm text-gray-700 transition-[max-height] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] overflow-hidden"
+                style={{ maxHeight: "0px" }}
               >
-                {containsHtml ? (
-                  // answer contains HTML — render sanitized HTML
-                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                ) : (
-                  // plain text answer — render as text to avoid XSS
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{answerRaw}</p>
-                )}
+                <div className="pt-2">
+                  {containsHtml ? (
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: safeHtml }}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {answerRaw}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           );
