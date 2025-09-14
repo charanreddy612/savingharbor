@@ -90,7 +90,26 @@ export async function list(req, res) {
               locale: params.locale || undefined,
             },
           });
-
+          // ---------- ensure prev/next point to backend (Render) when PUBLIC_API_BASE_URL is set ----------
+          const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
+            .toString()
+            .trim()
+            .replace(/\/+$/, "");
+          if (backendBase) {
+            const rewriteToBackend = (raw) => {
+              if (!raw) return null;
+              try {
+                // Parse raw as URL relative to dummy origin to get pathname + search reliably
+                const u = new URL(raw, "http://example.invalid");
+                return `${backendBase}${u.pathname}${u.search}`;
+              } catch (err) {
+                // if parsing fails, fall back to raw
+                return raw;
+              }
+            };
+            nav.prev = nav.prev ? rewriteToBackend(nav.prev) : null;
+            nav.next = nav.next ? rewriteToBackend(nav.next) : null;
+          }
           return {
             data: safeRows,
             meta: {
