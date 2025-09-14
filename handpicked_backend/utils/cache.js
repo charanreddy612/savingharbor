@@ -28,14 +28,7 @@ function buildCacheKey(req, keyExtra = "") {
   return keyExtra ? `${base}:${keyExtra}` : base;
 }
 
-/**
-
-withCache(req, compute, options?)
-ttlSeconds: number (default 60)
-keyExtra: string (optional suffix to distinguish call-site variants)
-skip: boolean (if true, bypass cache)
-*/
-// cache.js (small replacement of withCache)
+// cache.js - withCache
 export async function withCache(req, compute, options = {}) {
   const {
     ttlSeconds = Number(process.env.CACHE_TTL_PUBLIC || 60),
@@ -48,17 +41,9 @@ export async function withCache(req, compute, options = {}) {
   }
 
   // If controllers passed a deterministic keyExtra (recommended), prefer it.
-  // const key = keyExtra
-  //   ? `${buildCacheKey(req)}:${keyExtra}`
-  //   : buildCacheKey(req);
-
-  const key = keyExtra ? String(keyExtra) : buildCacheKey(req);
-
-  // DEBUG: log key and query to detect collisions (remove in prod)
-  try {
-    console.info("[withCache] key=", key);
-    console.info("[withCache] req.query=", req.query);
-  } catch {}
+  const key = keyExtra
+    ? `${buildCacheKey(req)}:${keyExtra}`
+    : buildCacheKey(req);
 
   // Try cache
   const cached = await memoryCacheStore.get(key);

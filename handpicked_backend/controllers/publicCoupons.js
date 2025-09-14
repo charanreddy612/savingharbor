@@ -22,32 +22,8 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
-  console.info("[publicCoupons.list] req.method=", req.method);
-  console.info("[publicCoupons.list] req.originalUrl=", req.originalUrl);
-  console.info("[publicCoupons.list] req.url=", req.url);
-  console.info("[publicCoupons.list] req.query=", req.query);
-    const rawPage =
-      req.query && req.query.page
-        ? req.query.page
-        : typeof req.originalUrl === "string"
-        ? new URL(req.originalUrl, "http://dummy").searchParams.get("page")
-        : null;
-    const page = valPage(rawPage);
-    const rawLimit =
-      req.query && req.query.page
-        ? req.query.limit
-        : typeof req.originalUrl === "string"
-        ? new URL(req.originalUrl, "http://dummy").searchParams.get("limit")
-        : null;
-    const limit = valLimit(rawLimit);
-    //logging for issue debugging
-    const _page = Number.parseInt(page, 10) || 1;
-  const _limit = Number.parseInt(limit, 10) || 20;
-  const from = (_page - 1) * _limit;
-  const to = from + _limit - 1;
-  try {
-    console.info(`[CouponsRepo.list] page=${_page} limit=${_limit} from=${from} to=${to} q=${String(q||"").slice(0,80)} sort=${sort}`);
-  } catch (err) {}
+    const page = valPage(req.query.page);
+    const limit = valLimit(req.query.limit);
     const type = valEnum(req.query.type, COUPON_TYPES, "all");
     const status = valEnum(req.query.status, COUPON_STATUS, "active");
     const sort = valEnum(req.query.sort, COUPON_SORTS, "latest");
@@ -88,7 +64,6 @@ export async function list(req, res) {
       req,
       async () => {
         try {
-          // CouponsRepo.list returns: { data, meta }
           const { data, meta } = await CouponsRepo.list(params);
 
           const safeRows = Array.isArray(data) ? data : [];
@@ -144,8 +119,7 @@ export async function list(req, res) {
           };
         }
       },
-      // { ttlSeconds: 60, keyExtra: cacheKey }
-       {skip:true, keyExtra: cacheKey }
+      { ttlSeconds: 60, keyExtra: cacheKey }
     );
 
     res.setHeader(

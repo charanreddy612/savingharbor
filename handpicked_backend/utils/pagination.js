@@ -46,10 +46,6 @@ function buildQueryString(paramsObj = {}) {
 
 /**
  * buildPrevNext
- * - path: may be API path (will be normalized to frontend path)
- * - page, limit, total, extraParams are used to generate querystring
- * - returns relative paths by default (e.g. /coupons?page=2)
- * - if PUBLIC_SITE_URL env var is set, returns absolute canonical links
  */
 export function buildPrevNext({
   path,
@@ -65,11 +61,19 @@ export function buildPrevNext({
 
   const frontendPath = normalizePathToFrontend(path, "/");
 
+  // backend origin (Render) — set this in Vercel env as BACKEND_URL
+  const backendOrigin = (process.env.PUBLIC_API_BASE_URL || "")
+    .toString()
+    .trim()
+    .replace(/\/+$/, "");
+
   const makeRelUrl = (targetPage) => {
     const params = { ...extraParams };
     if (targetPage && Number(targetPage) > 1) params.page = Number(targetPage);
     if (limit && Number(limit) !== 20) params.limit = Number(limit);
-    return `${frontendPath}${buildQueryString(params)}`;
+    const rel = `${frontendPath}${buildQueryString(params)}`;
+    // if BACKEND_URL provided, return absolute backend URL; otherwise return relative frontend path
+    return backendOrigin ? `${backendOrigin}${rel}` : rel;
   };
 
   const prevPage = page > 1 ? page - 1 : null;
@@ -92,8 +96,16 @@ export function buildPrevNext({
   };
 
   return {
-    prev: prevPage ? maybeAbsolute(makeRelUrl(prevPage)) : null,
-    next: nextPage ? maybeAbsolute(makeRelUrl(nextPage)) : null,
+    prev: prevPage
+      ? backendOrigin
+        ? makeRelUrl(prevPage)
+        : maybeAbsolute(makeRelUrl(prevPage))
+      : null,
+    next: nextPage
+      ? backendOrigin
+        ? makeRelUrl(nextPage)
+        : maybeAbsolute(makeRelUrl(nextPage))
+      : null,
     totalPages,
   };
 }
