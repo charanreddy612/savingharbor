@@ -1,7 +1,13 @@
 // src/components/couponReveal.jsx
-import React, { useEffect, useRef, useState } from "../web_modules/react.js"; // adjust import if needed: your environment uses plain 'react'
-
+import React, { useEffect, useRef, useState } from "react";
 import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
+
+/**
+ * CouponReveal React island
+ * - Re-uses renderCouponCardHtml for exact SSR parity
+ * - Injects the HTML and delegates reveal-button clicks
+ * - Keeps toasts + clipboard + redirect logic
+ */
 
 async function fetchWithRetry(url, options, retries = 2) {
   for (let i = 0; i <= retries; i++) {
@@ -51,13 +57,13 @@ export default function CouponReveal({ coupon, storeSlug }) {
   };
   const removeToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
-  // Insert the server-side HTML into the container on mount / coupon change
+  // Inject SSR-markup from renderCouponCardHtml into this island's container
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     el.innerHTML = renderCouponCardHtml(c);
 
-    // If this offer was already revealed previously in this session, reflect that
+    // If this offer was revealed previously in this session, reflect that state
     if (disabledOfferIds.has(String(c.id))) {
       const btn = el.querySelector(
         `.js-reveal-btn[data-offer-id="${String(c.id)}"]`
@@ -72,12 +78,10 @@ export default function CouponReveal({ coupon, storeSlug }) {
     }
   }, [c, disabledOfferIds]);
 
-  // Delegated click handler for reveal button inside the inserted HTML
+  // Delegated click listener for reveal button inside injected HTML
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-
-    let detached = false;
 
     const handleClick = async (ev) => {
       const btn = ev.target.closest && ev.target.closest(".js-reveal-btn");
@@ -85,7 +89,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       const offerId = btn.getAttribute("data-offer-id");
       if (!offerId) return;
 
-      // prevent double clicks
       if (disabledOfferIds.has(String(offerId))) return;
 
       btn.disabled = true;
@@ -110,8 +113,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
         );
 
         if (resp.status === 429) {
-          const msg = "Too many requests. Please try again later.";
-          pushToast(msg);
+          pushToast("Too many requests. Please try again later.");
           btn.disabled = false;
           return;
         }
@@ -128,7 +130,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
           serverCode ?? (c.code ? String(c.code).trim() : null);
 
         if (codeToReveal) {
-          // replace button with code box
+          // replace button with a code box
           const box = document.createElement("div");
           box.className =
             "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
@@ -143,12 +145,10 @@ export default function CouponReveal({ coupon, storeSlug }) {
         }
 
         if (serverRedirect) {
-          // open in new tab after tiny delay
           setTimeout(() => {
             window.open(serverRedirect, "_blank", "noopener,noreferrer");
           }, 100);
         } else {
-          // fallback redirect (if merchant info present)
           const m = c?.merchant || {};
           const fallback = m.affl_url?.startsWith("http")
             ? m.affl_url
@@ -162,7 +162,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
           }
         }
 
-        // mark disabled for this session
+        // mark revealed in this session
         setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
       } catch (err) {
         console.error("Reveal click failed", err);
@@ -173,7 +173,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
 
     el.addEventListener("click", handleClick);
     return () => {
-      detached = true;
       try {
         el.removeEventListener("click", handleClick);
       } catch (e) {}
@@ -182,10 +181,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
 
   return (
     <>
-      {/* container where server HTML is injected */}
       <div ref={containerRef} />
-
-      {/* toasts */}
       {toasts.map((t) => (
         <Toast
           key={t.id}
