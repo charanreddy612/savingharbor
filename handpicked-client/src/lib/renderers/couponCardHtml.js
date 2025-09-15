@@ -20,7 +20,8 @@ export function escapeHtml(s = "") {
  *   ends_at,
  *   merchant_id,
  *   merchant: { slug, name, logo_url },
- *   merchant_name
+ *   merchant_name,
+ *   click_count or clickCount
  * }
  */
 export function renderCouponCardHtml(item = {}) {
@@ -43,37 +44,54 @@ export function renderCouponCardHtml(item = {}) {
       )
     : "";
 
+  // usage count: try both names, fallback 0
+  const usedCount =
+    Number.isFinite(Number(item.click_count))
+      ? Number(item.click_count)
+      : Number.isFinite(Number(item.clickCount))
+      ? Number(item.clickCount)
+      : 0;
+
+  // Badge images (default public paths - update if your paths differ)
+  const verifiedBadge = "/images/verified-badge.png";
+  const reverifiedBadge = "/images/reverified-badge.png";
+
   // Keep markup/classnames identical to your Card / island components to avoid CSS drift.
   return `
-    <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
-          ${
-            logo
-              ? `<img src="${logo}" alt="${
-                  merchantName || "Store"
-                }" width="40" height="40" class="object-contain" loading="lazy" />`
-              : `<div class="text-[10px] text-gray-400">Logo</div>`
-          }
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm text-brand-primary truncate">${merchantName}</h3>
-          <p class="text-xs text-gray-500 truncate">${title}</p>
-        </div>
-      </div>
+    <div class="relative">
+      <!-- Badges absolutely positioned -->
+      <img src="${escapeHtml(verifiedBadge)}" alt="Verified" class="absolute left-3 -top-3 w-20 h-8 object-contain pointer-events-none drop-shadow-sm" />
+      <img src="${escapeHtml(reverifiedBadge)}" alt="Reverified today" class="absolute right-3 -top-3 w-28 h-8 object-contain pointer-events-none drop-shadow-sm" />
 
-      <div class="mt-1 flex-1">
-        <button
-          type="button"
-          class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
-          data-offer-id="${id}"
-        >
-          ${couponType === "coupon" ? "Reveal Code" : "Activate Deal"}
-        </button>
-      </div>
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
+            ${
+              logo
+                ? `<img src="${logo}" alt="${merchantName || "Store"}" width="40" height="40" class="object-contain" loading="lazy" />`
+                : `<div class="text-[10px] text-gray-400">Logo</div>`
+            }
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-sm text-brand-primary truncate">${merchantName}</h3>
+            <p class="text-xs text-gray-500 truncate">${title}</p>
+          </div>
+        </div>
 
-      <div class="flex items-center justify-between mt-2">
-        <div class="text-xs text-gray-500">${endsAt}</div>
+        <div class="mt-1 flex-1">
+          <button
+            type="button"
+            class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            data-offer-id="${id}"
+          >
+            ${couponType === "coupon" ? "Reveal Code" : "Activate Deal"}
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between mt-2">
+          <div class="text-xs text-gray-500">${endsAt}</div>
+          <div class="text-xs text-gray-500">used by ${escapeHtml(String(usedCount))} ${usedCount === 1 ? "user" : "users"}</div>
+        </div>
       </div>
     </div>
   `;
