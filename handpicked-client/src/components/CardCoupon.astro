@@ -1,99 +1,17 @@
 ---
+import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
+
 type Coupon = {
   id: string | number;
   title?: string | null;
   code?: string | null;
   ends_at?: string | null;
   merchant_name?: string | null;
-  merchant?: {
-    slug?: string | null;
-    logo_url?: string | null;
-  };
+  merchant?: { slug: string | null; logo_url?: string | null };
+  coupon_type?: string;
 };
 
 const { coupon } = Astro.props as { coupon: Coupon };
-const ends = coupon.ends_at ? new Date(coupon.ends_at) : null;
-const endsText = ends ? `Ends ${ends.toLocaleDateString()}` : null;
 ---
 
-<div
-  class="bg-primary border-gray-200 rounded-lg shadow-sm hover:shadow-md transition p-4 flex flex-col gap-3"
-  x-data="{ revealed: false }"
->
-  <!-- Store info -->
-  <div class="flex items-center gap-3">
-    <div
-      class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white"
-    >
-      {
-        coupon.merchant?.logo_url ? (
-          <img
-            src={coupon.merchant.logo_url}
-            alt={coupon.merchant_name || "Store"}
-            width="40"
-            height="40"
-            class="object-contain"
-            loading="lazy"
-          />
-        ) : (
-          <div class="text-[10px] text-gray-400">Logo</div>
-        )
-      }
-    </div>
-    <div class="flex flex-col">
-      <h3 class="font-semibold text-gray-900 text-sm">
-        {coupon.merchant_name}
-      </h3>
-      <p class="text-xs text-gray-500 truncate">{coupon.title || "Deal"}</p>
-    </div>
-  </div>
-
-  <!-- Reveal Code / Activate -->
-  <div class="mt-2">
-    {
-      coupon.code ? (
-        <button
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition relative overflow-hidden"
-          x-show="!revealed"
-          x-on:click="revealed = true; navigator.clipboard.writeText(`{coupon.code}`)"
-          x-transition:enter="transition ease-out duration-200"
-          x-transition:enter-start="opacity-0 scale-95"
-          x-transition:enter-end="opacity-100 scale-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100 scale-100"
-          x-transition:leave-end="opacity-0 scale-95"
-        >
-          Reveal Code
-        </button>
-      ) : (
-        <a
-          href={`/stores/${coupon.merchant?.slug || ""}`}
-          class="block w-full text-center border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-green-600 hover:bg-green-50 transition"
-        >
-          Activate Deal
-        </a>
-      )
-    }
-
-    <!-- Revealed Code -->
-    {
-      coupon.code && (
-        <div
-          class="w-full border border-dashed border-blue-400 rounded-md px-3 py-2 text-sm text-center font-mono text-blue-700 bg-blue-50"
-          x-show="revealed"
-          x-transition:enter="transition ease-out duration-200"
-          x-transition:enter-start="opacity-0 scale-95"
-          x-transition:enter-end="opacity-100 scale-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100 scale-100"
-          x-transition:leave-end="opacity-0 scale-95"
-        >
-          {coupon.code}
-        </div>
-      )
-    }
-  </div>
-
-  <!-- Footer Info -->
-  {endsText && <p class="text-xs text-gray-500 text-right">{endsText}</p>}
-</div>
+<div set:html={renderCouponCardHtml(coupon)} />
