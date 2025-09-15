@@ -1,6 +1,6 @@
 // src/lib/renderers/couponCardHtml.js
 export function escapeHtml(s = "") {
-  return String(s || "")
+  return String(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
@@ -8,7 +8,11 @@ export function escapeHtml(s = "") {
 
 /**
  * renderCouponCardHtml(item)
- * item: { id, title, coupon_type, ends_at, merchant: { name, logo_url }, merchant_name, click_count }
+ * item: {
+ *   id, title, coupon_type, code, ends_at, merchant_id,
+ *   merchant: { slug, name, logo_url }, merchant_name,
+ *   click_count
+ * }
  */
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
@@ -30,68 +34,23 @@ export function renderCouponCardHtml(item = {}) {
       )
     : "";
 
-  // usage count: try both names, fallback 0
-  const usedCount = Number.isFinite(Number(item.click_count))
-    ? Number(item.click_count)
-    : Number.isFinite(Number(item.clickCount))
-    ? Number(item.clickCount)
-    : 0;
+  const clickCount =
+    Number.isFinite(Number(item.click_count)) && Number(item.click_count) > 0
+      ? Number(item.click_count)
+      : 0;
 
-  // Inline SVGs ---------------------------------------------------------
-  // 1) Gold rosette + red ribbon (reverified)
-  const reverifiedSvg = `
-    <svg width="160" height="56" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
-      <!-- ribbon -->
-      <g transform="translate(0,28)">
-        <path d="M120 72 L100 112 L150 96 L200 112 L180 72 Z" fill="#C11B1B" />
-        <path d="M40 72 L60 112 L110 96 L160 112 L140 72 Z" fill="#C11B1B" transform="translate(80,0)" />
-      </g>
-      <!-- rosette circle with scalloped edge -->
-      <g transform="translate(40,0) scale(0.9)">
-        <defs>
-          <filter id="gshadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.12"/>
-          </filter>
-        </defs>
-        <g filter="url(#gshadow)">
-          <circle cx="80" cy="40" r="36" fill="#FFD54A" />
-          <circle cx="80" cy="40" r="28" fill="#F9E29D" />
-          <!-- check -->
-          <path d="M66 40 l8 8 l18 -18" stroke="#064E3B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </g>
-        <text x="80" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#064E3B">RE-VERIFIED</text>
-      </g>
-    </svg>
-  `;
+  // Two inline compact SVG badges (kept small to avoid external assets)
+  const verifiedSvg = `<svg width="72" height="48" viewBox="0 0 280 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img"><defs><filter id="sdrop" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.12"/></filter></defs><g transform="translate(40,0)" filter="url(#sdrop)"><path d="M60 6 L120 24 L120 64 C120 88 84 104 60 108 C36 104 0 88 0 64 L0 24 Z" fill="#FFD54A" stroke="#F59E0B" stroke-width="4"/><circle cx="60" cy="46" r="20" fill="#065F46"/><path d="M50 46 l6 6 l14 -14" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><text x="60" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#064E3B">VERIFIED</text></g></svg>`;
 
-  // 2) Gold shield with green check (verified)
-  const verifiedSvg = `
-    <svg width="140" height="56" viewBox="0 0 280 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
-      <defs>
-        <filter id="sdrop" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.12"/>
-        </filter>
-      </defs>
-      <g transform="translate(40,0)" filter="url(#sdrop)">
-        <!-- shield -->
-        <path d="M60 6 L120 24 L120 64 C120 88 84 104 60 108 C36 104 0 88 0 64 L0 24 Z" fill="#FFD54A" stroke="#F59E0B" stroke-width="4"/>
-        <circle cx="60" cy="46" r="20" fill="#065F46"/>
-        <path d="M50 46 l6 6 l14 -14" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text x="60" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#064E3B">VERIFIED</text>
-      </g>
-    </svg>
-  `;
+  const reverifiedSvg = `<svg width="84" height="56" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img"><g transform="translate(40,0) scale(0.64)"><circle cx="80" cy="40" r="36" fill="#FFD54A"/><circle cx="80" cy="40" r="28" fill="#F9E29D"/><path d="M66 40 l8 8 l18 -18" stroke="#064E3B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><text x="80" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#064E3B">RE-VERIFIED</text></g><g transform="translate(0,28) scale(0.64)"><path d="M120 72 L100 112 L150 96 L200 112 L180 72 Z" fill="#C11B1B"/><path d="M40 72 L60 112 L110 96 L160 112 L140 72 Z" fill="#C11B1B" transform="translate(80,0)"/></g></svg>`;
 
-  // --------------------------------------------------------------------
-
+  // Keep markup/classnames identical to your Card / island components to avoid CSS drift.
   return `
     <div class="relative">
-      <!-- badges: positioned absolutely so they don't affect layout -->
-      <div style="position:absolute;left:0.5rem;top:-0.6rem;z-index:20;pointer-events:none;line-height:0;">
+      <div class="absolute -top-4 -left-2 z-20 pointer-events-none" aria-hidden="true" style="line-height:0;">
         ${reverifiedSvg}
       </div>
-
-      <div style="position:absolute;right:0.5rem;top:-0.6rem;z-index:20;pointer-events:none;line-height:0;">
+      <div class="absolute -top-4 -right-2 z-20 pointer-events-none" aria-hidden="true" style="line-height:0;">
         ${verifiedSvg}
       </div>
 
@@ -117,6 +76,9 @@ export function renderCouponCardHtml(item = {}) {
             type="button"
             class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
             data-offer-id="${id}"
+            aria-label="${
+              couponType === "coupon" ? "Reveal coupon code" : "Activate deal"
+            }"
           >
             ${couponType === "coupon" ? "Reveal Code" : "Activate Deal"}
           </button>
@@ -124,9 +86,9 @@ export function renderCouponCardHtml(item = {}) {
 
         <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-gray-500">${endsAt}</div>
-          <div class="text-xs text-gray-500">used by ${escapeHtml(
-            String(usedCount)
-          )} ${usedCount === 1 ? "user" : "users"}</div>
+          <div class="text-xs text-gray-500">used by ${clickCount} ${
+    clickCount === 1 ? "user" : "users"
+  }</div>
         </div>
       </div>
     </div>
