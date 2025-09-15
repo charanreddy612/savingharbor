@@ -1,35 +1,100 @@
+// dbhelper/StoresRepoPublic.js
 import { supabase } from "../dbhelper/dbclient.js";
 import { sanitize } from "../utils/sanitize.js";
 
+/**
+ * list(params)
+ * - params: { q, categorySlug, sort, page, limit, skipCount=false, mode="default" }
+ * - returns: { rows: Array, total: number }
+ */
 export async function list({
-  q,
-  categorySlug,
-  sort,
-  page,
-  limit,
+  q = "",
+  categorySlug = null,
+  sort = "newest",
+  page = 1,
+  limit = 20,
   skipCount = false,
-  mode = "default", // "homepage" | "default"
-}) {
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+  mode = "default",
+} = {}) {
+  const safePage = Number(page) >= 1 ? Number(page) : 1;
+  const safeLimit = Number(limit) >= 1 ? Number(limit) : 20;
+  const from = (safePage - 1) * safeLimit;
+  const to = from + safeLimit - 1;
 
   // Resolve category name if filter present
   let categoryName = null;
   if (categorySlug) {
-    const { data: cat, error: ce } = await supabase
-      .from("merchant_categories")
-      .select("name")
-      .eq("slug", categorySlug)
-      .maybeSingle();
-    if (ce) throw ce;
-    categoryName = cat?.name || null;
+    try {
+      const { data: cat, error: ce } = await supabase
+        .from("merchant_categories")
+        .select("name")
+        .eq("slug", String(categorySlug).trim())
+        .maybeSingle();
+      if (ce) throw ce;
+      categoryName = cat?.name || null;
+    } catch (err) {
+      console.warn("Stores.list: category lookup failed", err);
+      categoryName = null;
+    }
   }
 
-  // Homepage mode — very lightweight (already using denormalized field)
+  // HOMEPAGE mode — lightweight select
   if (mode === "homepage") {
+    try {
+      let query = supabase
+        .from("merchants")
+        .select("id, slug, name, logo_url, active_coupons_count")
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (q) query = query.ilike("name", `%${q}%`);
+      if (categoryName)
+        query = query.contains("category_names", [categoryName]);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const rows = (data || []).map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        logo_url: r.logo_url,
+        stats: { active_coupons: r.active_coupons_count || 0 },
+      }));
+
+      return { rows, total: rows.length };
+    } catch (e) {
+      console.error("Stores.list(homepage) error:", e);
+      return { rows: [], total: 0 };
+    }
+  }
+
+  // DEFAULT mode — full listing for /stores page
+  try {
+    // Count only if required
+    let total = null;
+    if (!skipCount) {
+      try {
+        let cQuery = supabase
+          .from("merchants")
+          .select("id", { count: "exact", head: true });
+        if (q) cQuery = cQuery.ilike("name", `%${q}%`);
+        if (categoryName)
+          cQuery = cQuery.contains("category_names", [categoryName]);
+
+        const { count, error: cErr } = await cQuery;
+        if (cErr) throw cErr;
+        total = count || 0;
+      } catch (countErr) {
+        console.warn("Stores.list: count query failed:", countErr);
+        total = 0;
+      }
+    }
+
+    // Main query
     let query = supabase
       .from("merchants")
-      .select("id, slug, name, logo_url, active_coupons_count")
+      .select("id, slug, name, logo_url, created_at, active_coupons_count")
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -47,48 +112,11 @@ export async function list({
       stats: { active_coupons: r.active_coupons_count || 0 },
     }));
 
-    return { rows, total: rows.length };
+    return { rows, total: total || rows.length };
+  } catch (e) {
+    console.error("Stores.list error:", e);
+    return { rows: [], total: 0 };
   }
-
-  // Default mode — for Stores page (optimized)
-  // Count query (only if needed)
-  let total = null;
-  if (!skipCount) {
-    let cQuery = supabase
-      .from("merchants")
-      .select("id", { count: "exact", head: true });
-    if (q) cQuery = cQuery.ilike("name", `%${q}%`);
-    if (categoryName)
-      cQuery = cQuery.contains("category_names", [categoryName]);
-
-    const { count, error: cErr } = await cQuery;
-    if (cErr) throw cErr;
-    total = count || 0;
-  }
-
-  // Main rows query — include denormalized counter in select
-  let query = supabase
-    .from("merchants")
-    .select("id, slug, name, logo_url, created_at, active_coupons_count")
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  if (q) query = query.ilike("name", `%${q}%`);
-  if (categoryName) query = query.contains("category_names", [categoryName]);
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  // Use denormalized counter from row instead of doing grouped/count on coupons
-  const rows = (data || []).map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    name: r.name,
-    logo_url: r.logo_url,
-    stats: { active_coupons: r.active_coupons_count || 0 },
-  }));
-
-  return { rows, total: total || rows.length };
 }
 
 /**
@@ -97,11 +125,9 @@ export async function list({
 export async function getBySlug(slug) {
   if (!slug) return null;
 
-  // defensive normalize
   const normSlug = String(slug || "").trim();
 
   try {
-    // fetch merchant row — include denormalized active_coupons_count if present
     const { data, error } = await supabase
       .from("merchants")
       .select(
@@ -116,12 +142,11 @@ export async function getBySlug(slug) {
     }
     if (!data) return null;
 
-    // If denormalized counter exists on the row, use it. Otherwise, fall back to COUNT query.
+    // Compute active coupons: use denormalized counter if present, else fallback to COUNT
     let activeCoupons = 0;
     if (typeof data.active_coupons_count === "number") {
       activeCoupons = data.active_coupons_count || 0;
     } else {
-      // fallback count query (only if denormalized not available)
       try {
         const { count: ac, error: ce } = await supabase
           .from("coupons")
@@ -182,8 +207,8 @@ export function buildSeo(store, { canonical, locale } = {}) {
 /**
  * Build breadcrumbs
  */
-export function buildBreadcrumbs(store, { origin }) {
-    const SITE_ORIGIN = origin || "";
+export function buildBreadcrumbs(store, { origin } = {}) {
+  const SITE_ORIGIN = origin || "";
 
   const safeName = store && store.name ? String(store.name) : "Store";
   const safeSlug =
@@ -200,26 +225,21 @@ export function buildBreadcrumbs(store, { origin }) {
     { name: "Stores", url: storesUrl },
     { name: safeName, url: storeUrl },
   ];
-  // return [
-  //   { name: "Home", url: `${origin}/` },
-  //   { name: "Stores", url: `${origin}/stores` },
-  //   { name: store.name, url: `${origin}/stores/${store.slug}` },
-  // ];
 }
 
 /**
- * Related stores by overlapping categories
+ * Related stores by overlapping categories (RPC)
  */
 export async function relatedByCategories({
   merchantId,
   categoryNames,
-  limit,
-}) {
+  limit = 8,
+} = {}) {
   if (!categoryNames?.length) return [];
 
   try {
     const { data, error } = await supabase.rpc("merchants_by_category_any", {
-      cat_list: categoryNames, // e.g. ['electronics', 'home']
+      cat_list: categoryNames,
       exclude_id: merchantId || null,
       limit_val: limit || 8,
     });
@@ -244,7 +264,6 @@ export async function listSlugs() {
       .from("merchants")
       .select("slug, updated_at")
       .eq("active", true);
-
     if (error) {
       console.error("Supabase listSlugs error:", error);
       return { slugs: [] };

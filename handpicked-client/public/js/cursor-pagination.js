@@ -1,8 +1,8 @@
 // public/js/cursor-pagination.js
-// Drop-in pagination script for /coupons
+// Drop-in pagination script for /coupons, /stores, /blogs
 // - Place at /public/js/cursor-pagination.js
-// - Intercepts Prev/Next clicks (capturing listener) and prevents native navigation synchronously,
-//   then fetches backend JSON and replaces the coupons grid.
+// - Intercepts Prev/Next clicks (capture), prevents native navigation synchronously,
+//   fetches backend JSON and replaces the grid (#resource-list).
 // - Delegates "reveal" clicks to backend click endpoint.
 // - Uses window.PUBLIC_API_BASE_URL if provided, else falls back to the hardcoded Render base.
 
@@ -40,6 +40,7 @@
     return grid;
   }
 
+  // Renderers
   function renderCouponStaticCard(item) {
     return `
       <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
@@ -89,6 +90,72 @@
           </div>
         </div>
       </div>
+    `;
+  }
+
+  function renderStoreStaticCard(store) {
+    const name = escapeHtml(store.name || "");
+    const slug = escapeHtml(store.slug || "");
+    const logo = store.logo_url ? escapeHtml(store.logo_url) : "";
+    const active =
+      store.stats && typeof store.stats.active_coupons === "number"
+        ? Number(store.stats.active_coupons)
+        : null;
+
+    return `
+    <a
+      href="/stores/${slug}"
+      class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200"
+      aria-label="Open ${name}"
+    >
+      <div class="flex flex-col h-full">
+        <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
+          ${
+            logo
+              ? `<img src="${logo}" alt="${name}" loading="lazy" class="max-h-full max-w-full object-contain" />`
+              : `<div class="w-full flex items-center justify-center text-xs text-gray-400">Logo</div>`
+          }
+        </div>
+
+        <div class="flex-1 flex flex-col justify-center">
+          <div class="flex items-center justify-center gap-2">
+            <h3 class="font-semibold text-brand-primary text-sm md:text-base truncate text-center">${name}</h3>
+          </div>
+
+          ${
+            active !== null
+              ? `
+            <div class="mt-2 flex justify-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">
+                ${active} ${active === 1 ? "deal" : "deals"}
+              </span>
+            </div>
+          `
+              : ""
+          }
+        </div>
+      </div>
+    </a>
+  `;
+  }
+
+  function renderBlogStaticCard(post) {
+    const title = escapeHtml(post.title || post.headline || "");
+    const slug = escapeHtml(post.slug || "");
+    const excerpt = escapeHtml(post.excerpt || post.description || "");
+    const thumb = post.thumbnail_url ? escapeHtml(post.thumbnail_url) : "";
+
+    return `
+      <article class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+        ${
+          thumb
+            ? `<img src="${thumb}" alt="${title}" class="w-full h-40 object-cover rounded mb-3" loading="lazy"/>`
+            : ""
+        }
+        <h3 class="font-semibold text-sm text-brand-primary mb-1 truncate">${title}</h3>
+        <p class="text-xs text-gray-500 truncate">${excerpt}</p>
+        <a href="/blogs/${slug}" class="mt-3 inline-block text-xs text-brand-primary">Read</a>
+      </article>
     `;
   }
 
@@ -149,14 +216,45 @@
     }
   }
 
+  // Renderer selector
+  function chooseRenderer(json) {
+    // prefer pathname
+    const path = location.pathname || "";
+    if (path.startsWith("/stores")) return renderStoreStaticCard;
+    if (path.startsWith("/blogs")) return renderBlogStaticCard;
+    if (path.startsWith("/coupons")) return renderCouponStaticCard;
+
+    // fallback to server-provided meta.title if present
+    const title =
+      json && json.meta && json.meta.title
+        ? String(json.meta.title).toLowerCase()
+        : "";
+    if (title.includes("stores")) return renderStoreStaticCard;
+    if (title.includes("blogs")) return renderBlogStaticCard;
+    if (title.includes("coupons")) return renderCouponStaticCard;
+
+    // last-resort: infer from data shape
+    const rows = Array.isArray(
+      json && json.data ? json.data : json && json.items ? json.items : []
+    );
+    if (rows.length && rows[0].merchant) return renderCouponStaticCard;
+    if (rows.length && rows[0].slug && rows[0].name)
+      return renderStoreStaticCard;
+    if (rows.length && (rows[0].title || rows[0].headline))
+      return renderBlogStaticCard;
+
+    return renderCouponStaticCard; // default
+  }
+
   // Click handlers
-  // Synchronously capture and prevent navigation, then handle the action async.
   function isPaginationAnchor(a) {
     if (!a || !a.getAttribute) return false;
     const href = a.getAttribute("href") || "";
     return !!(
       href &&
       (href.includes("/coupons") ||
+        href.includes("/stores") ||
+        href.includes("/blogs") ||
         href.includes("page=") ||
         href.includes("cursor="))
     );
@@ -172,19 +270,26 @@
       const rows = Array.isArray(json.data) ? json.data : json.items || [];
       const grid = ensureGridWrapper();
       if (!grid) return;
-      grid.innerHTML = rows.map(renderCouponStaticCard).join("");
+
+      const renderer = chooseRenderer(json);
+      grid.innerHTML = rows.map(renderer).join("");
       updatePaginationUI(
         json.meta || {},
         document.querySelector(PAGINATION_WRAPPER_SEL)
       );
+
+      // scroll the grid into view (polish)
+      try {
+        grid.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (_) {}
+
       // update address bar to frontend href (so bookmarking/back works)
       try {
         const u = new URL(href, window.location.href);
         history.pushState({}, "", u.pathname + (u.search || ""));
       } catch (e) {}
-      // done
     } catch (err) {
-      console.error("Pagination fetch error:", err);
+      console.error("Pagination fetch error", err);
       // fallback: full navigation to href
       window.location.assign(href);
     }
@@ -202,7 +307,10 @@
 
     try {
       btn.disabled = true;
-      const endpoint = `${BACKEND_API_BASE.replace(/\/+$/, "")}/offers/${encodeURIComponent(id)}/click`;
+      const endpoint = `${BACKEND_API_BASE.replace(
+        /\/+$/,
+        ""
+      )}/offers/${encodeURIComponent(id)}/click`;
       const resp = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,7 +355,9 @@
       const rows = Array.isArray(json.data) ? json.data : json.items || [];
       const grid = ensureGridWrapper();
       if (!grid) return;
-      grid.innerHTML = rows.map(renderCouponStaticCard).join("");
+
+      const renderer = chooseRenderer(json);
+      grid.innerHTML = rows.map(renderer).join("");
       updatePaginationUI(
         json.meta || {},
         document.querySelector(PAGINATION_WRAPPER_SEL)
@@ -294,10 +404,7 @@
 
   // init: ensure pagination wrapper exists (no-op if missing)
   function init() {
-    // nothing else required here, listeners already attached
-    // but ensure grid exists so later replacements work
     ensureGridWrapper();
-    // expose debug var
     window.PUBLIC_API_BASE_URL = window.PUBLIC_API_BASE_URL || BACKEND_API_BASE;
   }
 

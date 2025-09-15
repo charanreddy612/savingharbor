@@ -1,3 +1,4 @@
+// controllers/publicStores.js
 import * as StoresRepo from "../dbhelper/StoresRepoPublic.js";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { ok, fail, notFound } from "../utils/http.js";
@@ -20,7 +21,9 @@ import { getOrigin, getPath } from "../utils/request-helper.js";
 import { buildPrevNext } from "../utils/pagination.js";
 import { makeListCacheKey } from "../utils/cacheKey.js";
 
-// publicStores.js
+/**
+ * GET /public/v1/stores
+ */
 export async function list(req, res) {
   try {
     const page = valPage(req.query.page);
@@ -31,7 +34,7 @@ export async function list(req, res) {
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const categorySlug = String(req.query.category || "").trim();
 
-    // Resolve origin/path safely (getOrigin/getPath might be sync or async)
+    // origin/path may be sync or async
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
@@ -76,7 +79,26 @@ export async function list(req, res) {
           },
         });
 
-        // Await buildCanonical because it is async and may resolve Promises internally
+        // If frontend configured PUBLIC_API_BASE_URL, rewrite prev/next to backend base
+        const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
+          .toString()
+          .trim()
+          .replace(/\/+$/, "");
+        if (backendBase) {
+          const rewrite = (raw) => {
+            if (!raw) return null;
+            try {
+              const u = new URL(raw, "http://example.invalid");
+              return `${backendBase}${u.pathname}${u.search}`;
+            } catch (err) {
+              return raw;
+            }
+          };
+          nav.prev = nav.prev ? rewrite(nav.prev) : null;
+          nav.next = nav.next ? rewrite(nav.next) : null;
+        }
+
+        // Build canonical (may be async)
         const canonical = await buildCanonical({
           origin: params.origin,
           path: params.path,
@@ -114,7 +136,6 @@ export async function list(req, res) {
  *
  */
 export async function detail(req, res) {
-  console.info("Store detail controller method:");
   try {
     const slug = String(req.params.slug || "")
       .trim()
@@ -160,19 +181,15 @@ export async function detail(req, res) {
         // Fetch store (single fast lookup)
         const store = await StoresRepo.getBySlug(params.slug);
         if (!store) return { data: null, meta: { status: 404 } };
-        console.info("Store detail controller method: Store", store);
 
-        //
-        // Run heavy/auxiliary calls in parallel so a slow helper doesn't block the whole payload
-        // Primary coupons (we need total for pagination) is still included as the primary Promise
-        //
+        // Prepare parallel promises
         const couponsPromise = CouponsRepo.listForStore({
           merchantId: store.id,
           type,
           page,
           limit,
           sort,
-          skipCount: false, // need totals for pagination
+          skipCount: false,
         }).catch((e) => {
           console.warn("Coupons listForStore failed:", e);
           return { items: [], total: 0 };
@@ -186,17 +203,6 @@ export async function detail(req, res) {
           console.warn("relatedByCategories failed:", e);
           return [];
         });
-
-        // const testimonialsPromise =
-        //   typeof TestimonialsRepo?.getTopForStore === "function"
-        //     ? TestimonialsRepo.getTopForStore({
-        //         merchantId: store.id,
-        //         limit: 3,
-        //       }).catch((e) => {
-        //         console.warn("getTopForStore failed:", e);
-        //         return null;
-        //       })
-        //     : Promise.resolve(null);
 
         const trendingPromise = CouponsRepo.listForStore({
           merchantId: store.id,
@@ -231,85 +237,58 @@ export async function detail(req, res) {
               })
             : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
 
-        // Await all concurrently
-        const [
-          couponsResult,
-          relatedResult,
-          // testimonialsResult,
-          trendingResult,
-          recentResult,
-        ] = await Promise.all([
-          couponsPromise,
-          relatedPromise,
-          // testimonialsPromise,
-          trendingPromise,
-          recentActivityPromise,
-        ]);
+        const [couponsResult, relatedResult, trendingResult, recentResult] =
+          await Promise.all([
+            couponsPromise,
+            relatedPromise,
+            trendingPromise,
+            recentActivityPromise,
+          ]);
 
-        // Primary coupons: ensure shape and fallback
         const rawItems =
           couponsResult && couponsResult.items ? couponsResult.items : [];
         const total =
-          couponsResult && typeof couponsResult.total === "number"
-            ? couponsResult.total
-            : 0;
+          typeof couponsResult?.total === "number" ? couponsResult.total : 0;
 
-        // Map coupons: keep fields but remove/omit coupon_code
         const couponsItems = (rawItems || []).map((r) => ({
           id: r.id,
           coupon_type: r.coupon_type,
           title: r.title,
           description: r.description,
           type_text: r.type_text,
-          // DO NOT expose coupon_code in GET response
           code: null,
           ends_at: r.ends_at,
           show_proof: !!r.show_proof,
           proof_image_url: r.proof_image_url || null,
           is_editor: !!r.is_editor,
-          merchant_id: data.merchant_id,
+          merchant_id: r.merchant_id,
           merchant: r.merchant
-          ? {
-            id: r.merchant.id,
-            slug: r.merchant.slug,
-            name: r.merchant.name,
-            aff_url: r.merchant.aff_url,
-            web_url: r.merchant.web_url,
-            logo_url: r.merchant.logo_url,
-          }
-        : null,
+            ? {
+                id: r.merchant.id,
+                slug: r.merchant.slug,
+                name: r.merchant.name,
+                aff_url: r.merchant.aff_url,
+                web_url: r.merchant.web_url,
+                logo_url: r.merchant.logo_url,
+              }
+            : null,
         }));
-        console.info("Store detail controller method: Coupons ", couponsItems);
 
-        // Related stores (already normalized by repo or fallback to empty array)
         const related = relatedResult || [];
 
-        // Parse FAQs from store row
-        console.info("FAQs from DB : ", store.faqs);
+        // Normalize FAQs
         let faqs = normalizeFaqsFromColumn(store.faqs);
         faqs = faqs.map((f) => ({
           question: DOMPurify.sanitize(f.question),
           answer: DOMPurify.sanitize(f.answer),
         }));
-        console.info("Store detail controller method: FAQs ", faqs);
 
-        // Testimonials handling (normalize various possible shapes)
+        // Testimonials / ratings fallback (kept as before)
         let testimonials = [];
         let avgRating = null;
         let reviewsCount = 0;
-        // if (testimonialsResult) {
-        //   const tRes = testimonialsResult;
-        //   if (Array.isArray(tRes)) {
-        //     testimonials = tRes.slice(0, 3);
-        //   } else if (tRes.items) {
-        //     testimonials = tRes.items || [];
-        //     if (tRes.avgRating !== undefined) avgRating = tRes.avgRating;
-        //     if (tRes.totalReviews !== undefined)
-        //       reviewsCount = tRes.totalReviews;
-        //   }
-        // }
 
-        // Trending offers: try repo result first, otherwise fallback to listTopByClicks if implemented
+        // Trending offers fallback
         let trendingOffers = [];
         if (
           trendingResult &&
@@ -349,13 +328,12 @@ export async function detail(req, res) {
           }
         }
 
-        // Recent activity (already returned or fallback)
         const recentActivity = recentResult || {
           total_offers_added_last_30d: 0,
           recent: [],
         };
 
-        // Build Canonical URL - await because it may be async internally
+        // canonical + seo
         const canonical = await buildCanonical({
           origin: params.origin,
           path: params.path,
@@ -366,7 +344,6 @@ export async function detail(req, res) {
           sort: params.sort,
         });
 
-        // Build SEO, breadcrumbs, jsonld (existing helpers)
         const seo = StoresRepo.buildSeo(store, {
           canonical,
           locale: params.locale,
@@ -386,7 +363,7 @@ export async function detail(req, res) {
           },
         };
 
-        // Coupons prev/next navigation helper (existing)
+        // Coupons prev/next navigation helper – rewrite to backend base if configured
         const couponsNav = buildPrevNext({
           origin: params.origin,
           path: params.path,
@@ -396,13 +373,29 @@ export async function detail(req, res) {
           extraParams: { type, sort, locale: params.locale || undefined },
         });
 
-        // side_description_html and description_html: prefer explicit fields on store row
+        const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
+          .toString()
+          .trim()
+          .replace(/\/+$/, "");
+        if (backendBase) {
+          const rewrite = (raw) => {
+            if (!raw) return null;
+            try {
+              const u = new URL(raw, "http://example.invalid");
+              return `${backendBase}${u.pathname}${u.search}`;
+            } catch (err) {
+              return raw;
+            }
+          };
+          couponsNav.prev = couponsNav.prev ? rewrite(couponsNav.prev) : null;
+          couponsNav.next = couponsNav.next ? rewrite(couponsNav.next) : null;
+        }
+
         const side_description_html =
           store.side_description_html || store.summary_html || null;
         const description_html =
           store.description_html || store.about_html || null;
 
-        // Prepare final data payload
         return {
           data: {
             id: store.id,
@@ -414,7 +407,6 @@ export async function detail(req, res) {
             breadcrumbs,
             side_description_html,
             description_html,
-            // Keep about_html for backward compatibility, but prefer description_html
             about_html: store.about_html || null,
             stats: { active_coupons: store.active_coupons || 0 },
             coupons: {
@@ -462,7 +454,6 @@ export async function detail(req, res) {
 }
 
 function normalizeFaqsFromColumn(raw) {
-  // raw is expected to be either: null/undefined, a JS array (from jsonb), or a JSON string.
   if (!raw) return [];
 
   let parsed = null;
@@ -479,7 +470,6 @@ function normalizeFaqsFromColumn(raw) {
       return [];
     }
   } else {
-    // unexpected type
     console.warn(
       "normalizeFaqsFromColumn: unexpected faqs column type:",
       typeof raw
