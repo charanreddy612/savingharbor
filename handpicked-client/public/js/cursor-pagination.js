@@ -1,8 +1,8 @@
 // public/js/cursor-pagination.js
 // Drop-in pagination script for /coupons, /stores, /blogs
 // - Place at /public/js/cursor-pagination.js
-// - Intercepts Prev/Next clicks (capture), prevents native navigation synchronously,
-//   fetches backend JSON and replaces the grid (#resource-list).
+// - Only intercepts in-page pagination (same pathname + pagination present)
+// - Fetches backend JSON and replaces the grid (#resource-list).
 // - Delegates "reveal" clicks to backend click endpoint.
 // - Uses window.PUBLIC_API_BASE_URL if provided, else falls back to the hardcoded Render base.
 
@@ -140,10 +140,8 @@
   }
 
   function renderBlogStaticCard(post) {
-    // post: { id, slug, title, hero_image_url, category, created_at }
     const title = escapeHtml(post.title || post.headline || "");
     const slug = escapeHtml(post.slug || "");
-    const excerpt = escapeHtml(post.excerpt || post.description || "");
     const thumb = post.hero_image_url ? escapeHtml(post.hero_image_url) : "";
 
     return `
@@ -241,13 +239,11 @@
 
   // Renderer selector
   function chooseRenderer(json) {
-    // prefer pathname
     const path = location.pathname || "";
     if (path.startsWith("/stores")) return renderStoreStaticCard;
     if (path.startsWith("/blogs")) return renderBlogStaticCard;
     if (path.startsWith("/coupons")) return renderCouponStaticCard;
 
-    // fallback to server-provided meta.title if present
     const title =
       json && json.meta && json.meta.title
         ? String(json.meta.title).toLowerCase()
@@ -256,7 +252,6 @@
     if (title.includes("blogs")) return renderBlogStaticCard;
     if (title.includes("coupons")) return renderCouponStaticCard;
 
-    // last-resort: infer from data shape
     const rows = Array.isArray(
       json && json.data ? json.data : json && json.items ? json.items : []
     );
@@ -269,18 +264,56 @@
     return renderCouponStaticCard; // default
   }
 
-  // Click handlers
+  // --------------------
+  // SAFER pagination detection:
+  // Only treat anchors as pagination when:
+  //  - href points to same pathname as current page (in-page pagination), AND
+  //  - current page contains the pagination wrapper or list wrapper
+  // OR
+  //  - the anchor explicitly contains page= or cursor= AND the wrapper exists and origin/path match current page
+  // This avoids intercepting header navigation to /coupons, /stores, /blogs from other pages.
+  // --------------------
   function isPaginationAnchor(a) {
     if (!a || !a.getAttribute) return false;
     const href = a.getAttribute("href") || "";
-    return !!(
-      href &&
-      (href.includes("/coupons") ||
-        href.includes("/stores") ||
-        href.includes("/blogs") ||
-        href.includes("page=") ||
-        href.includes("cursor="))
+    if (!href) return false;
+
+    const looksLikeList =
+      href.includes("/coupons") ||
+      href.includes("/stores") ||
+      href.includes("/blogs");
+    if (!looksLikeList) return false;
+
+    let parsed;
+    try {
+      parsed = new URL(href, window.location.href);
+    } catch (e) {
+      return false;
+    }
+
+    const samePath = parsed.pathname === window.location.pathname;
+    const hasPageOrCursor =
+      parsed.search.includes("page=") || parsed.search.includes("cursor=");
+    const paginationWrapperExists = !!document.querySelector(
+      PAGINATION_WRAPPER_SEL
     );
+    const listWrapperExists = !!document.querySelector(LIST_WRAPPER_SEL);
+
+    // Intercept only when same path and page contains the required elements
+    if (samePath && (paginationWrapperExists || listWrapperExists)) return true;
+
+    // If explicit page/cursor and wrapper exists but only when the anchor targets current origin and pathname
+    if (
+      hasPageOrCursor &&
+      (paginationWrapperExists || listWrapperExists) &&
+      parsed.origin === window.location.origin &&
+      parsed.pathname === window.location.pathname
+    ) {
+      return true;
+    }
+
+    // Otherwise do not intercept (likely a header nav)
+    return false;
   }
 
   async function handlePaginationAnchorClickAsync(a) {
@@ -301,19 +334,16 @@
         document.querySelector(PAGINATION_WRAPPER_SEL)
       );
 
-      // scroll the grid into view (polish)
       try {
         grid.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (_) {}
 
-      // update address bar to frontend href (so bookmarking/back works)
       try {
         const u = new URL(href, window.location.href);
         history.pushState({}, "", u.pathname + (u.search || ""));
       } catch (e) {}
     } catch (err) {
       console.error("Pagination fetch error", err);
-      // fallback: full navigation to href
       window.location.assign(href);
     }
   }
@@ -390,7 +420,7 @@
     }
   }
 
-  // Install capturing click listener to block native navigation synchronously
+  // Install capturing click listener to block native navigation synchronously only for in-page pagination anchors
   document.addEventListener(
     "click",
     function (ev) {
@@ -412,7 +442,6 @@
         // Handle async
         handlePaginationAnchorClickAsync(a);
       } catch (e) {
-        // if anything goes wrong, don't block normal behavior
         console.warn("pagination click handler error", e);
       }
     },
