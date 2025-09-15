@@ -1,31 +1,26 @@
 // public/js/cursor-pagination.js
-// Client pagination that fetches HTML fragments from frontend fragment endpoints
-// and injects them into #resource-list.
-// Works for /coupons, /stores, /blogs.
-// --- Fix: only intercept pagination anchors (not every /stores or /blogs link)
+// Minimal fragment-driven client pagination for /coupons, /stores, /blogs
+// - Place at /public/js/cursor-pagination.js
+// - Intercepts only pagination anchors and fetches server-rendered fragments
+// - Injects server HTML into #resource-list and updates pagination UI
+// - Delegates "reveal" button clicks to backend click endpoint
 
 (function () {
   if (typeof window === "undefined") return;
 
   const LIST_WRAPPER_SEL = "#resource-list";
-  const GRID_CLASS = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6";
   const PAGINATION_WRAPPER_SEL = ".mt-10";
 
   const FALLBACK_BACKEND = "https://handpickedclient.onrender.com/public/v1";
   const BACKEND_API_BASE =
     (window.PUBLIC_API_BASE_URL || "").replace(/\/+$/, "") || FALLBACK_BACKEND;
 
+  // ---- helpers ----
   function ensureGridWrapper() {
     const listWrapper = document.querySelector(LIST_WRAPPER_SEL);
     if (!listWrapper) return null;
-    let grid = listWrapper.querySelector(".grid");
-    if (!grid) {
-      grid = document.createElement("div");
-      grid.className = GRID_CLASS;
-      listWrapper.innerHTML = "";
-      listWrapper.appendChild(grid);
-    }
-    return grid;
+    // keep whatever grid markup server provided initially; ensure container for replacement
+    return listWrapper;
   }
 
   async function fetchJson(url) {
@@ -52,26 +47,14 @@
     }
   }
 
-  function toBackendApiUrl(href) {
-    try {
-      const parsed = new URL(href, window.location.href);
-      if (parsed.origin === window.location.origin) {
-        return `${BACKEND_API_BASE}${parsed.pathname}${parsed.search}`;
-      }
-      return href;
-    } catch (e) {
-      return `${BACKEND_API_BASE}${href}`;
-    }
-  }
-
   function updatePaginationUI(meta = {}, paginationWrapper) {
     if (!paginationWrapper) return;
     const prevHtml = meta.prev
-      ? `<a href="${meta.prev}" class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"></polyline></svg> Prev</a>`
-      : `<span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"></polyline></svg> Prev</span>`;
+      ? `<a href="${meta.prev}" class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition">Prev</a>`
+      : `<span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed">Prev</span>`;
     const nextHtml = meta.next
-      ? `<a href="${meta.next}" class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition">Next <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"></polyline></svg></a>`
-      : `<span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed">Next <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"></polyline></svg></span>`;
+      ? `<a href="${meta.next}" class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white transition">Next</a>`
+      : `<span class="flex items-center gap-1 px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed">Next</span>`;
     const totalPagesText = meta.total
       ? `Total pages: ${
           meta.total_pages ||
@@ -81,118 +64,77 @@
     paginationWrapper.innerHTML = `
       <div class="flex items-center justify-between mt-6">
         <div class="text-sm text-gray-500">${totalPagesText}</div>
-        <div class="flex items-center gap-2">
-          ${prevHtml}
-          ${nextHtml}
-        </div>
+        <div class="flex items-center gap-2">${prevHtml}${nextHtml}</div>
       </div>
     `;
   }
 
-  async function loadAndReplace(href) {
-    const fragmentUrl = fragmentEndpointForHref(href);
+  // Convert frontend href -> server fragment endpoint (if exists) or backend JSON
+  function toFragmentOrBackend(href) {
+    const frag = fragmentEndpointForHref(href);
+    if (frag) return { type: "fragment", url: frag };
+    // fallback to backend json (full API)
+    try {
+      const parsed = new URL(href, window.location.href);
+      const backend = `${BACKEND_API_BASE}${parsed.pathname}${parsed.search}`;
+      return { type: "backend", url: backend };
+    } catch (e) {
+      return { type: "backend", url: `${BACKEND_API_BASE}${href}` };
+    }
+  }
+
+  // Core: load fragment or backend JSON and inject into #resource-list
+  async function loadAndInject(href) {
+    const container = ensureGridWrapper();
     const paginationWrapper = document.querySelector(PAGINATION_WRAPPER_SEL);
-    const grid = ensureGridWrapper();
-    if (!grid) return;
+    if (!container) return;
+
+    const target = toFragmentOrBackend(href);
 
     try {
-      if (fragmentUrl) {
-        const json = await fetchJson(fragmentUrl);
-        grid.innerHTML = json.html || "";
+      if (target.type === "fragment") {
+        const json = await fetchJson(target.url);
+        // json.html expected to be server-rendered markup for the resource list
+        if (json.html !== undefined && json.html !== null) {
+          // If you prefer to sanitize, include DOMPurify on the page and use:
+          // container.innerHTML = DOMPurify.sanitize(json.html);
+          container.innerHTML = json.html;
+        } else {
+          // no html field — fallback to full navigation
+          window.location.assign(href);
+          return;
+        }
+        updatePaginationUI(json.meta || {}, paginationWrapper);
+        // update address bar so bookmarking/back works
+        try {
+          const u = new URL(href, window.location.href);
+          history.pushState({}, "", u.pathname + (u.search || ""));
+        } catch (_) {}
+        return;
+      }
+
+      // backend JSON path: attempt to use returned data.meta.html (not expected) or fallback
+      const json = await fetchJson(target.url);
+      if (json.html) {
+        container.innerHTML = json.html;
         updatePaginationUI(json.meta || {}, paginationWrapper);
         try {
           const u = new URL(href, window.location.href);
           history.pushState({}, "", u.pathname + (u.search || ""));
-        } catch (e) {}
+        } catch (_) {}
         return;
       }
 
-      const backendUrl = toBackendApiUrl(href);
-      const json = await fetchJson(backendUrl);
-      const rows = Array.isArray(json.data)
-        ? json.data
-        : json.rows || json.items || [];
-      const path = new URL(href, window.location.href).pathname;
-      let html = "";
-      if (path.startsWith("/stores")) {
-        html = rows
-          .map((r) => {
-            const logo = r.logo_url
-              ? `<img src="${r.logo_url}" alt="${r.name}" loading="lazy" class="max-h-full max-w-full object-contain" />`
-              : `<div class="w-full flex items-center justify-center text-xs text-gray-400">Logo</div>`;
-            return `<a href="/stores/${encodeURIComponent(
-              r.slug
-            )}" class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200" aria-label="Open ${
-              r.name
-            }"><div class="flex flex-col h-full"><div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">${logo}</div><div class="flex-1 flex flex-col justify-center"><h3 class="font-semibold text-brand-primary text-sm md:text-base truncate text-center">${
-              r.name
-            }</h3><div class="mt-2 flex justify-center"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">${
-              (r.stats && r.stats.active_coupons) || 0
-            } deals</span></div></div></div></a>`;
-          })
-          .join("");
-      } else if (path.startsWith("/blogs") || path.startsWith("/blog")) {
-        html = rows
-          .map(
-            (p) =>
-              `<a href="/blogs/${encodeURIComponent(
-                p.slug
-              )}" class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:-translate-y-1 transition duration-200"><div class="aspect-[16/9] bg-gray-100">${
-                p.hero_image_url
-                  ? `<img src="${p.hero_image_url}" alt="${p.title}" class="w-full h-full object-cover" loading="lazy" />`
-                  : ``
-              }</div><div class="p-4"><h3 class="font-semibold text-brand-primary line-clamp-2">${
-                p.title
-              }</h3><div class="mt-2 text-xs text-gray-500">${
-                p.category
-                  ? `<span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary">${p.category}</span>`
-                  : ""
-              }${
-                p.created_at
-                  ? `<span>${new Date(
-                      p.created_at
-                    ).toLocaleDateString()}</span>`
-                  : ""
-              }</div></div></a>`
-          )
-          .join("");
-      } else {
-        html = rows
-          .map(
-            (r) =>
-              `<div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]"><div class="flex items-center gap-3"><div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">${
-                r.merchant?.logo_url
-                  ? `<img src="${r.merchant.logo_url}" alt="${
-                      r.merchant_name || "Store"
-                    }" width="40" height="40" class="object-contain" loading="lazy" />`
-                  : `<div class="text-[10px] text-gray-400">Logo</div>`
-              }</div><div class="flex-1 min-w-0"><h3 class="font-semibold text-sm text-brand-primary truncate">${
-                r.merchant_name || ""
-              }</h3><p class="text-xs text-gray-500 truncate">${
-                r.title || ""
-              }</p></div></div><div class="mt-1 flex-1"><button class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary" data-offer-id="${
-                r.id
-              }">${
-                r.coupon_type === "coupon" ? "Reveal Code" : "Activate Deal"
-              }</button></div><div class="flex items-center justify-between mt-2"><div class="text-xs text-gray-500">${
-                r.ends_at ? new Date(r.ends_at).toLocaleDateString() : ""
-              }</div></div></div>`
-          )
-          .join("");
-      }
-
-      grid.innerHTML = html;
-      updatePaginationUI(json.meta || {}, paginationWrapper);
-      try {
-        const u = new URL(href, window.location.href);
-        history.pushState({}, "", u.pathname + (u.search || ""));
-      } catch (_) {}
+      // If backend returns data array, we don't render client-side markup here.
+      // Best fallback: navigate to URL (server will SSR)
+      window.location.assign(href);
     } catch (err) {
       console.error("Pagination fetch error", err);
       window.location.assign(href);
     }
   }
 
+  // Reveal handler (delegated)
   async function handleRevealClick(ev) {
     const btn =
       ev.target && ev.target.closest
@@ -201,6 +143,7 @@
     if (!btn) return;
     const id = btn.getAttribute("data-offer-id");
     if (!id) return;
+
     try {
       btn.disabled = true;
       const endpoint = `${BACKEND_API_BASE.replace(
@@ -241,24 +184,21 @@
     }
   }
 
-  // NEW: only treat an anchor as a pagination anchor when:
-  //  - it is inside the pagination wrapper (.mt-10), OR
-  //  - its href contains explicit pagination params (page= or cursor=), OR
-  //  - it explicitly opts in via data-paginate="true" or rel="pagination"
+  // Decide whether an anchor is a pagination anchor (conservative)
   function isPaginationAnchor(a) {
     if (!a || !a.getAttribute) return false;
-    const href = a.getAttribute("href") || "";
     // explicit opt-in
     if (a.dataset && a.dataset.paginate === "true") return true;
     if (a.getAttribute("rel") === "pagination") return true;
-    // inside pagination area
+    // inside pagination wrapper
     if (a.closest && a.closest(PAGINATION_WRAPPER_SEL)) return true;
     // explicit pagination query
+    const href = a.getAttribute("href") || "";
     if (href.includes("page=") || href.includes("cursor=")) return true;
     return false;
   }
 
-  // Capture clicks (synchronous) — only prevent default if this is a pagination anchor
+  // Capture clicks and only intercept pagination anchors
   document.addEventListener(
     "click",
     function (ev) {
@@ -266,30 +206,33 @@
         const a =
           ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
         if (!a) return;
-        // allow modifier/new-tab or external target
+        // allow modifier/new-tab
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || a.target === "_blank")
           return;
-        if (!isPaginationAnchor(a)) return; // <-- key change: don't intercept everything
+        if (!isPaginationAnchor(a)) return;
         ev.preventDefault();
         ev.stopImmediatePropagation();
-        loadAndReplace(a.getAttribute("href"));
+        loadAndInject(a.getAttribute("href"));
       } catch (e) {
         console.warn("pagination click handler error", e);
       }
     },
-    true
+    true // capture
   );
 
   document.addEventListener("click", handleRevealClick, false);
+
+  // Back/forward: reload fragment for current location
   window.addEventListener("popstate", function () {
-    loadAndReplace(location.pathname + location.search);
+    loadAndInject(location.pathname + location.search);
   });
 
+  // init: nothing heavy to do, just ensure container present and expose debug var
   function init() {
     ensureGridWrapper();
-    // expose for debug
     window.PUBLIC_API_BASE_URL = window.PUBLIC_API_BASE_URL || BACKEND_API_BASE;
   }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
