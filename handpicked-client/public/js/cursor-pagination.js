@@ -2,6 +2,7 @@
 // Client pagination that fetches HTML fragments from frontend fragment endpoints
 // and injects them into #resource-list.
 // Works for /coupons, /stores, /blogs.
+// --- Fix: only intercept pagination anchors (not every /stores or /blogs link)
 
 (function () {
   if (typeof window === "undefined") return;
@@ -36,7 +37,6 @@
     return res.json();
   }
 
-  // Build fragment endpoint for frontend (prefer fragments route)
   function fragmentEndpointForHref(href) {
     try {
       const parsed = new URL(href, window.location.href);
@@ -46,14 +46,12 @@
       if (path.startsWith("/stores")) return `/api/fragments/stores${qs}`;
       if (path.startsWith("/blogs") || path.startsWith("/blog"))
         return `/api/fragments/blogs${qs}`;
-      // fallback to full backend JSON rewrite
       return null;
     } catch (e) {
       return null;
     }
   }
 
-  // Convert frontend href to backend full API URL (fallback)
   function toBackendApiUrl(href) {
     try {
       const parsed = new URL(href, window.location.href);
@@ -91,7 +89,6 @@
     `;
   }
 
-  // Replace grid HTML using fragment or JSON fallback
   async function loadAndReplace(href) {
     const fragmentUrl = fragmentEndpointForHref(href);
     const paginationWrapper = document.querySelector(PAGINATION_WRAPPER_SEL);
@@ -100,12 +97,9 @@
 
     try {
       if (fragmentUrl) {
-        // Preferred: fetch fragment from frontend serverless endpoint
         const json = await fetchJson(fragmentUrl);
-        // json: { html, meta }
         grid.innerHTML = json.html || "";
         updatePaginationUI(json.meta || {}, paginationWrapper);
-        // update address bar
         try {
           const u = new URL(href, window.location.href);
           history.pushState({}, "", u.pathname + (u.search || ""));
@@ -113,13 +107,11 @@
         return;
       }
 
-      // fallback: fetch backend JSON and render client-side (older path)
       const backendUrl = toBackendApiUrl(href);
       const json = await fetchJson(backendUrl);
       const rows = Array.isArray(json.data)
         ? json.data
         : json.rows || json.items || [];
-      // try to guess renderer: simple heuristics (coupons/stores/blogs)
       const path = new URL(href, window.location.href).pathname;
       let html = "";
       if (path.startsWith("/stores")) {
@@ -165,7 +157,6 @@
           )
           .join("");
       } else {
-        // coupons fallback (simple)
         html = rows
           .map(
             (r) =>
@@ -198,12 +189,10 @@
       } catch (_) {}
     } catch (err) {
       console.error("Pagination fetch error", err);
-      // fallback to full navigation
       window.location.assign(href);
     }
   }
 
-  // reveal handler delegates click POST to backend /offers/:id/click
   async function handleRevealClick(ev) {
     const btn =
       ev.target && ev.target.closest
@@ -252,21 +241,24 @@
     }
   }
 
-  // Determine whether anchor looks like a paginated resource we should intercept
+  // NEW: only treat an anchor as a pagination anchor when:
+  //  - it is inside the pagination wrapper (.mt-10), OR
+  //  - its href contains explicit pagination params (page= or cursor=), OR
+  //  - it explicitly opts in via data-paginate="true" or rel="pagination"
   function isPaginationAnchor(a) {
     if (!a || !a.getAttribute) return false;
     const href = a.getAttribute("href") || "";
-    return !!(
-      href &&
-      (href.includes("/coupons") ||
-        href.includes("/stores") ||
-        href.includes("/blogs") ||
-        href.includes("page=") ||
-        href.includes("cursor="))
-    );
+    // explicit opt-in
+    if (a.dataset && a.dataset.paginate === "true") return true;
+    if (a.getAttribute("rel") === "pagination") return true;
+    // inside pagination area
+    if (a.closest && a.closest(PAGINATION_WRAPPER_SEL)) return true;
+    // explicit pagination query
+    if (href.includes("page=") || href.includes("cursor=")) return true;
+    return false;
   }
 
-  // Capture click to synchronously prevent navigation, then handle async
+  // Capture clicks (synchronous) — only prevent default if this is a pagination anchor
   document.addEventListener(
     "click",
     function (ev) {
@@ -274,9 +266,10 @@
         const a =
           ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
         if (!a) return;
+        // allow modifier/new-tab or external target
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || a.target === "_blank")
           return;
-        if (!isPaginationAnchor(a)) return;
+        if (!isPaginationAnchor(a)) return; // <-- key change: don't intercept everything
         ev.preventDefault();
         ev.stopImmediatePropagation();
         loadAndReplace(a.getAttribute("href"));
@@ -289,13 +282,12 @@
 
   document.addEventListener("click", handleRevealClick, false);
   window.addEventListener("popstate", function () {
-    // re-fetch current URL (use fragment endpoint)
     loadAndReplace(location.pathname + location.search);
   });
 
-  // init
   function init() {
     ensureGridWrapper();
+    // expose for debug
     window.PUBLIC_API_BASE_URL = window.PUBLIC_API_BASE_URL || BACKEND_API_BASE;
   }
   if (document.readyState === "loading") {
