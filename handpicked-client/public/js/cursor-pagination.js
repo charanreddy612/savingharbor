@@ -1,6 +1,5 @@
 // public/js/cursor-pagination.js
 // Drop-in pagination script for /coupons, /stores, /blogs
-// - Place at /public/js/cursor-pagination.js
 // - Only intercepts in-page pagination (same pathname + pagination present)
 // - Fetches backend JSON and replaces the grid (#resource-list).
 // - Delegates "reveal" clicks to backend click endpoint.
@@ -25,7 +24,12 @@
       .replace(/>/g, "&gt;");
   }
 
-  function ensureGridWrapper() {
+  /**
+   * getOrCreateGrid
+   * - If a .grid element already exists inside #resource-list, return it (do NOT clear).
+   * - If none exists, create one and append (this is for pages that didn't SSR the grid).
+   */
+  function getOrCreateGrid() {
     const listWrapper = document.querySelector(LIST_WRAPPER_SEL);
     if (!listWrapper) return null;
     let grid = listWrapper.querySelector(".grid");
@@ -34,13 +38,23 @@
       grid.className = GRID_CLASS;
       listWrapper.innerHTML = "";
       listWrapper.appendChild(grid);
-    } else {
-      grid.innerHTML = "";
     }
     return grid;
   }
 
-  // Renderers
+  /**
+   * replaceGridRows(grid, htmlString)
+   * - clears existing grid content and writes the new markup.
+   * - used only when we are applying a client-side pagination update.
+   */
+  function replaceGridRows(grid, htmlString) {
+    if (!grid) return;
+    // Clear then set (this is intentional when doing client-side replace)
+    grid.innerHTML = "";
+    grid.innerHTML = htmlString;
+  }
+
+  // Renderers (unchanged)
   function renderCouponStaticCard(item) {
     return `
       <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
@@ -103,11 +117,7 @@
         : null;
 
     return `
-    <a
-      href="/stores/${slug}"
-      class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200"
-      aria-label="Open ${name}"
-    >
+    <a href="/stores/${slug}" class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200" aria-label="Open ${name}">
       <div class="flex flex-col h-full">
         <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
           ${
@@ -124,13 +134,9 @@
 
           ${
             active !== null
-              ? `
-            <div class="mt-2 flex justify-center">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">
-                ${active} ${active === 1 ? "deal" : "deals"}
-              </span>
-            </div>
-          `
+              ? `<div class="mt-2 flex justify-center"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">${active} ${
+                  active === 1 ? "deal" : "deals"
+                }</span></div>`
               : ""
           }
         </div>
@@ -145,10 +151,7 @@
     const thumb = post.hero_image_url ? escapeHtml(post.hero_image_url) : "";
 
     return `
-    <a
-      href="/blogs/${slug}"
-      class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:-translate-y-1 transition duration-200"
-    >
+    <a href="/blogs/${slug}" class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:-translate-y-1 transition duration-200">
       <div class="aspect-[16/9] bg-gray-100">
         ${
           thumb
@@ -225,19 +228,16 @@
   function toBackendApiUrl(href) {
     try {
       const parsed = new URL(href, window.location.href);
-      // If href origin is same as current origin (frontend link), rewrite to backend base
       if (parsed.origin === window.location.origin) {
         return `${BACKEND_API_BASE}${parsed.pathname}${parsed.search}`;
       }
-      // If href already points to backend or another host, use as-is
       return href;
     } catch (e) {
-      // fallback: try simple concat
       return `${BACKEND_API_BASE}${href}`;
     }
   }
 
-  // Renderer selector
+  // choose renderer
   function chooseRenderer(json) {
     const path = location.pathname || "";
     if (path.startsWith("/stores")) return renderStoreStaticCard;
@@ -261,18 +261,10 @@
     if (rows.length && (rows[0].title || rows[0].headline))
       return renderBlogStaticCard;
 
-    return renderCouponStaticCard; // default
+    return renderCouponStaticCard;
   }
 
-  // --------------------
-  // SAFER pagination detection:
-  // Only treat anchors as pagination when:
-  //  - href points to same pathname as current page (in-page pagination), AND
-  //  - current page contains the pagination wrapper or list wrapper
-  // OR
-  //  - the anchor explicitly contains page= or cursor= AND the wrapper exists and origin/path match current page
-  // This avoids intercepting header navigation to /coupons, /stores, /blogs from other pages.
-  // --------------------
+  // Safer pagination detection (do not intercept header nav)
   function isPaginationAnchor(a) {
     if (!a || !a.getAttribute) return false;
     const href = a.getAttribute("href") || "";
@@ -299,10 +291,8 @@
     );
     const listWrapperExists = !!document.querySelector(LIST_WRAPPER_SEL);
 
-    // Intercept only when same path and page contains the required elements
     if (samePath && (paginationWrapperExists || listWrapperExists)) return true;
 
-    // If explicit page/cursor and wrapper exists but only when the anchor targets current origin and pathname
     if (
       hasPageOrCursor &&
       (paginationWrapperExists || listWrapperExists) &&
@@ -312,10 +302,10 @@
       return true;
     }
 
-    // Otherwise do not intercept (likely a header nav)
     return false;
   }
 
+  // client-side pagination flow
   async function handlePaginationAnchorClickAsync(a) {
     if (!a) return;
     const href = a.getAttribute("href");
@@ -324,11 +314,13 @@
     try {
       const json = await fetchApi(apiUrl);
       const rows = Array.isArray(json.data) ? json.data : json.items || [];
-      const grid = ensureGridWrapper();
+      const grid = getOrCreateGrid();
       if (!grid) return;
 
       const renderer = chooseRenderer(json);
-      grid.innerHTML = rows.map(renderer).join("");
+      // build final html then replace in one operation (avoid flicker)
+      const html = rows.map(renderer).join("");
+      replaceGridRows(grid, html);
       updatePaginationUI(
         json.meta || {},
         document.querySelector(PAGINATION_WRAPPER_SEL)
@@ -399,18 +391,19 @@
     }
   }
 
-  // Popstate: re-fetch current URL from backend and replace grid
+  // popstate rehydrate client grid (do not clear SSR until we have data)
   async function handlePopState() {
     try {
       const href = location.pathname + location.search;
       const apiUrl = toBackendApiUrl(href);
       const json = await fetchApi(apiUrl);
       const rows = Array.isArray(json.data) ? json.data : json.items || [];
-      const grid = ensureGridWrapper();
+      const grid = getOrCreateGrid();
       if (!grid) return;
 
       const renderer = chooseRenderer(json);
-      grid.innerHTML = rows.map(renderer).join("");
+      const html = rows.map(renderer).join("");
+      replaceGridRows(grid, html);
       updatePaginationUI(
         json.meta || {},
         document.querySelector(PAGINATION_WRAPPER_SEL)
@@ -420,7 +413,7 @@
     }
   }
 
-  // Install capturing click listener to block native navigation synchronously only for in-page pagination anchors
+  // Capture click listener but only intercept in-page pagination anchors
   document.addEventListener(
     "click",
     function (ev) {
@@ -439,24 +432,24 @@
         ev.preventDefault();
         ev.stopImmediatePropagation();
 
-        // Handle async
         handlePaginationAnchorClickAsync(a);
       } catch (e) {
         console.warn("pagination click handler error", e);
       }
     },
-    true // capture = true
+    true
   );
 
-  // Delegated reveal clicks (non-capturing ok)
+  // Delegated reveal clicks
   document.addEventListener("click", handleRevealClick, false);
 
   // popstate
   window.addEventListener("popstate", handlePopState);
 
-  // init: ensure pagination wrapper exists (no-op if missing)
+  // init: DO NOT clear server-rendered grid; only create grid if missing
   function init() {
-    ensureGridWrapper();
+    // create grid if missing but do NOT clear existing content
+    getOrCreateGrid();
     window.PUBLIC_API_BASE_URL = window.PUBLIC_API_BASE_URL || BACKEND_API_BASE;
   }
 
