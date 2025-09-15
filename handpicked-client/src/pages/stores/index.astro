@@ -33,10 +33,12 @@ type StoresResponse = {
 let resp: StoresResponse | null = null;
 try {
   // forward the current request querystring to the backend so SSR respects ?page, ?limit, etc.
-  const currentUrl = new URL(Astro.request.url);
-  const query = currentUrl.search || ""; // includes leading '?' or is empty
+  const currentSearch =
+    typeof Astro !== "undefined" && Astro?.request && Astro.request.url
+      ? new URL(Astro.request.url).search
+      : ""; // fallback: no query when rendering outside SSR
   resp = await api.get<StoresResponse>(
-    `/stores${query}`,
+    `/stores${currentSearch}`,
     {},
     { retries: 2, timeout: 8000 }
   );

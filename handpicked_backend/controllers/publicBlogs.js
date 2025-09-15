@@ -1,3 +1,4 @@
+// controllers/publicBlogs.js
 import * as BlogsRepo from "../dbhelper/BlogsRepoPublic.js";
 import { ok, fail, notFound } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
@@ -17,20 +18,24 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
+    // Validate paging + query params
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const sort = valEnum(req.query.sort, ["latest", "featured"], "latest");
     const locale = valLocale(req.query.locale) || deriveLocale(req);
+
+    // category_id numeric param (optional)
     const categoryId = req.query.category_id
       ? Number(req.query.category_id)
       : null;
-    if (req.query.category_id && !Number.isFinite(categoryId))
+    if (req.query.category_id && !Number.isFinite(categoryId)) {
       return badRequest(res, "Invalid category_id");
+    }
 
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
 
-    // Resolve origin/path safely (getOrigin/getPath might be sync or async)
+    // Resolve origin/path (helpers may be sync or async)
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
@@ -45,21 +50,25 @@ export async function list(req, res) {
       path,
     };
 
+    // Deterministic cache key — use categoryId (numeric) not categorySlug
     const cacheKey = makeListCacheKey("blogs", {
       page,
       limit,
       q: params.q || "",
-      category: params.categorySlug || "",
+      category: params.categoryId ?? "",
       sort: params.sort || "",
       locale: params.locale || "",
-      type: params.type || "",
+      type: "",
     });
 
     const result = await withCache(
       req,
       async () => {
         try {
+          // BlogsRepo.list returns { rows, total } per your repo implementation
           const { rows, total } = await BlogsRepo.list(params);
+
+          // Build prev/next using total (repo provided)
           const nav = buildPrevNext({
             origin: params.origin,
             path: params.path,
@@ -73,16 +82,18 @@ export async function list(req, res) {
               locale: params.locale || undefined,
             },
           });
-          // Await buildCanonical because it is async and may resolve Promises internally
+
+          // Build canonical safely (await in case buildCanonical is async)
           const canonical = await buildCanonical({
             origin: params.origin,
             path: params.path,
             page,
             limit,
             q: params.q,
-            categorySlug: params.categorySlug,
+            // categorySlug not used here; keep contract minimal
             sort: params.sort,
           });
+
           return {
             data: rows,
             meta: {
@@ -97,10 +108,33 @@ export async function list(req, res) {
           };
         } catch (err) {
           console.error("Failed to fetch blogs list:", err);
-          throw err;
+          // keep response shape stable on error
+          return {
+            data: [],
+            meta: {
+              page,
+              limit,
+              total: 0,
+              canonical: await buildCanonical({
+                origin: params.origin,
+                path: params.path,
+                page,
+                limit,
+              }),
+              prev: null,
+              next: null,
+              total_pages: 1,
+            },
+          };
         }
       },
       { ttlSeconds: 60, keyExtra: cacheKey }
+    );
+
+    // Prevent CDN/stale caching while debugging/paging — remove or relax for production if desired
+    res.setHeader(
+      "Cache-Control",
+      "no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0"
     );
 
     return ok(res, result);
@@ -116,10 +150,11 @@ export async function detail(req, res) {
       .trim()
       .toLowerCase();
     if (!slug) return badRequest(res, "Invalid blog slug");
-    // Ensure page/limit are defined before any async blocks
+
+    // Keep paging validators in case blog detail uses pagination for related items
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
-    // Opt-in for trusting proxy headers only if you know the provider is trusted
+
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
@@ -138,10 +173,10 @@ export async function detail(req, res) {
       page,
       limit,
       q: params.q || "",
-      category: params.categorySlug || "",
-      sort: params.sort || "",
+      category: "",
+      sort: "",
       locale: params.locale || "",
-      type: params.type || "",
+      type: "",
     });
 
     const result = await withCache(
@@ -154,16 +189,14 @@ export async function detail(req, res) {
           const canonical = await buildCanonical({
             origin: params.origin,
             path: params.path,
-            path: params.path,
             page: params.page,
-            categorySlug: params.categorySlug,
-            sort: params.sort,
           });
 
           const seo = BlogsRepo.buildSeo(blog, {
             canonical,
             locale: params.locale,
           });
+
           const breadcrumbs = BlogsRepo.buildBreadcrumbs(blog, params);
 
           const articleJsonLd = buildArticleJsonLd(blog, params.origin);
@@ -179,6 +212,7 @@ export async function detail(req, res) {
           };
 
           const related = await BlogsRepo.related(blog, 6);
+
           return {
             data: {
               id: blog.id,
