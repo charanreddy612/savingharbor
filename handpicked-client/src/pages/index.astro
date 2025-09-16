@@ -129,19 +129,25 @@ const cmeta = cresp?.meta || {};
         <a
           href="/coupons"
           class="btn btn-outline"
-          aria-label="Explore more coupons">Explore more →</a
+          aria-label="Explore more coupons"
         >
+          Explore more →
+        </a>
       </div>
 
       <section>
         {
           coupons.length > 0 ? (
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            /* NOTE: added items-stretch so grid children stretch vertically */
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 items-stretch">
               {coupons.map((c) => (
+                /* NOTE: each grid cell must be full-height so the inner card can h-full */
                 <div
-                  class="rounded-md bg-white/3 p-3 transition-shadow hover:shadow-store-card card-accent-top"
-                  style="border-top-width: 3px; border-top-style: solid; "
+                  class="h-full rounded-md bg-white/3 p-3 transition-shadow hover:shadow-store-card card-accent-top"
+                  style="border-top-width: 3px; border-top-style: solid;"
                 >
+                  {/* CouponRevealIsland injects the SSR markup; that markup must render h-full
+                  — we already updated renderCouponCardHtml to wrap with w-full h-full */}
                   <CouponRevealIsland
                     client:idle
                     coupon={c}
