@@ -39,24 +39,31 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // Two inline compact SVG badges (kept small to avoid external assets)
-  const verifiedSvg = `<svg width="72" height="48" viewBox="0 0 280 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img"><defs><filter id="sdrop" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.12"/></filter></defs><g transform="translate(40,0)" filter="url(#sdrop)"><path d="M60 6 L120 24 L120 64 C120 88 84 104 60 108 C36 104 0 88 0 64 L0 24 Z" fill="#FFD54A" stroke="#F59E0B" stroke-width="4"/><circle cx="60" cy="46" r="20" fill="#065F46"/><path d="M50 46 l6 6 l14 -14" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><text x="60" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#064E3B">VERIFIED</text></g></svg>`;
+  // Responsive badges — mobile-first sizing; decorative and non-interactive
+  const badgesHtml = `
+    <div class="absolute left-2 top-2 sm:left-3 sm:top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
+      <div class="flex items-center gap-2 text-[10px] sm:text-sm text-emerald-600 bg-white/0">
+        <img src="/images/verified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
+        <span class="font-medium">Verified</span>
+      </div>
+    </div>
 
-  const reverifiedSvg = `<svg width="84" height="56" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img"><g transform="translate(40,0) scale(0.64)"><circle cx="80" cy="40" r="36" fill="#FFD54A"/><circle cx="80" cy="40" r="28" fill="#F9E29D"/><path d="M66 40 l8 8 l18 -18" stroke="#064E3B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><text x="80" y="18" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#064E3B">RE-VERIFIED</text></g><g transform="translate(0,28) scale(0.64)"><path d="M120 72 L100 112 L150 96 L200 112 L180 72 Z" fill="#C11B1B"/><path d="M40 72 L60 112 L110 96 L160 112 L140 72 Z" fill="#C11B1B" transform="translate(80,0)"/></g></svg>`;
+    <div class="absolute right-2 top-2 sm:right-3 sm:top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
+      <div class="flex items-center gap-2 text-[10px] sm:text-sm text-emerald-600 bg-white/0">
+        <img src="/images/reverified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
+        <span class="font-medium">Re-verified</span>
+      </div>
+    </div>
+  `;
 
-  // Keep markup/classnames identical to your Card / island components to avoid CSS drift.
   return `
     <div class="relative">
-      <div class="absolute -top-4 -left-2 z-20 pointer-events-none" aria-hidden="true" style="line-height:0;">
-        ${reverifiedSvg}
-      </div>
-      <div class="absolute -top-4 -right-2 z-20 pointer-events-none" aria-hidden="true" style="line-height:0;">
-        ${verifiedSvg}
-      </div>
+      ${badgesHtml}
 
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
+      <!-- add top padding on small screens so badges don't overlap content -->
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 pt-6 sm:pt-4 min-h-[110px]">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white">
+          <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white flex-shrink-0">
             ${
               logo
                 ? `<img src="${logo}" alt="${
@@ -86,9 +93,12 @@ export function renderCouponCardHtml(item = {}) {
 
         <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-gray-500">${endsAt}</div>
-          <div class="text-xs text-gray-500">used by ${clickCount} ${
-    clickCount === 1 ? "user" : "users"
-  }</div>
+          <div class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" />
+            </svg>
+            <span>used by ${clickCount} ${clickCount === 1 ? "user" : "users"}</span>
+          </div>
         </div>
       </div>
     </div>
