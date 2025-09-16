@@ -24,7 +24,7 @@ export function renderCouponCardHtml(item = {}) {
     ? escapeHtml(item.merchant.logo_url)
     : "";
   const couponType = item.coupon_type || "";
-  const description = escapeHtml(item.description ?? "");
+  // const description = escapeHtml(item.description ?? "");
   const endsAt = item.ends_at
     ? escapeHtml(
         new Date(item.ends_at).toLocaleDateString(undefined, {
@@ -67,7 +67,7 @@ export function renderCouponCardHtml(item = {}) {
 
   return `
     <div class="relative">
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[120px]">
         <!-- 1) Badges row: left and right -->
         ${badgesHtml}
 
@@ -86,11 +86,6 @@ export function renderCouponCardHtml(item = {}) {
           <div class="flex-1 min-w-0">
             <h3 class="font-semibold text-sm text-brand-primary truncate">${merchantName}</h3>
             <p class="text-xs text-gray-500 truncate">${title}</p>
-            ${
-              description
-                ? `<p class="text-xs text-gray-500 truncate mt-0.5">${description}</p>`
-                : ""
-            }
           </div>
         </div>
 
