@@ -131,3 +131,12 @@
 }
 
 .expandable p { margin: 0; }
+
+.details-panel.hidden {
+  display: none !important;
+}
+
+.preview-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  letter-spacing: 0.02em;
+}

@@ -7,8 +7,7 @@ import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
  * - Re-uses renderCouponCardHtml for exact SSR parity
  * - Injects the HTML and delegates reveal-button clicks
  * - Keeps toasts + clipboard + redirect logic
- *
- * NOTE: This version adds robust direct handlers + debug logs to make reveal flow reliable.
+ * - Now also wires the description details toggle (no global script needed)
  */
 
 async function fetchWithRetry(url, options, retries = 2) {
@@ -59,12 +58,10 @@ export default function CouponReveal({ coupon, storeSlug }) {
   };
   const removeToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
-  // Core click handler extracted so we can attach it to buttons directly
   const handleRevealClick = async (btnEl, offerId) => {
     if (!btnEl || !offerId) return;
     if (disabledOfferIds.has(String(offerId))) return;
 
-    // disable immediate to prevent double-taps
     btnEl.disabled = true;
     try {
       const base = import.meta.env.PUBLIC_API_BASE_URL || "";
@@ -129,7 +126,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       }
 
       if (serverRedirect) {
-        // small delay to allow UI update & copy toast to appear
         setTimeout(() => {
           window.open(serverRedirect, "_blank", "noopener,noreferrer");
         }, 100);
@@ -147,7 +143,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
         }
       }
 
-      // mark revealed in this session
       setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
     } catch (err) {
       console.error("Reveal click failed", err);
@@ -156,14 +151,14 @@ export default function CouponReveal({ coupon, storeSlug }) {
     }
   };
 
-  // Inject SSR-markup from renderCouponCardHtml into this island's container
+  // Inject SSR-markup + wire reveal & details toggle
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     el.innerHTML = renderCouponCardHtml(c);
     console.debug("[CouponReveal] injected HTML for offer", c?.id);
 
-    // If this offer was revealed previously in this session, reflect that state
+    // Restore state if already revealed
     if (disabledOfferIds.has(String(c.id))) {
       const btn = el.querySelector(
         `.js-reveal-btn[data-offer-id="${String(c.id)}"]`
@@ -177,15 +172,12 @@ export default function CouponReveal({ coupon, storeSlug }) {
       }
     }
 
-    // Attach direct click handlers to any reveal buttons found in the injected HTML.
-    // This is more robust than relying only on delegation when HTML is re-injected.
+    // Attach reveal handlers
     const buttons = el.querySelectorAll(".js-reveal-btn[data-offer-id]");
-    if (buttons && buttons.length > 0) {
+    if (buttons.length > 0) {
       buttons.forEach((btn) => {
         const offerId = btn.getAttribute("data-offer-id");
         if (!offerId) return;
-
-        // avoid attaching multiple handlers: use a flag
         if (!btn.__coupon_reveal_attached) {
           btn.__coupon_reveal_attached = true;
           btn.addEventListener("click", (ev) => {
@@ -195,15 +187,27 @@ export default function CouponReveal({ coupon, storeSlug }) {
           console.debug("[CouponReveal] attached direct handler for", offerId);
         }
       });
-    } else {
-      console.debug(
-        "[CouponReveal] no reveal buttons found in injected HTML for",
-        c?.id
-      );
     }
+
+    // Attach details toggle handlers
+    const toggleBtns = el.querySelectorAll(".js-details-toggle");
+    toggleBtns.forEach((btn) => {
+      if (btn.__details_attached) return;
+      btn.__details_attached = true;
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("aria-controls");
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (!target) return;
+        const expanded = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", String(!expanded));
+        target.setAttribute("aria-hidden", String(expanded));
+        target.classList.toggle("hidden", expanded);
+        btn.innerText = expanded ? "Show Details ▼" : "Hide Details ▲";
+      });
+    });
   }, [c, disabledOfferIds]);
 
-  // Keep delegated listener as a safety-net for elements added later dynamically
+  // Delegated listener fallback
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -213,7 +217,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       if (!btn) return;
       const offerId = btn.getAttribute("data-offer-id");
       if (!offerId) return;
-      // avoid running twice if direct handler already processed it
       if (btn.__coupon_reveal_attached_handled) return;
       btn.__coupon_reveal_attached_handled = true;
       await handleRevealClick(btn, offerId);
@@ -223,7 +226,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
     return () => {
       try {
         el.removeEventListener("click", delegated);
-      } catch (e) {}
+      } catch (_) {}
     };
   }, [c, sSlug, disabledOfferIds]);
 
