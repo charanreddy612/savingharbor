@@ -141,8 +141,8 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
                   <div class="text-sm text-gray-400">Logo</div>
                 )}
               </div>
-
-              <div class="min-w-0">
+            </div>
+            <div class="flex flex-col items-start gap-4">
                 <h1 class="text-2xl font-extrabold text-brand-primary leading-tight">
                   {store.name}
                 </h1>
@@ -164,8 +164,6 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
                   <a href={`/stores/${store.slug}#about-section`} class="btn btn-outline text-sm">About</a>
                 </div>
               </div>
-            </div>
-
             <!-- RIGHT: fluid column for descriptions (inline view more / show less) -->
             <div class="min-w-0">
               {meta.description && (
