@@ -1,11 +1,19 @@
 // src/lib/renderers/couponCardHtml.js
 export function escapeHtml(s = "") {
-  return String(s || "")
+  return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
+/**
+ * renderCouponCardHtml(item)
+ * item: {
+ *   id, title, coupon_type, code, ends_at, merchant_id,
+ *   merchant: { slug, name, logo_url }, merchant_name,
+ *   click_count
+ * }
+ */
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
   const title = escapeHtml(item.title ?? "");
@@ -16,6 +24,7 @@ export function renderCouponCardHtml(item = {}) {
     ? escapeHtml(item.merchant.logo_url)
     : "";
   const couponType = item.coupon_type || "";
+  const description = escapeHtml(item.description ?? "");
   const endsAt = item.ends_at
     ? escapeHtml(
         new Date(item.ends_at).toLocaleDateString(undefined, {
@@ -31,16 +40,16 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // Compact badges: icon-first, no chip background or shadow, label shown only on sm+
   const badgesHtml = `
-    <div class="flex-shrink-0 flex items-center gap-2 ml-2">
-      <div class="flex items-center gap-1">
+    <div class="w-full flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
         <img src="/images/verified-badge.png" alt="Verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
         <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Verified</span>
       </div>
-      <div class="flex items-center gap-1">
-        <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
+
+      <div class="flex items-center gap-2">
         <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
+        <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>
   `;
@@ -58,10 +67,13 @@ export function renderCouponCardHtml(item = {}) {
 
   return `
     <div class="relative">
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 min-h-[110px]">
-        <!-- header: logo | merchant info (flex-1) | badges (icon-first) -->
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[140px]">
+        <!-- 1) Badges row: left and right -->
+        ${badgesHtml}
+
+        <!-- 2) Header row: logo | merchant info -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 flex items-center justify-center rounded overflow-hidden bg-white flex-shrink-0">
+          <div class="w-10 h-10 flex items-center justify-center rounded overflow-hidden bg-white flex-shrink-0 border">
             ${
               logo
                 ? `<img src="${logo}" alt="${
@@ -74,13 +86,16 @@ export function renderCouponCardHtml(item = {}) {
           <div class="flex-1 min-w-0">
             <h3 class="font-semibold text-sm text-brand-primary truncate">${merchantName}</h3>
             <p class="text-xs text-gray-500 truncate">${title}</p>
+            ${
+              description
+                ? `<p class="text-xs text-gray-500 truncate mt-0.5">${description}</p>`
+                : ""
+            }
           </div>
-
-          ${badgesHtml}
         </div>
 
-        <!-- CTA -->
-        <div class="mt-1 flex-1">
+        <!-- 3) CTA -->
+        <div class="mt-1">
           <button
             type="button"
             class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
@@ -93,7 +108,7 @@ export function renderCouponCardHtml(item = {}) {
           </button>
         </div>
 
-        <!-- footer -->
+        <!-- 4) Footer: endsAt (left) | usedBy (right) -->
         <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-gray-500">${endsAt}</div>
           ${usedByHtml}
