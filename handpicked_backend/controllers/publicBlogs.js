@@ -184,7 +184,6 @@ export async function detail(req, res) {
       async () => {
         try {
           const blog = await BlogsRepo.getBySlug(slug);
-          console.log("DEBUG blog result:", JSON.stringify(blog, null, 2));
           if (!blog) return { data: null, meta: { status: 404 } };
 
           const canonical = await buildCanonical({
@@ -192,14 +191,11 @@ export async function detail(req, res) {
             path: params.path,
             page: params.page,
           });
-console.log("DEBUG step: got blog", blog.slug);
           const seo = BlogsRepo.buildSeo(blog, {
             canonical,
             locale: params.locale,
           });
-console.log("DEBUG step: built seo");
           const breadcrumbs = BlogsRepo.buildBreadcrumbs(blog, params);
-console.log("DEBUG step: built breadcrumbs");
           const articleJsonLd = buildArticleJsonLd(blog, params.origin);
           const breadcrumbJsonLd = {
             "@context": "https://schema.org",
@@ -211,9 +207,7 @@ console.log("DEBUG step: built breadcrumbs");
               item: b.url,
             })),
           };
-console.log("DEBUG step: built articleJsonLd");
           const related = await BlogsRepo.related(blog, 6);
-console.log("DEBUG step: got related", related.length);
           return {
             data: {
               id: blog.id,

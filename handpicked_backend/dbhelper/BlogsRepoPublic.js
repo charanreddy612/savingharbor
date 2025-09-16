@@ -168,9 +168,9 @@ export async function getBySlug(slug) {
       slug: data.slug,
       title: data.title,
       hero_image_url:
-        data.featured_image_url || data.featured_thumb_url || null,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
+      data.featured_image_url || data.featured_thumb_url || null,
+      created_at: data.created_at ? new Date(data.created_at).toISOString() : null,
+      updated_at: data.updated_at ? new Date(data.updated_at).toISOString() : null,
       seo_title: data.meta_title || "",
       meta_description: data.meta_description || "",
       content_html: sanitize(data.content || ""),
@@ -254,7 +254,7 @@ export async function related(blog, limit = 6) {
     slug: r.slug,
     title: r.title,
     hero_image_url: r.featured_image_url || r.featured_thumb_url || null,
-    created_at: r.created_at,
+    created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
   }));
 }
 
