@@ -192,14 +192,14 @@ export async function detail(req, res) {
             path: params.path,
             page: params.page,
           });
-
+console.log("DEBUG step: got blog", blog.slug);
           const seo = BlogsRepo.buildSeo(blog, {
             canonical,
             locale: params.locale,
           });
-
+console.log("DEBUG step: built seo");
           const breadcrumbs = BlogsRepo.buildBreadcrumbs(blog, params);
-
+console.log("DEBUG step: built breadcrumbs");
           const articleJsonLd = buildArticleJsonLd(blog, params.origin);
           const breadcrumbJsonLd = {
             "@context": "https://schema.org",
@@ -211,9 +211,9 @@ export async function detail(req, res) {
               item: b.url,
             })),
           };
-
+console.log("DEBUG step: built articleJsonLd");
           const related = await BlogsRepo.related(blog, 6);
-
+console.log("DEBUG step: got related", related.length);
           return {
             data: {
               id: blog.id,

@@ -32,16 +32,18 @@ export function buildStoreJsonLd(store, origin) {
 }
 
 export function buildArticleJsonLd(blog, origin) {
+  if (!blog) return {};
+
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: blog.title,
-    datePublished: blog.created_at,
-    dateModified: blog.updated_at,
+    headline: blog.title || "",
+    datePublished: blog.created_at || null,
+    dateModified: blog.updated_at || null,
     author: blog.author?.name
       ? { "@type": "Person", name: blog.author.name }
       : undefined,
-    mainEntityOfPage: `${origin}/blog/${blog.slug}`,
+    mainEntityOfPage: blog.slug ? `${origin}/blogs/${blog.slug}` : origin,
     image: blog.hero_image_url || undefined,
   };
 }
