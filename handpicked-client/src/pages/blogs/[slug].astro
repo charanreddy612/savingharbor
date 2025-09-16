@@ -18,6 +18,7 @@ type BlogDetail = {
     name?: string | null;
     role?: string | null;
     avatar_url?: string | null;
+    bio?: string | null;
     sameAs?: string[];
   } | null;
   breadcrumbs?: { name: string; url: string }[];
@@ -32,6 +33,7 @@ type BlogDetailResponse = {
     title?: string;
     description?: string;
   };
+  related?: BlogDetail[];
 };
 
 const { slug } = Astro.params as { slug: string };
@@ -53,11 +55,13 @@ try {
       canonical: undefined,
       jsonld: undefined,
     },
+    related: [],
   };
 }
 
 const post = resp?.data || null;
 const meta = resp?.meta || {};
+const related = resp?.related || [];
 const pageTitle =
   meta.title ||
   (post?.title ? `${post.title} - HandPicked` : "Blog - HandPicked");
@@ -68,6 +72,17 @@ const jsonld = meta.jsonld;
 const safeBodyHtml = post?.content_html
   ? DOMPurify.sanitize(post.content_html)
   : null;
+
+// Generate TOC
+let toc: { id: string; text: string }[] = [];
+if (safeBodyHtml) {
+  const tmp = new DOMParser().parseFromString(safeBodyHtml, "text/html");
+  toc = Array.from(tmp.querySelectorAll("h2, h3")).map((h) => {
+    const id = h.id || h.textContent?.toLowerCase().replace(/\s+/g, "-") || "";
+    h.id = id; // ensure ids are set
+    return { id, text: h.textContent || "" };
+  });
+}
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -77,11 +92,9 @@ const safeBodyHtml = post?.content_html
     <>
       <Breadcrumbs breadcrumbs={post.breadcrumbs} />
 
-      <!-- Page grid: main article + sidebar -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-4">
-        <!-- Main article column (centered, comfortable measure) -->
+        <!-- Main article -->
         <article class="lg:col-span-2">
-          <!-- Hero / Title -->
           <header class="mb-6">
             <h1 class="text-3xl md:text-4xl font-bold leading-tight text-brand-primary">
               {post.title}
@@ -110,14 +123,12 @@ const safeBodyHtml = post?.content_html
             )}
           </header>
 
-          <!-- Optional hero image -->
           {post.hero_image_url && (
             <figure class="mb-6">
               <img src={post.hero_image_url} alt={post.title} class="w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
             </figure>
           )}
 
-          <!-- Article body: centered measure using prose -->
           {safeBodyHtml ? (
             <div class="prose prose-lg prose-gray max-w-none">
               <div set:html={safeBodyHtml} />
@@ -126,66 +137,69 @@ const safeBodyHtml = post?.content_html
             <p class="text-gray-600">This article has no content.</p>
           )}
 
-          <!-- Share / CTA bar -->
+          <!-- Share -->
           <div class="mt-8 flex items-center justify-between gap-4">
             <div class="flex items-center gap-2">
               <span class="text-sm text-gray-600">Share:</span>
               <div class="flex items-center gap-2">
-                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition" href="#" aria-label="Share on Twitter">Twitter</a>
-                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition" href="#" aria-label="Share on LinkedIn">LinkedIn</a>
+                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition"
+                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonical || Astro.url.href)}&text=${encodeURIComponent(post.title)}`}
+                  target="_blank" rel="noopener">Twitter</a>
+                <a class="p-2 rounded hover:bg-brand-primary/10 text-brand-primary transition"
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonical || Astro.url.href)}`}
+                  target="_blank" rel="noopener">LinkedIn</a>
               </div>
             </div>
-
             <div>
               <a href="/blog" class="btn btn-outline text-sm">Back to Blog</a>
             </div>
           </div>
 
-          <!-- Optional Related posts preview (keeps non-breaking) -->
-          <section class="mt-12">
-            <h3 class="text-xl font-semibold text-brand-primary mb-4">Related posts</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Replace these placeholders with real related posts when available -->
-              <a href="/blog/sample-slug" class="block p-4 border rounded hover:shadow-sm">
-                <div class="font-medium">Sample related post title</div>
-                <div class="text-xs text-gray-500 mt-1">Quick summary or date</div>
-              </a>
-              <a href="/blog/sample-slug-2" class="block p-4 border rounded hover:shadow-sm">
-                <div class="font-medium">Another article</div>
-                <div class="text-xs text-gray-500 mt-1">Short excerpt</div>
-              </a>
-            </div>
-          </section>
+          <!-- Related posts -->
+          {related.length > 0 && (
+            <section class="mt-12">
+              <h3 class="text-xl font-semibold text-brand-primary mb-4">Related posts</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {related.map((r) => (
+                  <a href={`/blog/${r.slug}`} class="block p-4 border rounded hover:shadow-sm">
+                    <div class="font-medium">{r.title}</div>
+                    {r.created_at && (
+                      <div class="text-xs text-gray-500 mt-1">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </div>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
         </article>
 
-        <!-- Right sidebar: sticky on desktop, stacks below on mobile -->
+        <!-- Sidebar -->
         <aside class="lg:col-span-1">
           <div class="space-y-6">
-            <!-- Subscribe box -->
             <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
               <h4 class="font-semibold text-sm text-brand-primary mb-2">Get updates</h4>
               <p class="text-sm text-gray-600 mb-3">Subscribe for the latest articles and deals.</p>
-              <!-- Keep your existing subscribe component if present -->
               <form class="flex gap-2">
                 <input type="email" placeholder="you@domain.com" class="flex-1 px-3 py-2 border rounded text-sm" />
                 <button class="btn btn-primary text-sm">Subscribe</button>
               </form>
             </div>
 
-            <!-- Sticky quick nav (table of contents) -->
-            <div class="hidden lg:block sticky top-28">
-              <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
-                <h4 class="font-semibold text-sm text-brand-secondary mb-2">On this page</h4>
-                <nav class="text-sm text-gray-600 space-y-2">
-                  <!-- Optionally generate TOC from headings; placeholders for now -->
-                  <a href="#what-are-ai-driven-coupons" class="block hover:text-brand-primary">What are AI-Driven Coupons?</a>
-                  <a href="#predictive-algorithms" class="block hover:text-brand-primary">Predictive Algorithms</a>
-                  <a href="#case-study" class="block hover:text-brand-primary">Case Study</a>
-                </nav>
+            {toc.length > 0 && (
+              <div class="hidden lg:block sticky top-28">
+                <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
+                  <h4 class="font-semibold text-sm text-brand-secondary mb-2">On this page</h4>
+                  <nav class="text-sm text-gray-600 space-y-2">
+                    {toc.map((h) => (
+                      <a href={`#${h.id}`} class="block hover:text-brand-primary">{h.text}</a>
+                    ))}
+                  </nav>
+                </div>
               </div>
-            </div>
+            )}
 
-            <!-- Small author / about card -->
             {post.author && (
               <div class="bg-white border border-gray-100 rounded p-4 shadow-sm">
                 <div class="flex items-center gap-3">
@@ -201,7 +215,14 @@ const safeBodyHtml = post?.content_html
                     {post.author.role && <div class="text-xs text-gray-500">{post.author.role}</div>}
                   </div>
                 </div>
-                <p class="mt-3 text-sm text-gray-600">Author bio or a short blurb can go here. Keep it concise.</p>
+                {post.author.bio && <p class="mt-3 text-sm text-gray-600">{post.author.bio}</p>}
+                {post.author.sameAs && post.author.sameAs.length > 0 && (
+                  <div class="mt-2 flex gap-2">
+                    {post.author.sameAs.map((link) => (
+                      <a href={link} target="_blank" rel="noopener" class="text-xs text-brand-primary hover:underline">{link.replace(/^https?:\/\//, "")}</a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

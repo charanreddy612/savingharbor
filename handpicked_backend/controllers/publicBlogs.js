@@ -226,8 +226,8 @@ export async function detail(req, res) {
               seo,
               breadcrumbs,
               content_html: blog.content_html,
-              related,
             },
+            related,
             meta: {
               canonical,
               jsonld: { article: articleJsonLd, breadcrumb: breadcrumbJsonLd },

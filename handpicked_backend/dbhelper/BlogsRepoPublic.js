@@ -147,7 +147,7 @@ export async function getBySlug(slug) {
         category_id,
         blog_categories(name),
         author_id,
-        authors ( id, name, avatar_url, bio_html )
+        authors ( id, name, avatar_url, bio_html, same_as )
       `
       )
       .eq("slug", slug)
@@ -180,7 +180,8 @@ export async function getBySlug(slug) {
             id: authorRow.id ?? data.author_id ?? null,
             name: authorRow.name ?? "Editorial Team",
             avatar_url: authorRow.avatar_url ?? null,
-            bio_html: sanitize(authorRow.bio_html ?? ""),
+            bio: authorRow.bio_html ? sanitize(authorRow.bio_html) : null,
+            sameAs: Array.isArray(authorRow.same_as) ? authorRow.same_as : [],
           }
         : null,
     };
