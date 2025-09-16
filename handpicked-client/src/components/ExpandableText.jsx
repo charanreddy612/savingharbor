@@ -1,18 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 
 /**
- * ExpandableText.jsx
+ * ExpandableText.jsx — precise inline "View more… / Show less"
  *
  * Props:
- *  - html: string (HTML content to render; must be sanitized before passing in)
- *  - id: string (unique id used for aria-controls)
- *  - initialLines: number (how many lines to show when collapsed) default 2
- *  - className: string (optional extra classes for container)
+ *  - html: string (sanitized HTML)
+ *  - id: string (unique id)
+ *  - initialLines: number (default: 2)
+ *  - className: extra classes for container
  *
  * Usage:
- *  <ExpandableText client:load html={meta.description} id="store-desc" initialLines={2} />
+ *  <ExpandableText client:load html={meta.description} id="store-meta-desc" initialLines={2} className="prose ..." />
  *
- * NOTE: html should be sanitized server-side (DOMPurify) before being passed in.
+ * Note: html MUST be sanitized server-side before passing in (you already do DOMPurify).
  */
 
 export default function ExpandableText({
@@ -21,98 +21,174 @@ export default function ExpandableText({
   initialLines = 2,
   className = "",
 }) {
-  const contentRef = useRef(null);
+  const containerRef = useRef(null);
+  const measureRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   const [showToggle, setShowToggle] = useState(false);
-  const toggleId = `${id}-toggle`;
+  const [collapsedText, setCollapsedText] = useState(""); // plain-text truncated snippet
+  const [isMeasured, setIsMeasured] = useState(false);
 
+  // Helper: returns plain text from HTML
+  function stripHtmlToText(inputHtml) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = inputHtml;
+    return tmp.textContent?.trim() ?? "";
+  }
+
+  // Measure and compute truncated snippet that fits in initialLines
   useEffect(() => {
-    // Run measurement after first paint to account for fonts/images
-    const measure = () => {
-      const el = contentRef.current;
-      if (!el) return;
+    if (typeof document === "undefined") return;
 
-      // ensure collapsed for measurement
-      el.classList.add(`clamp-${initialLines}`);
-      // create a clone to measure full height
-      const clone = el.cloneNode(true);
-      clone.style.position = "absolute";
-      clone.style.visibility = "hidden";
-      clone.style.pointerEvents = "none";
-      clone.style.height = "auto";
-      clone.style.maxHeight = "none";
-      clone.style.webkitLineClamp = "unset";
-      document.body.appendChild(clone);
-      const fullHeight = clone.getBoundingClientRect().height;
-      document.body.removeChild(clone);
+    const el = containerRef.current;
+    if (!el) return;
 
-      const clampedHeight = el.getBoundingClientRect().height;
-      // if full height > clamped height (by some epsilon), show toggle
-      if (fullHeight > clampedHeight + 1) {
-        setShowToggle(true);
+    // create invisible measurer that mirrors width/font of the real container
+    const measurer = document.createElement("div");
+    measurer.style.position = "absolute";
+    measurer.style.visibility = "hidden";
+    measurer.style.pointerEvents = "none";
+    measurer.style.whiteSpace = "normal";
+    // copy computed font and width constraints to the measurer
+    const computed = window.getComputedStyle(el);
+    measurer.style.font = computed.font;
+    measurer.style.fontSize = computed.fontSize;
+    measurer.style.lineHeight = computed.lineHeight;
+    measurer.style.letterSpacing = computed.letterSpacing;
+    measurer.style.width = `${el.clientWidth}px`;
+    measurer.style.padding = computed.padding;
+    measurer.style.boxSizing = computed.boxSizing;
+
+    document.body.appendChild(measurer);
+    measureRef.current = measurer;
+
+    const fullText = stripHtmlToText(html);
+    // if very short, don't show toggle
+    measurer.textContent = fullText;
+    const fullHeight = measurer.getBoundingClientRect().height;
+    // compute height for N lines
+    const lineHeight =
+      parseFloat(computed.lineHeight) || parseFloat(computed.fontSize) * 1.2;
+    const targetHeight = Math.round(lineHeight * initialLines);
+
+    if (fullHeight <= targetHeight + 1) {
+      // content fits — no toggle
+      setShowToggle(false);
+      setCollapsedText(fullText);
+      setIsMeasured(true);
+      document.body.removeChild(measurer);
+      return;
+    }
+
+    // binary search over character count to find longest prefix that fits
+    let lo = 0;
+    let hi = fullText.length;
+    let best = "";
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const trial = fullText.slice(0, mid).trim() + "…";
+      measurer.textContent = trial + " View more";
+      const h = measurer.getBoundingClientRect().height;
+      if (h <= targetHeight + 1) {
+        best = trial;
+        lo = mid + 1;
       } else {
-        setShowToggle(false);
+        hi = mid - 1;
       }
+    }
 
-      // maintain collapsed state (do not expand automatically)
-      el.classList.toggle(`clamp-${initialLines}`, !expanded);
-    };
+    if (!best) {
+      // fallback: show first N characters
+      const fallback =
+        fullText
+          .slice(0, Math.max(80, Math.floor(fullText.length * 0.25)))
+          .trim() + "…";
+      setCollapsedText(fallback);
+    } else {
+      setCollapsedText(best);
+    }
 
-    // measure after images/fonts load (rAF + setTimeout)
-    const raf = requestAnimationFrame(() => {
-      setTimeout(measure, 0);
-    });
+    setShowToggle(true);
+    setIsMeasured(true);
+    document.body.removeChild(measurer);
 
-    // Also re-check on window resize (debounced)
-    let rsTimer = null;
+    // re-measure on resize (debounced)
+    let t = null;
     const onResize = () => {
-      clearTimeout(rsTimer);
-      rsTimer = setTimeout(measure, 150);
+      clearTimeout(t);
+      t = setTimeout(() => {
+        // reset state then re-run effect by toggling isMeasured
+        setIsMeasured(false);
+        // small delay then set true to trigger effect
+        setTimeout(() => setIsMeasured(true), 0);
+      }, 150);
     };
     window.addEventListener("resize", onResize);
-
     return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(rsTimer);
+      clearTimeout(t);
       window.removeEventListener("resize", onResize);
+      if (measureRef.current && measureRef.current.parentNode) {
+        try {
+          measureRef.current.parentNode.removeChild(measureRef.current);
+        } catch (e) {}
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html, initialLines]); // re-run if html changes
+  }, [html, initialLines, isMeasured]);
 
-  useEffect(() => {
-    // Toggle the class on the real element when expanded changes
-    const el = contentRef.current;
-    if (!el) return;
-    el.classList.toggle(`clamp-${initialLines}`, !expanded);
-  }, [expanded, initialLines]);
-
-  // accessible toggle handler
+  // Toggle handler
   const onToggle = (e) => {
+    e.preventDefault();
     setExpanded((s) => !s);
-    // keep focus on the toggle so keyboard users remain in context
-    e.currentTarget.focus();
+    // keep focus on the toggle
+    if (e.currentTarget && e.currentTarget.focus) e.currentTarget.focus();
   };
 
+  // Render collapsed: plain-text snippet + inline link
+  // Render expanded: original sanitized HTML + inline "Show less" link appended
   return (
-    <div className={`expandable ${className}`} aria-live="polite">
-      <div
-        id={id}
-        ref={contentRef}
-        className={`expandable-content clamp-${initialLines}`}
-        // Danger: caller must sanitize html before passing it in
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-      {showToggle && (
-        <button
-          id={toggleId}
-          className="expand-toggle"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-controls={id}
-          type="button"
-        >
-          {expanded ? "Show less" : "View more…"}
-        </button>
+    <div
+      id={id}
+      className={`expandable ${className}`}
+      ref={containerRef}
+      aria-live="polite"
+    >
+      {!expanded ? (
+        // collapsed view uses plain text snippet to ensure toggle sits inline at the end
+        <p className="text-gray-700 leading-relaxed m-0">
+          {collapsedText}
+          {showToggle && (
+            <>
+              {" "}
+              <button
+                type="button"
+                className="expand-toggle"
+                onClick={onToggle}
+                aria-expanded={expanded}
+                aria-controls={id}
+              >
+                View more…
+              </button>
+            </>
+          )}
+        </p>
+      ) : (
+        // expanded view restores full HTML and shows Show less inline
+        <div className="leading-relaxed">
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+          {showToggle && (
+            <>
+              {" "}
+              <button
+                type="button"
+                className="expand-toggle"
+                onClick={onToggle}
+                aria-expanded={expanded}
+                aria-controls={id}
+              >
+                Show less
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
