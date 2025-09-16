@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 
 /**
- * ExpandableText.jsx — precise inline "View more… / Show less"
+ * ExpandableText.jsx — deterministic initial render to avoid hydration errors
+ *
+ * - Computes a simple deterministic collapsed snippet synchronously (server + client)
+ *   so SSR output matches initial client DOM.
+ * - After hydration, optionally performs a refined measurement and updates the snippet.
  *
  * Props:
  *  - html: string (sanitized HTML)
- *  - id: string (unique id)
- *  - initialLines: number (default: 2)
- *  - className: extra classes for container
- *
- * Usage:
- *  <ExpandableText client:load html={meta.description} id="store-meta-desc" initialLines={2} className="prose ..." />
- *
- * Note: html MUST be sanitized server-side before passing in (you already do DOMPurify).
+ *  - id: string
+ *  - initialLines: number
+ *  - className: string
  */
 
 export default function ExpandableText({
@@ -23,33 +22,63 @@ export default function ExpandableText({
 }) {
   const containerRef = useRef(null);
   const measureRef = useRef(null);
-  const [expanded, setExpanded] = useState(false);
-  const [showToggle, setShowToggle] = useState(false);
-  const [collapsedText, setCollapsedText] = useState(""); // plain-text truncated snippet
-  const [isMeasured, setIsMeasured] = useState(false);
 
-  // Helper: returns plain text from HTML
+  // Determine initial collapsed snippet deterministically from plain text:
+  const plain =
+    typeof document === "undefined"
+      ? stripHtmlToTextServer(html)
+      : stripHtmlToText(html);
+  const approxCharsPerLine = 120; // conservative heuristic (no DOM measurement)
+  const initialCharLimit = Math.max(
+    80,
+    Math.floor(approxCharsPerLine * initialLines)
+  );
+  const needsToggleInitial = plain.length > initialCharLimit;
+  const initialSnippet = needsToggleInitial
+    ? plain.slice(0, initialCharLimit).trim() + "…"
+    : plain;
+
+  // States
+  const [expanded, setExpanded] = useState(false);
+  const [showToggle, setShowToggle] = useState(needsToggleInitial);
+  const [collapsedText, setCollapsedText] = useState(initialSnippet);
+  const [measured, setMeasured] = useState(false);
+
+  // Helper: strip HTML -> text (browser-safe)
   function stripHtmlToText(inputHtml) {
     const tmp = document.createElement("div");
     tmp.innerHTML = inputHtml;
     return tmp.textContent?.trim() ?? "";
   }
+  // Helper for server-side (no document)
+  function stripHtmlToTextServer(inputHtml) {
+    // Basic HTML tag removal — works server-side
+    return String(inputHtml || "")
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<\/?[^>]+(>|$)/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-  // Measure and compute truncated snippet that fits in initialLines
+  // After hydration, run measurement to refine the snippet based on real layout.
+  // This is optional — it will update the DOM after hydration (no hydration mismatch).
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof window === "undefined") return;
+    if (!containerRef.current) return;
+    // Heuristic: run only if we detected that a toggle is needed initially.
+    if (!showToggle) {
+      setMeasured(true);
+      return;
+    }
 
     const el = containerRef.current;
-    if (!el) return;
-
-    // create invisible measurer that mirrors width/font of the real container
+    // Create an invisible measurer
     const measurer = document.createElement("div");
     measurer.style.position = "absolute";
     measurer.style.visibility = "hidden";
     measurer.style.pointerEvents = "none";
     measurer.style.whiteSpace = "normal";
 
-    // copy computed font and width constraints to the measurer
     const computed = window.getComputedStyle(el);
     measurer.style.font = computed.font;
     measurer.style.fontSize = computed.fontSize;
@@ -63,24 +92,22 @@ export default function ExpandableText({
     measureRef.current = measurer;
 
     const fullText = stripHtmlToText(html);
-    // if very short, don't show toggle
     measurer.textContent = fullText;
     const fullHeight = measurer.getBoundingClientRect().height;
-    // compute height for N lines
     const lineHeight =
       parseFloat(computed.lineHeight) || parseFloat(computed.fontSize) * 1.2;
     const targetHeight = Math.round(lineHeight * initialLines);
 
     if (fullHeight <= targetHeight + 1) {
-      // content fits — no toggle
+      // fits — no toggle needed
       setShowToggle(false);
       setCollapsedText(fullText);
-      setIsMeasured(true);
+      setMeasured(true);
       document.body.removeChild(measurer);
       return;
     }
 
-    // binary search over character count to find longest prefix that fits
+    // Binary search for best cut that fits
     let lo = 0;
     let hi = fullText.length;
     let best = "";
@@ -97,19 +124,14 @@ export default function ExpandableText({
       }
     }
 
-    if (!best) {
-      // fallback: show first N characters
-      const fallback =
-        fullText
-          .slice(0, Math.max(80, Math.floor(fullText.length * 0.25)))
-          .trim() + "…";
-      setCollapsedText(fallback);
+    if (best) {
+      // Only update if it meaningfully differs from our initial snippet
+      if (best !== collapsedText) setCollapsedText(best);
     } else {
-      setCollapsedText(best);
+      // fallback: keep initial snippet
     }
 
-    setShowToggle(true);
-    setIsMeasured(true);
+    setMeasured(true);
     document.body.removeChild(measurer);
 
     // re-measure on resize (debounced)
@@ -117,10 +139,9 @@ export default function ExpandableText({
     const onResize = () => {
       clearTimeout(t);
       t = setTimeout(() => {
-        // reset state then re-run effect by toggling isMeasured
-        setIsMeasured(false);
-        // small delay then set true to trigger effect
-        setTimeout(() => setIsMeasured(true), 0);
+        // re-run measurement
+        setMeasured(false);
+        setTimeout(() => setMeasured(true), 0);
       }, 150);
     };
     window.addEventListener("resize", onResize);
@@ -133,17 +154,16 @@ export default function ExpandableText({
         } catch (e) {}
       }
     };
-  }, [html, initialLines, isMeasured]);
+  }, [html, initialLines]); // run when html changes
 
   // Toggle handler
   const onToggle = (e) => {
     e.preventDefault();
     setExpanded((s) => !s);
-    // keep focus on the toggle
     if (e.currentTarget && e.currentTarget.focus) e.currentTarget.focus();
   };
 
-  // small chevron icon
+  // Chevron icon
   const Chevron = ({ open = false }) => (
     <svg
       className={`inline-block ml-1 -mt-0.5 transition-transform duration-150 ${
@@ -165,8 +185,6 @@ export default function ExpandableText({
     </svg>
   );
 
-  // Render collapsed: plain-text snippet + inline styled button
-  // Render expanded: original sanitized HTML + inline "Show less" styled button
   return (
     <div
       id={id}
@@ -175,7 +193,6 @@ export default function ExpandableText({
       aria-live="polite"
     >
       {!expanded ? (
-        // collapsed view uses plain text snippet to ensure toggle sits inline at the end
         <p className="text-gray-700 leading-relaxed m-0">
           {collapsedText}
           {showToggle && (
@@ -195,7 +212,6 @@ export default function ExpandableText({
           )}
         </p>
       ) : (
-        // expanded view restores full HTML and shows Show less inline
         <div className="leading-relaxed">
           <div dangerouslySetInnerHTML={{ __html: html }} />
           {showToggle && (

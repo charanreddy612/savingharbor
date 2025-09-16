@@ -18,6 +18,7 @@ export function escapeHtml(s = "") {
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
   const title = escapeHtml(item.title ?? "");
+  const description = item.description || "";
   const merchantName = escapeHtml(
     item.merchant_name ?? item.merchant?.name ?? ""
   );
@@ -85,8 +86,8 @@ export function renderCouponCardHtml(item = {}) {
           </div>
 
           <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-sm text-brand-primary truncate">${merchantName}</h3>
-            <p class="text-xs text-gray-500 truncate">${title}</p>
+            <h3 class="font-semibold text-sm text-brand-primary truncate">${title}</h3>
+            <p class="text-xs text-gray-500 truncate">${description}</p>
           </div>
         </div>
 
