@@ -17,6 +17,7 @@ import TrendingOffersCompact from "../../components/TrendingOffersCompact.jsx";
 import WhyTrustUs from "../../components/WhyTrustUs.jsx";
 import DOMPurify from "isomorphic-dompurify";
 import { api } from "../../lib/api";
+import ExpandableText from "../../components/ExpandableText.jsx";
 
 type Coupon = {
   id: string | number;
@@ -160,37 +161,21 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
                     </div>
                   )}
 
-                  <!-- small action row: removed redundant "View Coupons" button -->
                   <div class="mt-3 flex items-center gap-3">
-                    <a href={`/stores/${store.slug}#about-section`} class="btn btn-outline text-sm">About</a>
-                    <!-- View Coupons button intentionally removed to reduce duplication -->
+                    <a href={`/stores/${store.slug}#about-section`} class="btn btn-primary text-sm">About</a>
                   </div>
                 </div>
               </div>
             </div>
+            <!-- meta.description (short intro in hero) -->
+            {meta.description && (
+              <ExpandableText client:load html={meta.description} id="store-meta-desc" initialLines={2} className="prose max-w-none text-gray-700 mb-2" />
+            )}
 
-            <!-- Right: description / side content (clamped + expand) -->
-            <div class="md:col-span-2">
-              {meta.description && (
-                <>
-                  <div id="store-desc" class="prose max-w-none text-gray-700 mb-2 line-clamp-2" set:html={meta.description}></div>
-                  <!-- View more button — JS toggles the clamp and then hides the button -->
-                  <button
-                    type="button"
-                    id="store-desc-toggle"
-                    class="text-sm text-indigo-600 hover:underline mb-4"
-                    aria-expanded="false"
-                    onclick="(function(){const el=document.getElementById('store-desc'); const btn=document.getElementById('store-desc-toggle'); if(!el) return; const expanded = !el.classList.contains('line-clamp-2'); if(expanded){ /* already expanded */ return; } el.classList.remove('line-clamp-2'); btn.setAttribute('aria-expanded','true'); btn.style.display='none'; })();"
-                  >
-                    View more
-                  </button>
-                </>
-              )}
-
-              {safeSideHtml && (
-                <div class="prose max-w-none text-gray-700" set:html={safeSideHtml}></div>
-              )}
-            </div>
+            <!-- safeSideHtml (about/side description) -->
+            {safeSideHtml && (
+              <ExpandableText client:load html={safeSideHtml} id="store-side-desc" initialLines={2} className="prose max-w-none text-gray-700" />
+            )}
           </div>
         </section>
 

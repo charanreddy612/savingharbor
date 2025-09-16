@@ -49,7 +49,7 @@ export function renderCouponCardHtml(item = {}) {
       </div>
 
       <div class="flex items-center gap-2">
-        <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified Today</span>
+        <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
         <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>

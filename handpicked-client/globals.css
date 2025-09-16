@@ -81,18 +81,17 @@
 }
 
 /* Truncate utilities (fallback if tailwind line-clamp plugin is not enabled) */
-.clamp-2 {
+/* clamp fallback utilities for ExpandableText */
+.line-clamp-1, .line-clamp-2, .line-clamp-3 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+
+/* set line counts */
+.line-clamp-1 { -webkit-line-clamp: 1; }
+.line-clamp-2 { -webkit-line-clamp: 2; }
+.line-clamp-3 { -webkit-line-clamp: 3; }
 
 /* Pills (consistent style for stats, used-by, trust chips) */
 .pill {
@@ -104,3 +103,30 @@
 .pill-gray {
   @apply bg-gray-100 text-gray-600;
 }
+
+/* optional smooth reveal (height transition) — works when removing clamp only */
+.expandable {
+  position: relative;
+}
+
+.expandable .expandable-content { transition: max-height 180ms ease; }
+
+/* Inline toggle styling — consistent with earlier suggestions */
+.expand-toggle {
+  display: inline-block;
+  margin-left: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+  color: #2563eb; /* indigo-600 */
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.expand-toggle:focus {
+  outline: 2px solid #bfdbfe; /* subtle focus */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
