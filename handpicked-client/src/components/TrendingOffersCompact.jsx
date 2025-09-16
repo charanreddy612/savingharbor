@@ -1,17 +1,13 @@
 import React, { useState, useRef } from "react";
 
 /**
- * TrendingOffersCompact.jsx
- *
- * Compact sidebar list of trending offers (1-3). Each item calls the secure click endpoint
- * to get the code (if any) and opens merchant URL in a new tab.
+ * TrendingOffersCompact.jsx - polished drop-in replacement
  *
  * Props:
  *  - offers: [{ id, title, coupon_type, short_desc?, click_count?, merchant? }]
  *  - storeSlug: string
  *
- * Note: Does not expose coupon codes in SSR. Expects POST /api/offers/{id}/click to return:
- * { ok: true, code: string|null, redirect_url: string|null, message }
+ * Behavior unchanged. Styling/markup aligned with global classes.
  */
 
 function CompactToast({ message, onClose }) {
@@ -21,11 +17,7 @@ function CompactToast({ message, onClose }) {
   }, [onClose]);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-3 py-2 rounded shadow"
-    >
+    <div role="status" aria-live="polite" className="toast">
       {message}
     </div>
   );
@@ -143,8 +135,8 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
 
   return (
     <>
-      <aside className="bg-white border border-gray-100 rounded-md shadow-sm p-4">
-        <h3 className="text-lg font-semibold mb-3">Trending offers</h3>
+      <aside className="card-base p-4">
+        <h3 className="section-heading mb-3">Trending offers</h3>
 
         {items.length === 0 ? (
           <p className="text-sm text-gray-500">No trending offers right now.</p>
@@ -155,12 +147,13 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
               return (
                 <li
                   key={o.id}
-                  className="flex items-center justify-between gap-3"
+                  className="flex items-start justify-between gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">
                       {o.title || "Offer"}
                     </div>
+
                     <div className="text-xs text-gray-500 mt-0.5">
                       {o.type ? `${o.type} • ` : ""}
                       {o.click_count !== undefined
@@ -169,7 +162,11 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
                     </div>
 
                     {s.revealedCode && (
-                      <div className="mt-2 text-xs font-mono text-blue-700 bg-blue-50 inline-block px-2 py-1 rounded">
+                      <div
+                        className="mt-2 text-xs font-mono text-blue-700 bg-blue-50 inline-block px-2 py-1 rounded"
+                        role="status"
+                        aria-live="polite"
+                      >
                         {s.revealedCode}
                       </div>
                     )}

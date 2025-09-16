@@ -37,6 +37,16 @@
   @apply opacity-60 cursor-not-allowed;
 }
 
+/* Toast styling (to unify any toasts) */
+.toast {
+  @apply fixed bottom-6 right-6 bg-brand-dark text-white text-sm px-3 py-2 rounded shadow-lg;
+}
+
+/* Sidebar sections */
+.sidebar-box {
+  @apply bg-white border border-gray-100 rounded-md p-4;
+}
+
 /* Swiper pagination bullets */
 .swiper-pagination-bullet {
   @apply bg-gray-300 opacity-80;
@@ -55,4 +65,42 @@
 .swiper-button-next:hover,
 .swiper-button-prev:hover {
   @apply text-brand-secondary;
+}
+
+/* Card base: smoother hover */
+.card-base {
+  @apply bg-white border border-gray-200 rounded-lg transition-shadow duration-150;
+}
+.card-base:hover {
+  @apply shadow-lg -translate-y-0.5;
+}
+
+/* Headings */
+.section-heading {
+  @apply text-xl font-semibold text-brand-primary mb-4;
+}
+
+/* Truncate utilities (fallback if tailwind line-clamp plugin is not enabled) */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pills (consistent style for stats, used-by, trust chips) */
+.pill {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+.pill-green {
+  @apply bg-emerald-50 text-emerald-700;
+}
+.pill-gray {
+  @apply bg-gray-100 text-gray-600;
 }

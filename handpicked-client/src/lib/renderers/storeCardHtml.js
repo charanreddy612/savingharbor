@@ -1,5 +1,4 @@
 // src/lib/renderers/storeCardHtml.js
-// Single source-of-truth HTML renderer for store cards.
 
 import { escapeHtml } from "./couponCardHtml.js";
 
@@ -19,28 +18,28 @@ export function renderStoreCardHtml(store = {}) {
   return `
     <a
       href="/stores/${slug}"
-      class="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-store-card hover:-translate-y-0.5 transition-transform duration-200"
+      class="card-base block p-4 h-full hover:shadow-lg hover:-translate-y-0.5 transition-transform duration-150"
       aria-label="Open ${name}"
     >
       <div class="flex flex-col h-full">
+        <!-- Logo -->
         <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
           ${
             logo
-              ? `<img src="${logo}" alt="${name}" loading="lazy" class="max-h-full max-w-full object-contain" />`
+              ? `<img src="${logo}" alt="${name}" width="64" height="64" loading="lazy" decoding="async" class="max-h-full max-w-full object-contain" />`
               : `<div class="w-full flex items-center justify-center text-xs text-gray-400">Logo</div>`
           }
         </div>
 
-        <div class="flex-1 flex flex-col justify-center">
-          <div class="flex items-center justify-center gap-2">
-            <h3 class="font-semibold text-brand-primary text-sm md:text-base truncate text-center">${name}</h3>
-          </div>
+        <!-- Content -->
+        <div class="flex-1 flex flex-col justify-center text-center">
+          <h3 class="font-semibold text-brand-primary text-sm md:text-base truncate">${name}</h3>
 
           ${
             active !== null
               ? `
             <div class="mt-2 flex justify-center">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-secondary/10 text-brand-secondary">
+              <span class="pill pill-green">
                 ${active} ${active === 1 ? "deal" : "deals"}
               </span>
             </div>

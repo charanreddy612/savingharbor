@@ -1,5 +1,4 @@
 // src/lib/renderers/blogCardHtml.js
-// Single source-of-truth HTML renderer for blog cards.
 
 import { escapeHtml } from "./couponCardHtml.js";
 
@@ -19,24 +18,24 @@ export function renderBlogCardHtml(post = {}) {
   return `
     <a
       href="/blogs/${slug}"
-      class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:-translate-y-1 transition duration-200"
+      class="card-base block overflow-hidden h-full hover:shadow-lg hover:-translate-y-0.5 transition-transform duration-150"
+      aria-label="Read blog: ${title}"
     >
+      <!-- Thumbnail -->
       <div class="aspect-[16/9] bg-gray-100">
         ${
           thumb
-            ? `<img src="${thumb}" alt="${title}" class="w-full h-full object-cover" loading="lazy" />`
-            : ``
+            ? `<img src="${thumb}" alt="${title}" width="640" height="360" class="w-full h-full object-cover" loading="lazy" decoding="async" />`
+            : `<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">No image</div>`
         }
       </div>
 
-      <div class="p-4">
-        <h3 class="font-semibold text-brand-primary line-clamp-2">${title}</h3>
+      <!-- Content -->
+      <div class="p-4 flex flex-col h-full">
+        <h3 class="font-semibold text-brand-primary text-sm md:text-base line-clamp-2">${title}</h3>
+
         <div class="mt-2 text-xs text-gray-500 flex flex-wrap items-center gap-2">
-          ${
-            category
-              ? `<span class="px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary">${category}</span>`
-              : ""
-          }
+          ${category ? `<span class="pill pill-green">${category}</span>` : ""}
           ${created ? `<span>${created}</span>` : ""}
         </div>
       </div>

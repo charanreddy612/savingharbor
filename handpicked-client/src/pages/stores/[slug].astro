@@ -1,4 +1,8 @@
 ---
+/* src/pages/stores/[slug].astro (refactored to use shared global classes)
+   - Uses .card-base, .section-heading, .pill, .pill-green, .btn, .btn-primary, .btn-outline, .sidebar-box
+   - No logic changes; purely styling refactor for maintainability
+*/
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
@@ -95,87 +99,99 @@ const safeSideHtml = store?.about_html ? DOMPurify.sanitize(store.about_html) : 
 const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.description_html) : null;
 ---
 
+<style>
+/* fallback clamp utility if tailwind line-clamp plugin isn't available */
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
+
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
 
-  <main class="container mx-auto px-4 py-10">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     {store ? (
       <>
         <Breadcrumbs breadcrumbs={store.breadcrumbs} />
 
-<!-- Store Hero — replace existing hero section with this -->
-<section class="mt-4">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-    <!-- Left: logo + title + quick stats (bigger, centered vertically) -->
-    <div class="md:col-span-1 flex items-start md:items-center">
-      <div class="flex items-center gap-4 w-full">
-        <div class="w-28 h-28 flex items-center justify-center border rounded-lg bg-white shadow-sm flex-shrink-0">
-          {store.logo_url ? (
-            <img
-              src={store.logo_url}
-              alt={store.name}
-              width="112"
-              height="112"
-              class="object-contain max-h-full max-w-full"
-              loading="lazy"
-            />
-          ) : (
-            <div class="text-sm text-gray-400">Logo</div>
-          )}
-        </div>
+        <!-- Store Hero -->
+        <section class="mt-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <!-- Left: logo + title + quick stats -->
+            <div class="md:col-span-1 flex items-start md:items-center">
+              <div class="flex items-center gap-4 w-full">
+                <div class="w-28 h-28 flex items-center justify-center border rounded-lg bg-white shadow-sm flex-shrink-0 overflow-hidden">
+                  {store.logo_url ? (
+                    <img
+                      src={store.logo_url}
+                      alt={store.name}
+                      width="112"
+                      height="112"
+                      class="object-contain max-h-full max-w-full"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div class="text-sm text-gray-400">Logo</div>
+                  )}
+                </div>
 
-        <div class="flex-1 min-w-0">
-          <h1 class="text-2xl md:text-3xl font-bold text-brand-primary leading-tight">
-            {store.name}
-          </h1>
+                <div class="flex-1 min-w-0">
+                  <h1 class="text-2xl md:text-3xl font-extrabold text-brand-primary leading-tight">
+                    {store.name}
+                  </h1>
 
-          <div class="mt-1 text-sm text-gray-500">
-            {store.category_names && store.category_names.length > 0
-              ? store.category_names.join(", ")
-              : null}
-          </div>
+                  <div class="mt-1 text-sm text-gray-500">
+                    {store.category_names && store.category_names.length > 0 ? store.category_names.join(", ") : null}
+                  </div>
 
-          {store.stats?.active_coupons !== undefined && (
-            <div class="mt-2">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-brand-secondary/10 text-brand-secondary">
-                {store.stats.active_coupons}{" "}
-                {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
-              </span>
+                  {store.stats?.active_coupons !== undefined && (
+                    <div class="mt-2">
+                      <span class="pill pill-green">
+                        {store.stats.active_coupons}{" "}
+                        {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
+                      </span>
+                    </div>
+                  )}
+
+                  <!-- small action row -->
+                  <div class="mt-3 flex items-center gap-3">
+                    <a href={`/stores/${store.slug}#about-section`} class="btn btn-outline text-sm">About</a>
+                    <a href={`/stores/${store.slug}#coupons`} class="btn btn-primary text-sm">View Coupons</a>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
 
-          <!-- small action row (keeps non-breaking) -->
-          <div class="mt-3 flex items-center gap-3">
-            <a href={`/stores/${store.slug}#about-section`} class="btn btn-outline text-sm">About</a>
-            <a href={`/stores/${store.slug}#coupons`} class="btn btn-primary text-sm">View Coupons</a>
+            <!-- Right: description / side content -->
+            <div class="md:col-span-2">
+              {meta.description && (
+                <div class="prose max-w-none text-gray-700 mb-4 clamp-3" set:html={meta.description}></div>
+              )}
+
+              {safeSideHtml && (
+                <div class="prose max-w-none text-gray-700" set:html={safeSideHtml}></div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: description / side content — takes remaining width -->
-    <div class="md:col-span-2">
-      {meta.description && (
-        <div class="prose max-w-none text-gray-700 mb-4" set:html={meta.description}></div>
-      )}
-
-      {safeSideHtml && (
-        <div class="prose max-w-none text-gray-700" set:html={safeSideHtml}></div>
-      )}
-    </div>
-  </div>
-</section>
+        </section>
 
         <div class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <!-- Main content -->
           <div class="lg:col-span-2 space-y-8">
             <!-- Coupons -->
-            <section>
-              <h2 class="text-xl font-semibold text-brand-primary mb-4">Coupons & Deals</h2>
+            <section id="coupons">
+              <h2 class="section-heading">Coupons & Deals</h2>
               {store.coupons?.items && store.coupons.items.length > 0 ? (
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
                   {store.coupons.items.map((c) => (
-                    <CouponRevealIsland client:load coupon={c} storeSlug={store.slug} />
+                    <div class="h-full card-base p-0">
+                      <!-- Keep CouponRevealIsland as the card content (it renders the inner card HTML) -->
+                      <CouponRevealIsland client:load coupon={c} storeSlug={store.slug} />
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -184,6 +200,7 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
 
               <div class="mt-4">
                 <Pagination
+                  aria-label="Store coupons pagination"
                   prev={store.coupons?.prev}
                   next={store.coupons?.next}
                   total_pages={store.coupons?.total_pages}
@@ -192,8 +209,8 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
             </section>
 
             <!-- About Store -->
-            <section id="about-section" class="bg-white border border-gray-100 rounded p-6">
-              <h2 class="text-xl font-semibold text-brand-primary mb-4">About this store</h2>
+            <section id="about-section" class="card-base p-6">
+              <h2 class="section-heading">About this store</h2>
               {safeDescriptionHtml ? (
                 <div class="prose max-w-none" set:html={safeDescriptionHtml}></div>
               ) : store.about_html ? (
@@ -213,7 +230,7 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
             <!-- Related Stores -->
             {store.related_stores && store.related_stores.length > 0 && (
               <section>
-                <h2 class="text-xl font-semibold text-brand-primary mb-4">Similar stores</h2>
+                <h2 class="section-heading">Similar stores</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {store.related_stores.map((rs) => (
                     <CardStore store={rs} />
@@ -225,21 +242,30 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
 
           <!-- Sidebar -->
           <aside class="lg:col-span-1 space-y-6">
-            <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
-            <RecentActivity client:load data={store.recent_activity} />
-
-            <div class="bg-white border border-gray-100 rounded-md p-4">
-              <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
-              <SubscribeBox client:load source={store.slug} />
-            </div>
-
-            <WhyTrustUs client:load />
-
-            {store.trust_text && (
-              <div class="bg-white border border-gray-100 rounded-md p-4 text-sm text-gray-700">
-                {store.trust_text}
+            <div class="lg:sticky lg:top-28 lg:self-start space-y-6">
+              <div class="sidebar-box">
+                <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
               </div>
-            )}
+
+              <div class="sidebar-box">
+                <RecentActivity client:load data={store.recent_activity} />
+              </div>
+
+              <div class="sidebar-box">
+                <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
+                <SubscribeBox client:load source={store.slug} />
+              </div>
+
+              <div class="sidebar-box">
+                <WhyTrustUs client:load />
+              </div>
+
+              {store.trust_text && (
+                <div class="sidebar-box text-sm text-gray-700">
+                  {store.trust_text}
+                </div>
+              )}
+            </div>
           </aside>
         </div>
       </>

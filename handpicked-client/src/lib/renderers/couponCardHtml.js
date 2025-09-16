@@ -1,4 +1,5 @@
 // src/lib/renderers/couponCardHtml.js
+
 export function escapeHtml(s = "") {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -24,7 +25,6 @@ export function renderCouponCardHtml(item = {}) {
     ? escapeHtml(item.merchant.logo_url)
     : "";
   const couponType = item.coupon_type || "";
-  // const description = escapeHtml(item.description ?? "");
   const endsAt = item.ends_at
     ? escapeHtml(
         new Date(item.ends_at).toLocaleDateString(undefined, {
@@ -40,6 +40,7 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
+  // Badges: icon-first, label hidden on mobile (shown on sm+)
   const badgesHtml = `
     <div class="w-full flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
@@ -67,8 +68,8 @@ export function renderCouponCardHtml(item = {}) {
 
   return `
     <div class="relative">
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-4 flex flex-col gap-3 min-h-[120px]">
-        <!-- 1) Badges row: left and right -->
+      <div class="card-base p-4 flex flex-col gap-3 min-h-[120px]">
+        <!-- 1) Badges row: left and right (in-flow) -->
         ${badgesHtml}
 
         <!-- 2) Header row: logo | merchant info -->
