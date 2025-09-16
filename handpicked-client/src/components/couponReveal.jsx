@@ -7,6 +7,8 @@ import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
  * - Re-uses renderCouponCardHtml for exact SSR parity
  * - Injects the HTML and delegates reveal-button clicks
  * - Keeps toasts + clipboard + redirect logic
+ *
+ * NOTE: This version adds robust direct handlers + debug logs to make reveal flow reliable.
  */
 
 async function fetchWithRetry(url, options, retries = 2) {
@@ -57,11 +59,109 @@ export default function CouponReveal({ coupon, storeSlug }) {
   };
   const removeToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
+  // Core click handler extracted so we can attach it to buttons directly
+  const handleRevealClick = async (btnEl, offerId) => {
+    if (!btnEl || !offerId) return;
+    if (disabledOfferIds.has(String(offerId))) return;
+
+    // disable immediate to prevent double-taps
+    btnEl.disabled = true;
+    try {
+      const base = import.meta.env.PUBLIC_API_BASE_URL || "";
+      const endpoint =
+        (base || "").replace(/\/+$/, "") +
+        `/offers/${encodeURIComponent(String(offerId))}/click`;
+
+      console.debug(
+        "[CouponReveal] clicking offer",
+        offerId,
+        "endpoint:",
+        endpoint
+      );
+
+      const resp = await fetchWithRetry(
+        endpoint,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            store_slug: sSlug,
+            referrer: "site",
+            platform: "web",
+          }),
+        },
+        2
+      );
+
+      if (resp.status === 429) {
+        pushToast("Too many requests. Please try again later.");
+        btnEl.disabled = false;
+        return;
+      }
+
+      let data = null;
+      try {
+        data = await resp.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.debug("[CouponReveal] server response for", offerId, data);
+
+      const serverCode = data?.code ?? null;
+      const serverRedirect = data?.redirect_url ?? null;
+
+      const codeToReveal =
+        serverCode ?? (c.code ? String(c.code).trim() : null);
+
+      if (codeToReveal) {
+        const box = document.createElement("div");
+        box.className =
+          "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
+        box.textContent = codeToReveal;
+        btnEl.replaceWith(box);
+        try {
+          await navigator.clipboard.writeText(codeToReveal);
+          pushToast("Code copied to clipboard");
+        } catch (e) {
+          pushToast("Code revealed — copy manually");
+        }
+      }
+
+      if (serverRedirect) {
+        // small delay to allow UI update & copy toast to appear
+        setTimeout(() => {
+          window.open(serverRedirect, "_blank", "noopener,noreferrer");
+        }, 100);
+      } else {
+        const m = c?.merchant || {};
+        const fallback = m.affl_url?.startsWith("http")
+          ? m.affl_url
+          : m.web_url?.startsWith("http")
+          ? m.web_url
+          : null;
+        if (fallback && !codeToReveal) {
+          setTimeout(() => {
+            window.open(fallback, "_blank", "noopener,noreferrer");
+          }, 100);
+        }
+      }
+
+      // mark revealed in this session
+      setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
+    } catch (err) {
+      console.error("Reveal click failed", err);
+      pushToast("An error occurred. Try again.");
+      if (btnEl) btnEl.disabled = false;
+    }
+  };
+
   // Inject SSR-markup from renderCouponCardHtml into this island's container
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     el.innerHTML = renderCouponCardHtml(c);
+    console.debug("[CouponReveal] injected HTML for offer", c?.id);
 
     // If this offer was revealed previously in this session, reflect that state
     if (disabledOfferIds.has(String(c.id))) {
@@ -76,105 +176,53 @@ export default function CouponReveal({ coupon, storeSlug }) {
         btn.replaceWith(box);
       }
     }
+
+    // Attach direct click handlers to any reveal buttons found in the injected HTML.
+    // This is more robust than relying only on delegation when HTML is re-injected.
+    const buttons = el.querySelectorAll(".js-reveal-btn[data-offer-id]");
+    if (buttons && buttons.length > 0) {
+      buttons.forEach((btn) => {
+        const offerId = btn.getAttribute("data-offer-id");
+        if (!offerId) return;
+
+        // avoid attaching multiple handlers: use a flag
+        if (!btn.__coupon_reveal_attached) {
+          btn.__coupon_reveal_attached = true;
+          btn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            handleRevealClick(btn, offerId);
+          });
+          console.debug("[CouponReveal] attached direct handler for", offerId);
+        }
+      });
+    } else {
+      console.debug(
+        "[CouponReveal] no reveal buttons found in injected HTML for",
+        c?.id
+      );
+    }
   }, [c, disabledOfferIds]);
 
-  // Delegated click listener for reveal button inside injected HTML
+  // Keep delegated listener as a safety-net for elements added later dynamically
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    const handleClick = async (ev) => {
+    const delegated = async (ev) => {
       const btn = ev.target.closest && ev.target.closest(".js-reveal-btn");
       if (!btn) return;
       const offerId = btn.getAttribute("data-offer-id");
       if (!offerId) return;
-
-      if (disabledOfferIds.has(String(offerId))) return;
-
-      btn.disabled = true;
-      try {
-        const base = import.meta.env.PUBLIC_API_BASE_URL || "";
-        const endpoint =
-          (base || "").replace(/\/+$/, "") +
-          `/offers/${encodeURIComponent(String(offerId))}/click`;
-
-        const resp = await fetchWithRetry(
-          endpoint,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              store_slug: sSlug,
-              referrer: "site",
-              platform: "web",
-            }),
-          },
-          2
-        );
-
-        if (resp.status === 429) {
-          pushToast("Too many requests. Please try again later.");
-          btn.disabled = false;
-          return;
-        }
-
-        let data = null;
-        try {
-          data = await resp.json();
-        } catch (_) {}
-
-        const serverCode = data?.code ?? null;
-        const serverRedirect = data?.redirect_url ?? null;
-
-        const codeToReveal =
-          serverCode ?? (c.code ? String(c.code).trim() : null);
-
-        if (codeToReveal) {
-          // replace button with a code box
-          const box = document.createElement("div");
-          box.className =
-            "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
-          box.textContent = codeToReveal;
-          btn.replaceWith(box);
-          try {
-            await navigator.clipboard.writeText(codeToReveal);
-            pushToast("Code copied to clipboard");
-          } catch (e) {
-            pushToast("Code revealed — copy manually");
-          }
-        }
-
-        if (serverRedirect) {
-          setTimeout(() => {
-            window.open(serverRedirect, "_blank", "noopener,noreferrer");
-          }, 100);
-        } else {
-          const m = c?.merchant || {};
-          const fallback = m.affl_url?.startsWith("http")
-            ? m.affl_url
-            : m.web_url?.startsWith("http")
-            ? m.web_url
-            : null;
-          if (fallback && !codeToReveal) {
-            setTimeout(() => {
-              window.open(fallback, "_blank", "noopener,noreferrer");
-            }, 100);
-          }
-        }
-
-        // mark revealed in this session
-        setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
-      } catch (err) {
-        console.error("Reveal click failed", err);
-        pushToast("An error occurred. Try again.");
-        if (btn) btn.disabled = false;
-      }
+      // avoid running twice if direct handler already processed it
+      if (btn.__coupon_reveal_attached_handled) return;
+      btn.__coupon_reveal_attached_handled = true;
+      await handleRevealClick(btn, offerId);
     };
 
-    el.addEventListener("click", handleClick);
+    el.addEventListener("click", delegated);
     return () => {
       try {
-        el.removeEventListener("click", handleClick);
+        el.removeEventListener("click", delegated);
       } catch (e) {}
     };
   }, [c, sSlug, disabledOfferIds]);

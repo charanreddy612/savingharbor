@@ -26,7 +26,7 @@ export function renderStoreCardHtml(store = {}) {
         <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
           ${
             logo
-              ? `<img src="${logo}" alt="${name}" width="64" height="64" loading="lazy" decoding="async" class="max-h-full max-w-full object-contain" />`
+              ? `<img src="${logo}" alt="${name}" width="96" height="80" loading="lazy" decoding="async" class="max-h-full max-w-full object-contain" />`
               : `<div class="w-full flex items-center justify-center text-xs text-gray-400">Logo</div>`
           }
         </div>
@@ -40,7 +40,7 @@ export function renderStoreCardHtml(store = {}) {
               ? `
             <div class="mt-2 flex justify-center">
               <span class="pill pill-green">
-                ${active} ${active === 1 ? "deal" : "deals"}
+                ${active} ${active === 1 ? "Offer" : "Offers"}
               </span>
             </div>
           `
