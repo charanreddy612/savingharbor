@@ -1,3 +1,38 @@
+// src/lib/renderers/couponCardHtml.js
+
+export function escapeHtml(s = "") {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function sanitizeDescription(desc = "") {
+  const raw = String(desc ?? "");
+  try {
+    if (typeof DOMPurify !== "undefined" && DOMPurify?.sanitize) {
+      return DOMPurify.sanitize(raw, {
+        ALLOWED_TAGS: [
+          "b",
+          "i",
+          "strong",
+          "em",
+          "br",
+          "p",
+          "ul",
+          "ol",
+          "li",
+          "a",
+        ],
+        ALLOWED_ATTR: ["href", "target", "rel"],
+      });
+    }
+  } catch (_) {}
+  return escapeHtml(raw);
+}
+
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
   const title = escapeHtml(item.title ?? "");
