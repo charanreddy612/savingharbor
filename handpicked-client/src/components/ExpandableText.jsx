@@ -48,6 +48,7 @@ export default function ExpandableText({
     measurer.style.visibility = "hidden";
     measurer.style.pointerEvents = "none";
     measurer.style.whiteSpace = "normal";
+
     // copy computed font and width constraints to the measurer
     const computed = window.getComputedStyle(el);
     measurer.style.font = computed.font;
@@ -142,8 +143,30 @@ export default function ExpandableText({
     if (e.currentTarget && e.currentTarget.focus) e.currentTarget.focus();
   };
 
-  // Render collapsed: plain-text snippet + inline link
-  // Render expanded: original sanitized HTML + inline "Show less" link appended
+  // small chevron icon
+  const Chevron = ({ open = false }) => (
+    <svg
+      className={`inline-block ml-1 -mt-0.5 transition-transform duration-150 ${
+        open ? "rotate-180" : "rotate-0"
+      }`}
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6 8l4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  // Render collapsed: plain-text snippet + inline styled button
+  // Render expanded: original sanitized HTML + inline "Show less" styled button
   return (
     <div
       id={id}
@@ -160,12 +183,13 @@ export default function ExpandableText({
               {" "}
               <button
                 type="button"
-                className="expand-toggle"
+                className="inline-flex items-center ml-1 text-sm font-medium text-indigo-600 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls={id}
               >
                 View more…
+                <Chevron open={false} />
               </button>
             </>
           )}
@@ -179,12 +203,13 @@ export default function ExpandableText({
               {" "}
               <button
                 type="button"
-                className="expand-toggle"
+                className="inline-flex items-center ml-1 text-sm font-medium text-indigo-600 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
                 onClick={onToggle}
                 aria-expanded={expanded}
                 aria-controls={id}
               >
                 Show less
+                <Chevron open={true} />
               </button>
             </>
           )}
