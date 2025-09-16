@@ -39,19 +39,35 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // Responsive badges — mobile-first sizing; decorative and non-interactive
+  // compact overlay-style badges
   const badgesHtml = `
-    <div class="absolute left-2 top-2 sm:left-3 sm:top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
-      <div class="flex items-center gap-2 text-[10px] sm:text-sm text-emerald-600 bg-white/0">
-        <img src="/images/verified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
-        <span class="font-medium">Verified</span>
+    <div class="absolute left-3 top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 rounded-full bg-white border border-gray-200 shadow-sm px-1.5 py-0.5">
+          <img src="/images/verified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
+          <span class="hidden sm:inline text-[11px] sm:text-sm text-emerald-700 font-medium">Verified</span>
+        </div>
       </div>
     </div>
 
-    <div class="absolute right-2 top-2 sm:right-3 sm:top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
-      <div class="flex items-center gap-2 text-[10px] sm:text-sm text-emerald-600 bg-white/0">
-        <img src="/images/reverified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
-        <span class="font-medium">Re-verified</span>
+    <div class="absolute right-3 top-3 z-30 pointer-events-none" aria-hidden="true" style="line-height:0;">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 rounded-full bg-white border border-gray-200 shadow-sm px-1.5 py-0.5">
+          <img src="/images/reverified-badge.png" alt="" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" />
+          <span class="hidden sm:inline text-[11px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // improved "used by" pill
+  const usedByHtml = `
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" /></svg>
+        <span>used by ${clickCount} ${
+    clickCount === 1 ? "user" : "users"
+  }</span>
       </div>
     </div>
   `;
@@ -60,8 +76,8 @@ export function renderCouponCardHtml(item = {}) {
     <div class="relative">
       ${badgesHtml}
 
-      <!-- add top padding on small screens so badges don't overlap content -->
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 pt-10 sm:pt-8 min-h-[110px]">
+      <!-- card: inner wrapper gets modest top padding so badges don't overlap -->
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 pt-8 sm:pt-6 min-h-[110px]">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white flex-shrink-0">
             ${
@@ -93,14 +109,7 @@ export function renderCouponCardHtml(item = {}) {
 
         <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-gray-500">${endsAt}</div>
-          <div class="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" />
-            </svg>
-            <span>used by ${clickCount} ${
-    clickCount === 1 ? "user" : "users"
-  }</span>
-          </div>
+          ${usedByHtml}
         </div>
       </div>
     </div>
