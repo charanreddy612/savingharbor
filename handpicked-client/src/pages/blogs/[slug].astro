@@ -73,16 +73,54 @@ const safeBodyHtml = post?.content_html
   ? DOMPurify.sanitize(post.content_html)
   : null;
 
-// Generate TOC
+// Generate TOC (server-safe — no DOMParser)
 let toc: { id: string; text: string }[] = [];
+let safeBodyHtmlWithIds = safeBodyHtml || "";
+
 if (safeBodyHtml) {
-  const tmp = new DOMParser().parseFromString(safeBodyHtml, "text/html");
-  toc = Array.from(tmp.querySelectorAll("h2, h3")).map((h) => {
-    const id = h.id || h.textContent?.toLowerCase().replace(/\s+/g, "-") || "";
-    h.id = id; // ensure ids are set
-    return { id, text: h.textContent || "" };
+  // Regex to match opening h2/h3 tags and capture optional id + inner text (non-greedy)
+  // This will find <h2 ...>...<\/h2> and <h3 ...>...<\/h3>
+  const headingRegex = /<(h[23])([^>]*)>([\s\S]*?)<\/\1>/gi;
+
+  const idsSeen = new Set<string>();
+  const slugify = (s: string) =>
+    String(s || "")
+      .trim()
+      .toLowerCase()
+      .replace(/<[^>]+>/g, "") // strip HTML inside heading
+      .replace(/[^\w\s-]/g, "") // remove punctuation
+      .replace(/\s+/g, "-");
+
+  // Build TOC and ensure headings in HTML have ids (inject if missing)
+  safeBodyHtmlWithIds = safeBodyHtmlWithIds.replace(headingRegex, (match, tag, attrs = "", inner) => {
+    // Try to extract an existing id attr
+    const idMatch = /id\s*=\s*["']([^"']+)["']/i.exec(attrs);
+    let id = idMatch ? idMatch[1] : slugify(inner);
+
+    // Avoid duplicate ids — append counter if necessary
+    let base = id;
+    let n = 1;
+    while (idsSeen.has(id)) {
+      id = `${base}-${n++}`;
+    }
+    idsSeen.add(id);
+
+    // record TOC entry (use inner text without tags)
+    const plainText = inner.replace(/<[^>]+>/g, "").trim();
+    toc.push({ id, text: plainText });
+
+    // If id existed, keep attrs; otherwise inject id into attrs
+    if (idMatch) {
+      return `<${tag}${attrs}>${inner}</${tag}>`;
+    } else {
+      // inject id attribute (preserve other attrs spacing)
+      const attrsNormalized = attrs && attrs.trim() ? " " + attrs.trim() : "";
+      return `<${tag} id="${id}"${attrsNormalized}>${inner}</${tag}>`;
+    }
   });
 }
+
+
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -131,7 +169,7 @@ if (safeBodyHtml) {
 
           {safeBodyHtml ? (
             <div class="prose prose-lg prose-gray max-w-none">
-              <div set:html={safeBodyHtml} />
+              <div set:html={safeBodyHtmlWithIds} />
             </div>
           ) : (
             <p class="text-gray-600">This article has no content.</p>

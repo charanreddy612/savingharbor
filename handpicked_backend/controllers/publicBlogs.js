@@ -238,12 +238,8 @@ export async function detail(req, res) {
 
     if (!result?.data) return notFound(res, "Blog not found");
 
-try {
-  const test = JSON.stringify(result);
-  console.log("DEBUG stringify succeeded, length:", test.length);
-} catch (err) {
-  console.error("DEBUG stringify failed:", err);
-}  } catch (e) {
+    return ok(res, result);
+  } catch (e) {
     console.error("Error in blogs.detail:", e);
     return fail(res, "Failed to get blog detail", e);
   }
