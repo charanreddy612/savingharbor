@@ -45,11 +45,11 @@ export function renderCouponCardHtml(item = {}) {
     <div class="w-full flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <img src="/images/verified-badge.png" alt="Verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
-        <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Verified</span>
+        <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Verified</span>
       </div>
 
       <div class="flex items-center gap-2">
-        <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
+        <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified Today</span>
         <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>

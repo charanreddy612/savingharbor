@@ -1,8 +1,5 @@
 ---
-/* src/pages/stores/[slug].astro (refactored to use shared global classes)
-   - Uses .card-base, .section-heading, .pill, .pill-green, .btn, .btn-primary, .btn-outline, .sidebar-box
-   - No logic changes; purely styling refactor for maintainability
-*/
+// src/pages/stores/[slug].astro (updated: sticky sidebar top, removed hero "View Coupons", 2-line clamp + view more)
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
@@ -100,10 +97,16 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
 ---
 
 <style>
-/* fallback clamp utility if tailwind line-clamp plugin isn't available */
+/* fallback clamp utilities if tailwind line-clamp plugin isn't available */
 .clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -157,19 +160,31 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
                     </div>
                   )}
 
-                  <!-- small action row -->
+                  <!-- small action row: removed redundant "View Coupons" button -->
                   <div class="mt-3 flex items-center gap-3">
                     <a href={`/stores/${store.slug}#about-section`} class="btn btn-outline text-sm">About</a>
-                    <a href={`/stores/${store.slug}#coupons`} class="btn btn-primary text-sm">View Coupons</a>
+                    <!-- View Coupons button intentionally removed to reduce duplication -->
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Right: description / side content -->
+            <!-- Right: description / side content (clamped + expand) -->
             <div class="md:col-span-2">
               {meta.description && (
-                <div class="prose max-w-none text-gray-700 mb-4 clamp-3" set:html={meta.description}></div>
+                <>
+                  <div id="store-desc" class="prose max-w-none text-gray-700 mb-2 line-clamp-2" set:html={meta.description}></div>
+                  <!-- View more button — JS toggles the clamp and then hides the button -->
+                  <button
+                    type="button"
+                    id="store-desc-toggle"
+                    class="text-sm text-indigo-600 hover:underline mb-4"
+                    aria-expanded="false"
+                    onclick="(function(){const el=document.getElementById('store-desc'); const btn=document.getElementById('store-desc-toggle'); if(!el) return; const expanded = !el.classList.contains('line-clamp-2'); if(expanded){ /* already expanded */ return; } el.classList.remove('line-clamp-2'); btn.setAttribute('aria-expanded','true'); btn.style.display='none'; })();"
+                  >
+                    View more
+                  </button>
+                </>
               )}
 
               {safeSideHtml && (
@@ -240,32 +255,30 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
             )}
           </div>
 
-          <!-- Sidebar -->
-          <aside class="lg:col-span-1 space-y-6">
-            <div class="lg:sticky lg:top-28 lg:self-start space-y-6">
-              <div class="sidebar-box">
-                <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
-              </div>
-
-              <div class="sidebar-box">
-                <RecentActivity client:load data={store.recent_activity} />
-              </div>
-
-              <div class="sidebar-box">
-                <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
-                <SubscribeBox client:load source={store.slug} />
-              </div>
-
-              <div class="sidebar-box">
-                <WhyTrustUs client:load />
-              </div>
-
-              {store.trust_text && (
-                <div class="sidebar-box text-sm text-gray-700">
-                  {store.trust_text}
-                </div>
-              )}
+          <!-- Sidebar: made sticky at top on lg screens to avoid empty space -->
+          <aside class="lg:col-span-1 lg:sticky lg:top-4 lg:self-start space-y-6">
+            <div class="sidebar-box">
+              <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
             </div>
+
+            <div class="sidebar-box">
+              <RecentActivity client:load data={store.recent_activity} />
+            </div>
+
+            <div class="sidebar-box">
+              <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
+              <SubscribeBox client:load source={store.slug} />
+            </div>
+
+            <div class="sidebar-box">
+              <WhyTrustUs client:load />
+            </div>
+
+            {store.trust_text && (
+              <div class="sidebar-box text-sm text-gray-700">
+                {store.trust_text}
+              </div>
+            )}
           </aside>
         </div>
       </>
