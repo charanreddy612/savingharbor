@@ -61,7 +61,7 @@ export function renderCouponCardHtml(item = {}) {
       ${badgesHtml}
 
       <!-- add top padding on small screens so badges don't overlap content -->
-      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 pt-6 sm:pt-4 min-h-[110px]">
+      <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 pt-10 sm:pt-8 min-h-[110px]">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white flex-shrink-0">
             ${
@@ -97,7 +97,9 @@ export function renderCouponCardHtml(item = {}) {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" />
             </svg>
-            <span>used by ${clickCount} ${clickCount === 1 ? "user" : "users"}</span>
+            <span>used by ${clickCount} ${
+    clickCount === 1 ? "user" : "users"
+  }</span>
           </div>
         </div>
       </div>
