@@ -175,6 +175,7 @@ export async function getBySlug(slug) {
       meta_description: data.meta_description || "",
       content_html: sanitize(data.content || ""),
       category: data.blog_categories?.name || null, // ✅ plain string
+      category_id: data.category_id || null,
       author: authorRow
         ? {
             id: authorRow.id ?? data.author_id ?? null,
