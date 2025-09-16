@@ -1,26 +1,11 @@
 // src/lib/renderers/couponCardHtml.js
-// Production-ready, mobile-first coupon card HTML renderer.
-// - Badges are in-flow on the right of the header (no absolute overlays).
-// - Mobile: icon-only for badges; sm+: icon + label.
-// - Merchant text truncates properly with `flex-1 min-w-0`.
-// - Images use loading="lazy" and decoding="async" for performance.
-// - Accessible alt text kept for images (badges have descriptive alt).
-// - "Used by" pill present and visually distinct.
 export function escapeHtml(s = "") {
-  return String(s)
+  return String(s || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
-/**
- * renderCouponCardHtml(item)
- * item: {
- *   id, title, coupon_type, code, ends_at, merchant_id,
- *   merchant: { slug, name, logo_url }, merchant_name,
- *   click_count
- * }
- */
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
   const title = escapeHtml(item.title ?? "");
@@ -46,17 +31,16 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // NOTE: badges are expected to be transparent PNG/SVG in /public/images
+  // Compact badges: icon-first, no chip background or shadow, label shown only on sm+
   const badgesHtml = `
-    <div class="flex-shrink-0 flex items-center gap-2">
-      <div class="flex items-center gap-2 rounded-full bg-white border border-gray-200 shadow-sm px-2 py-0.5">
+    <div class="flex-shrink-0 flex items-center gap-2 ml-2">
+      <div class="flex items-center gap-1">
         <img src="/images/verified-badge.png" alt="Verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
-        <span class="hidden sm:inline text-[11px] sm:text-sm text-emerald-700 font-medium">Verified</span>
+        <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Verified</span>
       </div>
-
-      <div class="flex items-center gap-2 rounded-full bg-white border border-gray-200 shadow-sm px-2 py-0.5">
+      <div class="flex items-center gap-1">
         <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
-        <span class="hidden sm:inline text-[11px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
+        <span class="hidden sm:inline text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
       </div>
     </div>
   `;
@@ -75,9 +59,9 @@ export function renderCouponCardHtml(item = {}) {
   return `
     <div class="relative">
       <div class="bg-white border border-gray-200 rounded-lg hover:shadow-md transition p-3 sm:p-4 flex flex-col gap-3 min-h-[110px]">
-        <!-- header row: logo | merchant info (flex-1) | badges (flex-shrink-0) -->
+        <!-- header: logo | merchant info (flex-1) | badges (icon-first) -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 flex items-center justify-center border rounded overflow-hidden bg-white flex-shrink-0">
+          <div class="w-10 h-10 flex items-center justify-center rounded overflow-hidden bg-white flex-shrink-0">
             ${
               logo
                 ? `<img src="${logo}" alt="${
@@ -95,7 +79,7 @@ export function renderCouponCardHtml(item = {}) {
           ${badgesHtml}
         </div>
 
-        <!-- action -->
+        <!-- CTA -->
         <div class="mt-1 flex-1">
           <button
             type="button"
@@ -109,7 +93,7 @@ export function renderCouponCardHtml(item = {}) {
           </button>
         </div>
 
-        <!-- footer row -->
+        <!-- footer -->
         <div class="flex items-center justify-between mt-2">
           <div class="text-xs text-gray-500">${endsAt}</div>
           ${usedByHtml}
