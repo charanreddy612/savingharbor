@@ -184,6 +184,7 @@ export async function detail(req, res) {
       async () => {
         try {
           const blog = await BlogsRepo.getBySlug(slug);
+          console.log("DEBUG blog result:", JSON.stringify(blog, null, 2));
           if (!blog) return { data: null, meta: { status: 404 } };
 
           const canonical = await buildCanonical({
