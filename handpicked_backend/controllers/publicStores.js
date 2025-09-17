@@ -280,6 +280,7 @@ export async function detail(req, res) {
           }));
           //setting coupon counts for stores with zero active coupons but have H2/H3 blocks
           store.active_coupons = couponsItems.length;
+          total = couponsItems.length;
         } else {
           // 🔹 Use DB coupons
           couponsItems = (rawItems || []).map((r) => ({

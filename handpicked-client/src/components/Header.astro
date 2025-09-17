@@ -8,39 +8,80 @@ const nav = [
 ];
 ---
 
-<header id="top" class="w-full border-b border-gray-200 bg-white">
-  <div class="container py-4 flex items-center justify-between">
-    <!-- Logo -->
-    <a href="/" class="flex items-center gap-3">
-      <img src="/logo.png" alt="SavingHarbor" width="36" height="36" />
-      <span class="font-semibold text-lg tracking-tight text-brand-primary">
-        Saving Harbor
-      </span>
-    </a>
-
-    <!-- Desktop nav -->
-    <nav class="hidden md:flex items-center gap-6">
-      <HeaderSearchIsland client:load />
-      {
-        nav.map((n) => (
-          <a
-            href={n.href}
-            class="text-sm text-brand-secondary hover:text-brand-primary transition"
-          >
-            {n.label}
-          </a>
-        ))
-      }
-    </nav>
-
-    <!-- Mobile -->
-    <div class="md:hidden">
-      <a
-        href="/stores"
-        class="btn btn-outline"
-      >
-        Browse
+<header
+  id="top"
+  class="w-full border-b border-gray-200 bg-gradient-to-r from-white via-slate-50 to-white shadow-sm"
+>
+  <div class="container mx-auto px-4 py-3">
+    <!-- Top row: logo + optional right-side small actions -->
+    <div class="flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 shrink-0">
+        <img
+          src="/logo.png"
+          alt="SavingHarbor"
+          width="40"
+          height="40"
+          class="rounded-sm"
+        />
+        <span class="font-bold text-lg tracking-tight text-brand-primary"
+          >Saving Harbor</span
+        >
       </a>
+
+      <!-- small right-side CTA (visible on md+) -->
+      <div class="hidden md:flex items-center gap-3">
+        <a
+          href="/stores"
+          class="inline-flex items-center text-sm font-medium px-3 py-1 rounded-md bg-brand-primary text-white hover:opacity-95 transition"
+        >
+          Browse
+        </a>
+      </div>
     </div>
+
+    <!-- Middle row: search (full-width on mobile, centered with max width on desktop) -->
+    <div class="mt-3 w-full flex justify-center">
+      <div class="w-full max-w-2xl">
+        <div
+          class="bg-white border border-gray-100 rounded-xl shadow-sm px-3 py-2 flex items-center gap-3"
+        >
+          <div class="flex-1">
+            <HeaderSearchIsland client:load />
+          </div>
+
+          <!-- small quick CTA (visible on lg) -->
+          <a
+            href="/stores"
+            class="hidden lg:inline-flex items-center text-sm font-medium px-3 py-1 rounded-md bg-brand-primary text-white transition"
+          >
+            Browse
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row: nav links (stacked on mobile, inline on desktop) -->
+    <nav aria-label="Main navigation" class="mt-3">
+      <ul class="flex flex-wrap justify-center gap-2">
+        {
+          nav.map((n) => (
+            <li>
+              <a
+                href={n.href}
+                class="text-sm font-medium text-slate-700 hover:text-brand-primary px-3 py-2 rounded-full transition-shadow hover:shadow-sm"
+                aria-current={
+                  new URL(location?.href || "", "http://example.invalid")
+                    .pathname === n.href
+                    ? "page"
+                    : undefined
+                }
+              >
+                {n.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
   </div>
 </header>
