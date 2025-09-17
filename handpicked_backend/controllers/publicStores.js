@@ -247,7 +247,7 @@ export async function detail(req, res) {
 
         const rawItems =
           couponsResult && couponsResult.items ? couponsResult.items : [];
-        const total =
+        let total =
           typeof couponsResult?.total === "number" ? couponsResult.total : 0;
 
         let couponsItems = [];
