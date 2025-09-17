@@ -154,12 +154,12 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
                       {o.title || "Offer"}
                     </div>
 
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    {/* <div className="text-xs text-gray-500 mt-0.5">
                       {o.type ? `${o.type} • ` : ""}
                       {o.click_count !== undefined
                         ? `${o.click_count} clicks`
                         : ""}
-                    </div>
+                    </div> */}
 
                     {s.revealedCode && (
                       <div
