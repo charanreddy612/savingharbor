@@ -3,13 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #1abc9c;    /* teal */
+  --brand-primary: #1abc9c; /* teal */
   --brand-secondary: #2e86de; /* blue */
-  --brand-accent: #1282a2;    /* gradient midpoint */
-  --brand-dark: #0b1220;      /* background navy */
+  --brand-accent: #1282a2; /* gradient midpoint */
+  --brand-dark: #0b1220; /* background navy */
 }
 
-.card-accent-top { border-top: 3px solid var(--brand-accent); }
+.card-accent-top {
+  border-top: 3px solid var(--brand-accent);
+}
 
 /* Base buttons */
 .btn {
@@ -82,16 +84,24 @@
 
 /* Truncate utilities (fallback if tailwind line-clamp plugin is not enabled) */
 /* clamp fallback utilities for ExpandableText */
-.line-clamp-1, .line-clamp-2, .line-clamp-3 {
+.line-clamp-1,
+.line-clamp-2,
+.line-clamp-3 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 /* set line counts */
-.line-clamp-1 { -webkit-line-clamp: 1; }
-.line-clamp-2 { -webkit-line-clamp: 2; }
-.line-clamp-3 { -webkit-line-clamp: 3; }
+.line-clamp-1 {
+  -webkit-line-clamp: 1;
+}
+.line-clamp-2 {
+  -webkit-line-clamp: 2;
+}
+.line-clamp-3 {
+  -webkit-line-clamp: 3;
+}
 
 /* Pills (consistent style for stats, used-by, trust chips) */
 .pill {
@@ -109,7 +119,9 @@
   position: relative;
 }
 
-.expandable .expandable-content { transition: max-height 180ms ease; }
+.expandable .expandable-content {
+  transition: max-height 180ms ease;
+}
 
 /* Inline toggle styling — consistent with earlier suggestions */
 .expand-toggle {
@@ -130,13 +142,33 @@
   border-radius: 4px;
 }
 
-.expandable p { margin: 0; }
+.expandable p {
+  margin: 0;
+}
 
 .details-panel.hidden {
   display: none !important;
 }
 
 .preview-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono",
+    monospace;
   letter-spacing: 0.02em;
+}
+
+.hp-summary::marker,
+.hp-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* optional: subtle transition for expanded content */
+.hp-details > div {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+/* ensure expanded block displays normally */
+.group-open\\:line-clamp-none {
+  -webkit-line-clamp: unset;
+  display: block;
+  white-space: normal;
 }

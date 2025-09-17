@@ -71,14 +71,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       const endpoint =
         (base || "").replace(/\/+$/, "") +
         `/offers/${encodeURIComponent(String(offerId))}/click`;
-
-      console.debug(
-        "[CouponReveal] clicking offer",
-        offerId,
-        "endpoint:",
-        endpoint
-      );
-
       const resp = await fetchWithRetry(
         endpoint,
         {
@@ -105,8 +97,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       } catch (_) {
         data = null;
       }
-
-      console.debug("[CouponReveal] server response for", offerId, data);
 
       const serverCode = data?.code ?? null;
       const serverRedirect = data?.redirect_url ?? null;
@@ -150,7 +140,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       // mark revealed in this session
       setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
     } catch (err) {
-      console.error("Reveal click failed", err);
       pushToast("An error occurred. Try again.");
       if (btnEl) btnEl.disabled = false;
     }
@@ -161,8 +150,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
     const el = containerRef.current;
     if (!el) return;
     el.innerHTML = renderCouponCardHtml(c);
-    console.debug("[CouponReveal] injected HTML for offer", c?.id);
-
     // If this offer was revealed previously in this session, reflect that state
     if (disabledOfferIds.has(String(c.id))) {
       const btn = el.querySelector(
@@ -192,14 +179,8 @@ export default function CouponReveal({ coupon, storeSlug }) {
             ev.stopPropagation();
             handleRevealClick(btn, offerId);
           });
-          console.debug("[CouponReveal] attached direct handler for", offerId);
         }
       });
-    } else {
-      console.debug(
-        "[CouponReveal] no reveal buttons found in injected HTML for",
-        c?.id
-      );
     }
   }, [c, disabledOfferIds]);
 
