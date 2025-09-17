@@ -82,31 +82,37 @@ export function renderCouponCardHtml(item = {}) {
                 : `<div class="text-[10px] text-gray-400">Logo</div>`
             }
           </div>
-        <div class="flex-1 min-w-0">
-          <!-- Title: collapsed by default (truncated), expands on tap/click/focus -->
-          <details class="hp-details group" role="listitem">
-            <summary class="hp-summary mb-0 list-none cursor-pointer focus:outline-none">
-              <h3 class="font-semibold text-sm text-brand-primary truncate group-open:whitespace-normal">
+          
+          <div class="flex-1 min-w-0">
+            <!-- Title: truncated, shows full on hover/focus -->
+            <div class="relative group">
+              <h3 class="font-semibold text-sm text-brand-primary truncate">
                 ${title}
               </h3>
-            </summary>
-            <div class="mt-2 text-xs text-gray-700">
-              ${title}
-            </div>
-          </details>
 
-          <!-- Description: collapsed by default (2-line clamp), expands on tap/click/focus -->
-          <details class="hp-details mt-1 group" role="listitem">
-            <summary class="hp-summary mb-0 list-none cursor-pointer focus:outline-none">
-              <p class="text-xs text-gray-500 line-clamp-2 group-open:line-clamp-none">
+              <!-- tooltip: appears on hover or keyboard focus (group-hover / group-focus) -->
+              <div
+                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                role="tooltip"
+              >
+                ${title}
+              </div>
+            </div>
+
+            <!-- Description: truncated (2-line clamp), shows full on hover/focus -->
+            <div class="relative group mt-1">
+              <p class="text-xs text-gray-500 line-clamp-2">
                 ${description}
               </p>
-            </summary>
-            <div class="mt-2 text-xs text-gray-700">
-              ${description}
+
+              <div
+                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                role="tooltip"
+              >
+                ${description}
+              </div>
             </div>
-          </details>
-        </div>
+          </div>
 
         <div class="mt-1">
           <button
