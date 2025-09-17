@@ -173,7 +173,7 @@ export default function HeaderSearchIsland() {
   };
 
   return (
-    <div ref={containerRef} className="relative min-w-[16rem]">
+    <div ref={containerRef} className="relative w-full">
       <label htmlFor="header-search" className="sr-only">
         Search stores
       </label>
@@ -191,47 +191,32 @@ export default function HeaderSearchIsland() {
           aria-controls="header-search-listbox"
           aria-activedescendant={active >= 0 ? `hs-item-${active}` : undefined}
           role="combobox"
-          className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary w-64"
+          className="w-full pl-0 pr-0 py-2 text-sm bg-transparent"
+          style={{
+            WebkitAppearance: "none",
+            appearance: "none",
+            outline: "none",
+            border: "none",
+            background: "transparent",
+            boxShadow: "none",
+            borderRadius: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+            color: "inherit",
+          }}
         />
 
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-          {loading ? (
-            <svg
-              className="w-4 h-4 animate-spin text-brand-accent"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-5 w-5 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          )}
-        </div>
+        {/* REMOVED the right-side icon/loader to avoid duplicate icons.
+            If you want a loader, we can show it by toggling the left icon in header,
+            or add a subtle inline spinner replacing the left icon when loading. */}
       </div>
 
       {open && (
         <ul
           id="header-search-listbox"
           role="listbox"
-          className="absolute z-50 mt-1 w-80 max-h-64 overflow-auto bg-white border border-gray-200 rounded shadow-lg"
+          className="absolute z-50 mt-1 w-full max-h-64 overflow-auto bg-white border border-gray-200 rounded shadow-lg"
+          style={{ left: 0, boxSizing: "border-box" }}
         >
           {errMsg ? (
             <li className="p-3 text-sm text-red-600">{errMsg}</li>
