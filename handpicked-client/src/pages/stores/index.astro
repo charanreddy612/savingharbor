@@ -67,7 +67,12 @@ const canonical = meta.canonical;
         stores.length > 0 ? (
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {stores.map((store) => (
-              <CardStore store={store} />
+              <div
+                class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+              >
+                <CardStore store={store} />
+              </div>
             ))}
           </div>
         ) : (
