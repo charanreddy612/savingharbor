@@ -3,29 +3,26 @@ import React, { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 
 /**
- * FAQAccordion.jsx
+ * FaqAccordion.jsx — drop-in replacement
  *
- * Props:
+ * Props (unchanged):
  *  - faqs: Array<{ question, answer }>
  *  - defaultOpen: number | null
  *  - idPrefix: string
  *
  * Behavior:
- *  - Single-open mode by default (openIndex).
- *  - Expand All switches to multi-open mode (openSet).
- *  - Collapse All returns to single-open mode.
- *  - Keyboard navigation: ArrowUp/Down, Home, End, Enter/Space toggle.
- *  - Smooth expand/collapse (respects prefers-reduced-motion).
+ *  - Single-open by default (openIndex).
+ *  - Expand All / Collapse All toggles multi-open mode (openSet).
+ *  - Individual toggles work in single or multi mode.
+ *  - Smooth expand/collapse using measured scrollHeight.
  */
-
-export default function FAQAccordion({
-  faqs = [],
+export default function FaqAccordion({
+  faqs,
   defaultOpen = null,
   idPrefix = "faq",
 }) {
   const list = Array.isArray(faqs) ? faqs : [];
-
-  // single-open index (null means none)
+  // single-open index (default mode)
   const [openIndex, setOpenIndex] = useState(
     typeof defaultOpen === "number" &&
       defaultOpen >= 0 &&
@@ -33,30 +30,32 @@ export default function FAQAccordion({
       ? defaultOpen
       : null
   );
-
-  // multi-open set for "Expand all" mode
+  // multi-open set for "Expand all" mode (store array of indexes)
   const [openSet, setOpenSet] = useState([]);
+  // whether user activated expand-all (multi mode)
   const [multiMode, setMultiMode] = useState(false);
 
-  // refs
+  // refs for headers and panels
   const headersRef = useRef([]);
   const panelsRef = useRef([]);
 
-  // keep refs sized correctly if list length changes
   useEffect(() => {
     headersRef.current = headersRef.current.slice(0, list.length);
     panelsRef.current = panelsRef.current.slice(0, list.length);
+    // keep openSet valid if list shrinks
     setOpenSet((s) => s.filter((i) => i >= 0 && i < list.length));
     if (openIndex !== null && (openIndex < 0 || openIndex >= list.length))
       setOpenIndex(null);
   }, [list.length]);
 
-  // toggle item by index
+  // toggle single or multi depending on mode
   const toggleItem = (i) => {
     if (multiMode) {
-      setOpenSet((prev) =>
-        prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
-      );
+      setOpenSet((prev) => {
+        const exists = prev.includes(i);
+        if (exists) return prev.filter((x) => x !== i);
+        return [...prev, i];
+      });
     } else {
       setOpenIndex((prev) => (prev === i ? null : i));
     }
@@ -74,10 +73,11 @@ export default function FAQAccordion({
     setOpenIndex(null);
   };
 
-  // keyboard nav for headers
+  // keyboard nav for headers (ARIA best-practices)
   const onKeyDownHeader = (e, i) => {
     const max = list.length - 1;
     const key = e.key;
+    const code = e.code;
     if (key === "ArrowDown") {
       e.preventDefault();
       const next = i + 1 > max ? 0 : i + 1;
@@ -92,7 +92,7 @@ export default function FAQAccordion({
     } else if (key === "End") {
       e.preventDefault();
       headersRef.current[max]?.focus();
-    } else if (key === "Enter" || key === " " || e.code === "Space") {
+    } else if (key === "Enter" || key === " " || code === "Space") {
       e.preventDefault();
       toggleItem(i);
     }
@@ -108,12 +108,10 @@ export default function FAQAccordion({
     panelsRef.current.forEach((panelEl, idx) => {
       if (!panelEl) return;
       const isOpen = multiMode ? openSet.includes(idx) : openIndex === idx;
-
       if (isOpen) {
         if (prefersReduced) {
           panelEl.style.maxHeight = "none";
         } else {
-          // set exact scrollHeight so CSS transition runs
           panelEl.style.maxHeight = panelEl.scrollHeight + "px";
         }
       } else {
@@ -125,11 +123,12 @@ export default function FAQAccordion({
   if (!list || list.length === 0) return null;
 
   return (
-    <div className="card card-surface">
+    <div className="w-full bg-white border border-gray-100 rounded-md shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold text-brand-primary">FAQs</h2>
 
         <div className="flex items-center gap-2">
+          {/* Expand/Collapse controls */}
           <button
             type="button"
             onClick={expandAll}
@@ -138,7 +137,6 @@ export default function FAQAccordion({
           >
             Expand all
           </button>
-
           <button
             type="button"
             onClick={collapseAll}
@@ -170,11 +168,12 @@ export default function FAQAccordion({
           const headerId = `${idPrefix}-header-${i}`;
           const panelId = `${idPrefix}-panel-${i}`;
 
-          const question = rawQ || `Question ${i + 1}`;
+          const question = rawQ;
           const answerRaw =
             f && (f.answer ?? f.a ?? f.ans)
               ? String(f.answer ?? f.a ?? f.ans).trim()
               : "";
+
           const containsHtml = /<\/?[a-z][\s\S]*>/i.test(answerRaw);
           const safeHtml = containsHtml ? DOMPurify.sanitize(answerRaw) : null;
 
@@ -193,7 +192,7 @@ export default function FAQAccordion({
                   onKeyDown={(e) => onKeyDownHeader(e, i)}
                   className="w-full text-left p-3 flex items-center justify-between gap-4 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 >
-                  <span className="text-sm md:text-base font-medium text-on-surface">
+                  <span className="text-sm md:text-base font-medium text-gray-900">
                     {question}
                   </span>
 
@@ -203,13 +202,13 @@ export default function FAQAccordion({
                         ? "rotate-180 text-brand-primary"
                         : "rotate-0 text-gray-400"
                     }`}
-                    aria-hidden="true"
                   >
                     <svg
                       className="w-5 h-5"
                       viewBox="0 0 20 20"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
                     >
                       <path
                         d="M5 7l5 5 5-5"
@@ -229,7 +228,7 @@ export default function FAQAccordion({
                 aria-labelledby={headerId}
                 aria-hidden={!isOpen}
                 ref={(el) => (panelsRef.current[i] = el)}
-                className="px-3 pb-3 text-sm text-on-surface transition-[max-height] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] overflow-hidden"
+                className="px-3 pb-3 text-sm text-gray-700 transition-[max-height] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] overflow-hidden"
                 style={{ maxHeight: "0px" }}
               >
                 <div className="pt-2">
@@ -239,7 +238,7 @@ export default function FAQAccordion({
                       dangerouslySetInnerHTML={{ __html: safeHtml }}
                     />
                   ) : (
-                    <p className="text-sm text-on-surface whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
                       {answerRaw}
                     </p>
                   )}
