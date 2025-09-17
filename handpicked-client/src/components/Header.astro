@@ -27,16 +27,6 @@ const nav = [
           >Saving Harbor</span
         >
       </a>
-
-      <!-- small right-side CTA (visible on md+) -->
-      <div class="hidden md:flex items-center gap-3">
-        <a
-          href="/stores"
-          class="inline-flex items-center text-sm font-medium px-3 py-1 rounded-md bg-brand-primary text-white hover:opacity-95 transition"
-        >
-          Browse
-        </a>
-      </div>
     </div>
 
     <!-- Middle row: search (full-width on mobile, centered with max width on desktop) -->
@@ -60,7 +50,7 @@ const nav = [
       </div>
     </div>
 
-    <!-- Bottom row: nav links (stacked on mobile, inline on desktop) -->
+    <!-- Bottom row: nav links (stacked on narrow screens, inline on wide screens) -->
     <nav aria-label="Main navigation" class="mt-3">
       <ul class="flex flex-wrap justify-center gap-2">
         {
@@ -69,12 +59,7 @@ const nav = [
               <a
                 href={n.href}
                 class="text-sm font-medium text-slate-700 hover:text-brand-primary px-3 py-2 rounded-full transition-shadow hover:shadow-sm"
-                aria-current={
-                  new URL(location?.href || "", "http://example.invalid")
-                    .pathname === n.href
-                    ? "page"
-                    : undefined
-                }
+                role="link"
               >
                 {n.label}
               </a>
