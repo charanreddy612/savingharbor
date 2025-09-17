@@ -250,33 +250,10 @@ export async function detail(req, res) {
         const total =
           typeof couponsResult?.total === "number" ? couponsResult.total : 0;
 
-        const couponsItems = (rawItems || []).map((r) => ({
-          id: r.id,
-          coupon_type: r.coupon_type,
-          title: r.title,
-          description: r.description,
-          type_text: r.type_text,
-          code: null,
-          ends_at: r.ends_at,
-          show_proof: !!r.show_proof,
-          proof_image_url: r.proof_image_url || null,
-          is_editor: !!r.is_editor,
-          click_count: r.click_count || 0,
-          merchant_id: r.merchant_id,
-          merchant: r.merchant
-            ? {
-                id: r.merchant.id,
-                slug: r.merchant.slug,
-                name: r.merchant.name,
-                aff_url: r.merchant.aff_url,
-                web_url: r.merchant.web_url,
-                logo_url: r.merchant.logo_url,
-              }
-            : null,
-        }));
+        let couponsItems = [];
 
-        // 🔹 Fallback: if no coupons, use H2/H3 blocks as default coupons
         if (total === 0) {
+          // 🔹 Use H2 + H3 blocks as default coupons
           const fallbackBlocks = [
             ...(store.coupon_h2_blocks || []),
             ...(store.coupon_h3_blocks || []),
@@ -300,6 +277,32 @@ export async function detail(req, res) {
               name: store.name,
               logo_url: store.logo_url,
             },
+          }));
+        } else {
+          // 🔹 Use DB coupons
+          couponsItems = (rawItems || []).map((r) => ({
+            id: r.id,
+            coupon_type: r.coupon_type,
+            title: r.title,
+            description: r.description,
+            type_text: r.type_text,
+            code: null,
+            ends_at: r.ends_at,
+            show_proof: !!r.show_proof,
+            proof_image_url: r.proof_image_url || null,
+            is_editor: !!r.is_editor,
+            click_count: r.click_count || 0,
+            merchant_id: r.merchant_id,
+            merchant: r.merchant
+              ? {
+                  id: r.merchant.id,
+                  slug: r.merchant.slug,
+                  name: r.merchant.name,
+                  aff_url: r.merchant.aff_url,
+                  web_url: r.merchant.web_url,
+                  logo_url: r.merchant.logo_url,
+                }
+              : null,
           }));
         }
 
