@@ -1,0 +1,41 @@
+---
+// src/pages/faq.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import FAQAccordion from "../components/FAQAccordion.jsx";
+
+const pageMeta = {
+  title: "FAQ — Saving Harbor",
+  description:
+    "Frequently asked questions about coupons, verification, and how to report issues.",
+};
+
+// Define FAQ entries (plain text or HTML in answers)
+const faqs = [
+  {
+    question: "How do you verify coupons?",
+    answer:
+      "We run automated checks then test high-impact codes manually in live carts. If a code fails, we remove or flag it.",
+  },
+  {
+    question: "Can I submit a coupon?",
+    answer:
+      'Yes — use our <a href="/contact" class="text-brand-primary hover:underline">Contact</a> page to submit codes. We’ll verify and publish if valid.',
+  },
+  {
+    question: "Who do you work with?",
+    answer:
+      "We partner with merchants and affiliate networks to surface legitimate savings. We also accept user reports for verification.",
+  },
+];
+---
+
+<Base meta={pageMeta}>
+  <Header />
+  <main class="container mx-auto px-4 py-10">
+    <h1 class="site-hero text-on-surface mb-6">FAQ</h1>
+    <FAQAccordion client:load faqs={faqs as any} />
+  </main>
+  <Footer />
+</Base>

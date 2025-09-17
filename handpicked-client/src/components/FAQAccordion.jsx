@@ -3,26 +3,29 @@ import React, { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 
 /**
- * FaqAccordion.jsx — drop-in replacement
+ * FAQAccordion.jsx
  *
- * Props (unchanged):
+ * Props:
  *  - faqs: Array<{ question, answer }>
  *  - defaultOpen: number | null
  *  - idPrefix: string
  *
  * Behavior:
- *  - Single-open by default (openIndex).
- *  - Expand All / Collapse All toggles multi-open mode (openSet).
- *  - Individual toggles work in single or multi mode.
- *  - Smooth expand/collapse using measured scrollHeight.
+ *  - Single-open mode by default (openIndex).
+ *  - Expand All switches to multi-open mode (openSet).
+ *  - Collapse All returns to single-open mode.
+ *  - Keyboard navigation: ArrowUp/Down, Home, End, Enter/Space toggle.
+ *  - Smooth expand/collapse (respects prefers-reduced-motion).
  */
-export default function FaqAccordion({
-  faqs,
+
+export default function FAQAccordion({
+  faqs = [],
   defaultOpen = null,
   idPrefix = "faq",
 }) {
   const list = Array.isArray(faqs) ? faqs : [];
-  // single-open index (default mode)
+
+  // single-open index (null means none)
   const [openIndex, setOpenIndex] = useState(
     typeof defaultOpen === "number" &&
       defaultOpen >= 0 &&
@@ -30,32 +33,30 @@ export default function FaqAccordion({
       ? defaultOpen
       : null
   );
-  // multi-open set for "Expand all" mode (store array of indexes)
+
+  // multi-open set for "Expand all" mode
   const [openSet, setOpenSet] = useState([]);
-  // whether user activated expand-all (multi mode)
   const [multiMode, setMultiMode] = useState(false);
 
-  // refs for headers and panels
+  // refs
   const headersRef = useRef([]);
   const panelsRef = useRef([]);
 
+  // keep refs sized correctly if list length changes
   useEffect(() => {
     headersRef.current = headersRef.current.slice(0, list.length);
     panelsRef.current = panelsRef.current.slice(0, list.length);
-    // keep openSet valid if list shrinks
     setOpenSet((s) => s.filter((i) => i >= 0 && i < list.length));
     if (openIndex !== null && (openIndex < 0 || openIndex >= list.length))
       setOpenIndex(null);
   }, [list.length]);
 
-  // toggle single or multi depending on mode
+  // toggle item by index
   const toggleItem = (i) => {
     if (multiMode) {
-      setOpenSet((prev) => {
-        const exists = prev.includes(i);
-        if (exists) return prev.filter((x) => x !== i);
-        return [...prev, i];
-      });
+      setOpenSet((prev) =>
+        prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+      );
     } else {
       setOpenIndex((prev) => (prev === i ? null : i));
     }
@@ -73,11 +74,10 @@ export default function FaqAccordion({
     setOpenIndex(null);
   };
 
-  // keyboard nav for headers (ARIA best-practices)
+  // keyboard nav for headers
   const onKeyDownHeader = (e, i) => {
     const max = list.length - 1;
     const key = e.key;
-    const code = e.code;
     if (key === "ArrowDown") {
       e.preventDefault();
       const next = i + 1 > max ? 0 : i + 1;
@@ -92,7 +92,7 @@ export default function FaqAccordion({
     } else if (key === "End") {
       e.preventDefault();
       headersRef.current[max]?.focus();
-    } else if (key === "Enter" || key === " " || code === "Space") {
+    } else if (key === "Enter" || key === " " || e.code === "Space") {
       e.preventDefault();
       toggleItem(i);
     }
@@ -108,10 +108,12 @@ export default function FaqAccordion({
     panelsRef.current.forEach((panelEl, idx) => {
       if (!panelEl) return;
       const isOpen = multiMode ? openSet.includes(idx) : openIndex === idx;
+
       if (isOpen) {
         if (prefersReduced) {
           panelEl.style.maxHeight = "none";
         } else {
+          // set exact scrollHeight so CSS transition runs
           panelEl.style.maxHeight = panelEl.scrollHeight + "px";
         }
       } else {
@@ -123,12 +125,11 @@ export default function FaqAccordion({
   if (!list || list.length === 0) return null;
 
   return (
-    <div className="w-full bg-white border border-gray-100 rounded-md shadow-sm p-4">
+    <div className="card card-surface">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold text-brand-primary">FAQs</h2>
 
         <div className="flex items-center gap-2">
-          {/* Expand/Collapse controls */}
           <button
             type="button"
             onClick={expandAll}
@@ -137,6 +138,7 @@ export default function FaqAccordion({
           >
             Expand all
           </button>
+
           <button
             type="button"
             onClick={collapseAll}
@@ -168,12 +170,11 @@ export default function FaqAccordion({
           const headerId = `${idPrefix}-header-${i}`;
           const panelId = `${idPrefix}-panel-${i}`;
 
-          const question = rawQ;
+          const question = rawQ || `Question ${i + 1}`;
           const answerRaw =
             f && (f.answer ?? f.a ?? f.ans)
               ? String(f.answer ?? f.a ?? f.ans).trim()
               : "";
-
           const containsHtml = /<\/?[a-z][\s\S]*>/i.test(answerRaw);
           const safeHtml = containsHtml ? DOMPurify.sanitize(answerRaw) : null;
 
@@ -192,7 +193,7 @@ export default function FaqAccordion({
                   onKeyDown={(e) => onKeyDownHeader(e, i)}
                   className="w-full text-left p-3 flex items-center justify-between gap-4 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 >
-                  <span className="text-sm md:text-base font-medium text-gray-900">
+                  <span className="text-sm md:text-base font-medium text-on-surface">
                     {question}
                   </span>
 
@@ -202,13 +203,13 @@ export default function FaqAccordion({
                         ? "rotate-180 text-brand-primary"
                         : "rotate-0 text-gray-400"
                     }`}
+                    aria-hidden="true"
                   >
                     <svg
                       className="w-5 h-5"
                       viewBox="0 0 20 20"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
                     >
                       <path
                         d="M5 7l5 5 5-5"
@@ -228,7 +229,7 @@ export default function FaqAccordion({
                 aria-labelledby={headerId}
                 aria-hidden={!isOpen}
                 ref={(el) => (panelsRef.current[i] = el)}
-                className="px-3 pb-3 text-sm text-gray-700 transition-[max-height] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] overflow-hidden"
+                className="px-3 pb-3 text-sm text-on-surface transition-[max-height] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] overflow-hidden"
                 style={{ maxHeight: "0px" }}
               >
                 <div className="pt-2">
@@ -238,7 +239,7 @@ export default function FaqAccordion({
                       dangerouslySetInnerHTML={{ __html: safeHtml }}
                     />
                   ) : (
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    <p className="text-sm text-on-surface whitespace-pre-wrap">
                       {answerRaw}
                     </p>
                   )}

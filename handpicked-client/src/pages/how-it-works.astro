@@ -1,0 +1,32 @@
+---
+// src/pages/how-it-works.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const pageMeta = {
+  title: "How Saving Harbor Works",
+  description: "Step-by-step: how we verify coupons, label offers, and ensure quality for shoppers.",
+};
+---
+<Base meta={pageMeta}>
+  <Header />
+  <main class="container mx-auto px-4 py-10">
+    <article class="prose max-w-none lg:prose-lg text-on-surface">
+      <h1>How it works</h1>
+      <p>We combine automated checks and human verification to deliver reliable coupons.</p>
+
+      <h2>Our process</h2>
+      <ol>
+        <li><strong>Discovery:</strong> We crawl merchant sites and partner feeds for new offers.</li>
+        <li><strong>Verification:</strong> Automated tests are run; high-impact codes are tried manually.</li>
+        <li><strong>Labeling:</strong> We add meta (single-use, expires soon, stackable) so shoppers know what to expect.</li>
+        <li><strong>Maintenance:</strong> Popular codes are re-checked daily; others on a rolling cadence.</li>
+      </ol>
+
+      <h2>What you can expect</h2>
+      <p>Clear labels, accurate expiry info when available, and the option to report broken codes via our <a href="/contact" class="text-brand-primary hover:underline">Contact</a> page.</p>
+    </article>
+  </main>
+  <Footer />
+</Base>

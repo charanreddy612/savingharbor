@@ -1,0 +1,35 @@
+---
+// src/pages/press.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const pageMeta = {
+  title: "Press — Saving Harbor",
+  description: "Press resources, company facts, logos, and media contacts for Saving Harbor.",
+};
+---
+<Base meta={pageMeta}>
+  <Header />
+  <main class="container mx-auto px-4 py-10">
+    <article class="prose max-w-none lg:prose-lg text-on-surface">
+      <h1>Press</h1>
+      <p>Thank you for your interest. Below are quick facts, our brand assets, and a downloadable press kit.</p>
+
+      <h2>Quick facts</h2>
+      <ul>
+        <li>Founded: 2024</li>
+        <li>Headquarters: Remote</li>
+        <li>Mission: Verified coupons, real savings.</li>
+      </ul>
+
+      <h2>Brand assets</h2>
+      <p>Download our press kit (logo, screenshots, company one-pager):</p>
+      <a href="/assets/saving-harbor-press-kit.zip" class="btn btn-outline mt-2 inline-block">Download Press Kit</a>
+
+      <h2 class="mt-6">Media contact</h2>
+      <p>For interview requests and press inquiries, email <a href="mailto:press@savingharbor.com" class="text-brand-primary hover:underline">press@savingharbor.com</a>.</p>
+    </article>
+  </main>
+  <Footer />
+</Base>

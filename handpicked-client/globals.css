@@ -7,8 +7,14 @@
   --brand-secondary: #2e86de; /* blue */
   --brand-accent: #1282a2; /* gradient midpoint */
   --brand-dark: #0b1220; /* background navy */
+
+  /* surface tokens — used for cards and light surfaces */
+  --surface: #ffffff; /* default light surface */
+  --surface-2: rgba(255, 255, 255, 0.03); /* subtle dark-surface */
+  --on-surface: #0f1724; /* text on light surface */
 }
 
+/* ---------- existing helpers ---------- */
 .card-accent-top {
   border-top: 3px solid var(--brand-accent);
 }
@@ -16,21 +22,26 @@
 /* Base buttons */
 .btn {
   @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+  /* accessible focus ring by default */
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
 }
 
 /* Primary button */
 .btn-primary {
   @apply bg-brand-primary text-white border border-brand-primary hover:bg-brand-secondary hover:border-brand-secondary;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
 }
 
 /* Outline button */
 .btn-outline {
   @apply border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
 }
 
 /* Secondary button (optional, for less emphasis) */
 .btn-secondary {
   @apply bg-brand-secondary text-white border border-brand-secondary hover:bg-brand-primary hover:border-brand-primary;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
 }
 
 /* Disabled state */
@@ -171,4 +182,89 @@
   -webkit-line-clamp: unset;
   display: block;
   white-space: normal;
+}
+
+/* Tailwind utilities (put in your globals or component CSS) */
+.footer-link {
+  @apply inline-block text-gray-300 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary rounded px-1;
+}
+.social-btn {
+  @apply p-2 rounded hover:bg-white/5 hover:text-brand-primary transition focus:outline-none focus:ring-2 focus:ring-brand-primary;
+}
+.social-btn.small {
+  @apply p-1;
+}
+
+/* @apply helpers (Tailwind) */
+.detail-summary {
+  @apply cursor-pointer font-medium;
+}
+.details-panel {
+  @apply mt-2 text-sm text-gray-300;
+}
+
+/* ---------- NEW / ADDED helpers (from audit) ---------- */
+
+/* unified card helper used across index and pages */
+.card {
+  @apply rounded-md bg-white/3 p-4 transition-shadow;
+}
+
+/* card variant for light surfaces (e.g. testimonials) */
+.card-surface {
+  /* use --surface tokens — override these in dark mode if needed */
+  background-color: var(--surface-2);
+  color: var(--on-surface);
+  @apply rounded-md p-4 border border-white/6;
+}
+
+/* Accent border helpers for card top */
+.accent-blue {
+  border-top-width: 4px;
+  border-top-style: solid;
+  border-top-color: var(--brand-secondary);
+}
+.accent-amber {
+  border-top-width: 4px;
+  border-top-style: solid;
+  border-top-color: #f59e0b;
+}
+
+/* Re-usable shadow for store/coupon cards */
+.shadow-store-card {
+  box-shadow: 0 6px 20px rgba(10, 12, 20, 0.06);
+}
+
+/* Hero helper */
+.site-hero {
+  @apply text-3xl md:text-4xl font-bold tracking-tight;
+}
+
+/* Prose overrides to nudge colors to brand tokens (safe & minimal) */
+.prose :where(h1, h2, h3, h4) {
+  @apply text-on-surface;
+}
+.prose {
+  /* default link color inside prose */
+  --tw-prose-links: var(--brand-primary);
+}
+.prose a {
+  @apply underline-offset-2 hover:underline;
+  color: var(--brand-primary);
+}
+
+/* small utility to ensure readable text on brand-primary backgrounds */
+.on-brand-contrast {
+  color: white;
+  mix-blend-mode: normal;
+}
+
+/* accessibility helpers */
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:px-3 focus:py-2 focus:bg-white focus:text-brand-primary rounded;
+}
+
+/* small responsive tweaks for footer columns spacing */
+.footer-col {
+  @apply space-y-3;
 }

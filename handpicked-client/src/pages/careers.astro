@@ -1,0 +1,50 @@
+---
+// src/pages/careers.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const pageMeta = {
+  title: "Careers at Saving Harbor",
+  description: "Join the team building the most trusted coupons site — roles, perks, and how to apply.",
+};
+---
+<Base meta={pageMeta}>
+  <Header />
+  <main class="container mx-auto px-4 py-10">
+    <header class="mb-6">
+      <h1 class="site-hero text-on-surface">Careers</h1>
+      <p class="mt-2 text-gray-400">We're a small, fast-moving team building trust-first coupon experiences. If you love shipping clear product and helping shoppers save, let's talk.</p>
+    </header>
+
+    <section class="space-y-4">
+      <h2 class="section-heading">Open roles</h2>
+
+      <!-- Example job card -->
+      <div class="card card-surface">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold">Senior Frontend Engineer</h3>
+            <div class="text-sm text-gray-300">Remote · Full-time</div>
+            <p class="mt-3 text-sm text-gray-300">Help build performant, accessible UI for millions of shoppers. 5+ years experience preferred.</p>
+          </div>
+          <div class="flex-shrink-0">
+            <a href="mailto:jobs@savingharbor.com?subject=Senior%20Frontend%20Engineer%20Application" class="btn btn-primary">Apply</a>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-400">Can’t find a role that fits? Email <a href="mailto:jobs@savingharbor.com" class="text-brand-primary hover:underline">jobs@savingharbor.com</a> with your CV and a short note.</p>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="section-heading">Why work with us</h2>
+      <ul class="prose text-on-surface">
+        <li>Remote-first, flexible hours.</li>
+        <li>Meaningful equity + competitive compensation.</li>
+        <li>Small team — high ownership.</li>
+      </ul>
+    </section>
+  </main>
+  <Footer />
+</Base>

@@ -1,7 +1,5 @@
 ---
-import Base from "../layouts/Base.astro";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
+import LegalLayout from "../layouts/LegalLayout.astro";
 
 const pageMeta = {
   title: "Terms of Use",
@@ -9,50 +7,31 @@ const pageMeta = {
 };
 ---
 
-<Base meta={pageMeta}>
-  <Header />
-  <main class="container py-10">
-    <article class="prose max-w-none">
-      <h1>Terms of Use</h1>
-      <p>Last updated: {new Date().toLocaleDateString()}</p>
-      text
-      <h2>Acceptance of terms</h2>
-      <p>
-        By accessing or using Saving Harbor, you agree to these Terms and our
-        Privacy Policy.
-      </p>
+<LegalLayout meta={pageMeta}>
+  <h2>Acceptance of terms</h2>
+  <p>By accessing or using Saving Harbor, you agree to these Terms...</p>
 
-      <h2>Use of the site</h2>
-      <ul>
-        <li>You agree not to misuse or attempt to disrupt the service.</li>
-        <li>
-          Content provided is for informational purposes and may change without
-          notice.
-        </li>
-        <li>We may update or discontinue features at any time.</li>
-      </ul>
+  <h2>Use of the site</h2>
+  <ul>
+    <li>You agree not to misuse or attempt to disrupt the service.</li>
+    <li>Content provided is for informational purposes and may change...</li>
+    <li>We may update or discontinue features at any time.</li>
+  </ul>
 
-      <h2>Intellectual property</h2>
-      <p>
-        Saving Harbor trademarks, logos, and content are protected. Do not use them
-        without permission.
-      </p>
+  <h2>Intellectual property</h2>
+  <p>Saving Harbor trademarks, logos, and content are protected...</p>
 
-      <h2>Disclaimers</h2>
-      <p>
-        We strive for accuracy, but codes and promotions may change. We are not
-        responsible for third-party offers.
-      </p>
+  <h2>Disclaimers</h2>
+  <p>We strive for accuracy, but codes and promotions may change...</p>
 
-      <h2>Limitation of liability</h2>
-      <p>
-        To the fullest extent permitted by law, Saving Harbor is not liable for
-        indirect or consequential damages.
-      </p>
+  <h2>Limitation of liability</h2>
+  <p>To the fullest extent permitted by law, Saving Harbor is not liable...</p>
 
-      <h2>Contact</h2>
-      <p>Email: legal@savingharbor.example</p>
-    </article>
-  </main>
-  <Footer />
-</Base>
+  <h2>Contact</h2>
+  <p>
+    Email: <a
+      href="mailto:legal@savingharbor.example"
+      class="text-brand-primary hover:underline">legal@savingharbor.example</a
+    >
+  </p>
+</LegalLayout>

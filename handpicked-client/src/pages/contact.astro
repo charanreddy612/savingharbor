@@ -1,4 +1,5 @@
 ---
+// src/pages/contact.astro
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -12,25 +13,58 @@ const pageMeta = {
 
 <Base meta={pageMeta}>
   <Header />
-  <main class="container py-10">
-    <article class="prose max-w-none">
-      <h1>Contact</h1>
-      <p>
+  <main class="container mx-auto px-4 py-10">
+    <header class="mb-6">
+      <h1 class="site-hero text-on-surface">Contact</h1>
+      <p class="mt-2 text-gray-400">
         We’d love to hear from you. Use the details below and we’ll get back as
         soon as possible.
       </p>
-      <h2>General inquiries</h2>
-      <p>Email: hello@savingharbor.example</p>
-      <h2>Partnerships</h2>
-      <p>Email: partnerships@savingharbor.example</p>
-      <h2>Support</h2>
-      <p>Email: support@savingharbor.example</p>
-      <h2>Feedback</h2>
-      <p>
-        Found an expired code or want to suggest a new store? Send details and
-        we’ll review promptly.
-      </p>
-    </article>
+    </header>
+
+    <section class="grid gap-6 sm:grid-cols-2">
+      <!-- General -->
+      <div class="card card-surface">
+        <h2 class="section-heading">General inquiries</h2>
+        <p>
+          Email: <a
+            href="mailto:hello@savingharbor.example"
+            class="text-brand-primary hover:underline"
+            >hello@savingharbor.example</a>
+        </p>
+      </div>
+
+      <!-- Partnerships -->
+      <div class="card card-surface">
+        <h2 class="section-heading">Partnerships</h2>
+        <p>
+          Email: <a
+            href="mailto:partnerships@savingharbor.example"
+            class="text-brand-primary hover:underline"
+            >partnerships@savingharbor.example</a>
+        </p>
+      </div>
+
+      <!-- Support -->
+      <div class="card card-surface">
+        <h2 class="section-heading">Support</h2>
+        <p>
+          Email: <a
+            href="mailto:support@savingharbor.example"
+            class="text-brand-primary hover:underline"
+            >support@savingharbor.example</a>
+        </p>
+      </div>
+
+      <!-- Feedback -->
+      <div class="card card-surface">
+        <h2 class="section-heading">Feedback</h2>
+        <p>
+          Found an expired code or want to suggest a new store? Send details and
+          we’ll review promptly.
+        </p>
+      </div>
+    </section>
   </main>
   <Footer />
 </Base>
