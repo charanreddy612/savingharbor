@@ -84,30 +84,33 @@ export function renderCouponCardHtml(item = {}) {
           </div>
           
           <div class="flex-1 min-w-0">
-            <!-- Title: truncated, shows full on hover/focus -->
-            <div class="relative group">
+            <!-- Title -->
+            <div class="relative group" tabindex="0" aria-describedby="title-tip-${id}">
               <h3 class="font-semibold text-sm text-brand-primary truncate">
                 ${title}
               </h3>
 
-              <!-- tooltip: appears on hover or keyboard focus (group-hover / group-focus) -->
               <div
-                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                id="title-tip-${id}"
                 role="tooltip"
+                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 w-auto max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                aria-hidden="true"
               >
                 ${title}
               </div>
             </div>
 
-            <!-- Description: truncated (2-line clamp), shows full on hover/focus -->
-            <div class="relative group mt-1">
-              <p class="text-xs text-gray-500 line-clamp-2">
+            <!-- Description -->
+            <div class="relative group mt-1" tabindex="0" aria-describedby="desc-tip-${id}">
+              <p class="text-xs text-gray-500 overflow-hidden" style="-webkit-box-orient:vertical; display:-webkit-box; -webkit-line-clamp:2;">
                 ${description}
               </p>
 
               <div
-                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                id="desc-tip-${id}"
                 role="tooltip"
+                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 w-auto max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                aria-hidden="true"
               >
                 ${description}
               </div>
