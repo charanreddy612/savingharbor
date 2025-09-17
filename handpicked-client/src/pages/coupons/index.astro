@@ -83,7 +83,12 @@ const jsonld = meta.jsonld;
         <div id="resource-list" data-resource="coupons" class="mt-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {coupons.map((c) => (
-              <CouponRevealIsland client:load coupon={c} storeSlug={c.merchant?.slug} />
+                <div
+                  class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+                  style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+                >
+              <CouponRevealIsland client:idle coupon={c} storeSlug={c.merchant?.slug} />
+              </div>
             ))}
           </div>
         </div>
