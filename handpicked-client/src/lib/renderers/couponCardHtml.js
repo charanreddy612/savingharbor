@@ -1,5 +1,6 @@
 // src/lib/renderers/couponCardHtml.js
 
+// src/lib/renderers/couponCardHtml.js
 export function escapeHtml(s = "") {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -12,7 +13,7 @@ export function escapeHtml(s = "") {
  * item: {
  *   id, title, coupon_type, code, ends_at, merchant_id,
  *   merchant: { slug, name, logo_url }, merchant_name,
- *   click_count
+ *   click_count, description
  * }
  */
 export function renderCouponCardHtml(item = {}) {
@@ -41,7 +42,6 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // Badges: icon-first, label hidden on mobile (shown on sm+)
   const badgesHtml = `
     <div class="w-full flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
@@ -82,40 +82,51 @@ export function renderCouponCardHtml(item = {}) {
                 : `<div class="text-[10px] text-gray-400">Logo</div>`
             }
           </div>
-          
+
           <div class="flex-1 min-w-0">
-            <!-- Title -->
-            <div class="relative group" tabindex="0" aria-describedby="title-tip-${id}">
-              <h3 class="font-semibold text-sm text-brand-primary truncate">
+            <!-- TITLE: truncated in the flow; shows full on hover or focus -->
+            <div
+              class="relative group inline-block w-full"
+              tabindex="0"
+              aria-describedby="title-tip-${id}"
+            >
+              <h3 class="font-semibold text-sm text-brand-primary truncate block min-w-0">
                 ${title}
               </h3>
 
+              <!-- tooltip: invisible to pointer-events until visible to avoid covering text -->
               <div
                 id="title-tip-${id}"
                 role="tooltip"
-                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 w-auto max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                class="absolute left-0 top-full mt-2 z-50 max-w-[20rem] w-max p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words transform scale-95 opacity-0 pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto group-focus:opacity-100 group-focus:scale-100 group-focus:pointer-events-auto"
                 aria-hidden="true"
               >
                 ${title}
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="relative group mt-1" tabindex="0" aria-describedby="desc-tip-${id}">
-              <p class="text-xs text-gray-500 overflow-hidden" style="-webkit-box-orient:vertical; display:-webkit-box; -webkit-line-clamp:2;">
+            <!-- DESCRIPTION: 2-line clamp fallback + hover/focus tooltip -->
+            <div
+              class="relative group mt-1 inline-block w-full"
+              tabindex="0"
+              aria-describedby="desc-tip-${id}"
+            >
+              <p class="text-xs text-gray-500 block min-w-0 overflow-hidden"
+                 style="-webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: 2;">
                 ${description}
               </p>
 
               <div
                 id="desc-tip-${id}"
                 role="tooltip"
-                class="hidden group-hover:block group-focus:block absolute left-0 top-full mt-2 z-50 w-auto max-w-[20rem] p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words"
+                class="absolute left-0 top-full mt-2 z-50 max-w-[20rem] w-max p-2 rounded bg-black text-white text-sm leading-tight shadow-lg break-words transform scale-95 opacity-0 pointer-events-none transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto group-focus:opacity-100 group-focus:scale-100 group-focus:pointer-events-auto"
                 aria-hidden="true"
               >
                 ${description}
               </div>
             </div>
           </div>
+        </div>
 
         <div class="mt-1">
           <button
@@ -137,7 +148,6 @@ export function renderCouponCardHtml(item = {}) {
       </div>
     </div>
   `;
-  0;
 }
 
 // export function renderCouponCardHtml(item = {}) {
