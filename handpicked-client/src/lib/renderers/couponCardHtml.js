@@ -82,8 +82,6 @@ export function renderCouponCardHtml(item = {}) {
                 : `<div class="text-[10px] text-gray-400">Logo</div>`
             }
           </div>
-
-          /* Replace the inner block that renders title/description with this */
         <div class="flex-1 min-w-0">
           <!-- Title: collapsed by default (truncated), expands on tap/click/focus -->
           <details class="hp-details group" role="listitem">
@@ -109,7 +107,7 @@ export function renderCouponCardHtml(item = {}) {
             </div>
           </details>
         </div>
-        
+
         <div class="mt-1">
           <button
             type="button"
