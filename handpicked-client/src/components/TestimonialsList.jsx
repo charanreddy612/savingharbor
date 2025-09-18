@@ -79,7 +79,7 @@ export default function TestimonialsList({
         <div>
           <a
             href="#reviews"
-            className="text-sm text-indigo-600 hover:underline"
+            className="btn btn-secondary" aria-label="See all reviews"
           >
             See all reviews
           </a>
