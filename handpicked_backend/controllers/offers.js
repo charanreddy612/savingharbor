@@ -2,7 +2,7 @@
 import { LRUCache } from "lru-cache";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { supabase } from "../dbhelper/dbclient.js";
-import * as MerchantsRepo from "../dbhelper/MerchantsRepoPublic.js";
+import * as StoresRepo from "../dbhelper/StoresRepoPublic.js";
 
 /**
  * POST /api/offers/:offerId/click
@@ -83,12 +83,12 @@ export async function click(req, res) {
 
       if (parsed && parsed.merchantId) {
         try {
-          // Try MerchantsRepo.getById if it exists (some projects might have it).
+          // Try StoresRepo.getById if it exists (some projects might have it).
           // Otherwise fall back to a direct Supabase fetch by id (safe & reliable).
           let store = null;
-          if (typeof MerchantsRepo.getById === "function") {
+          if (typeof StoresRepo.getById === "function") {
             try {
-              store = await MerchantsRepo.getById(parsed.merchantId);
+              store = await StoresRepo.getById(parsed.merchantId);
             } catch (e) {
               // ignore and fallback to supabase below
               store = null;
@@ -160,7 +160,7 @@ export async function click(req, res) {
             }
           }
         } catch (err) {
-          console.warn("MerchantsRepo fallback failed:", err);
+          console.warn("StoresRepo fallback failed:", err);
         }
       }
     }

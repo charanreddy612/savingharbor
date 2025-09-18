@@ -349,14 +349,16 @@ export async function detail(req, res) {
         let avgRating = null;
         let reviewsCount = 0;
 
-        // 🔹 Trending offers: always use H2/H3 blocks
+        // 🔹 Trending offers: always use H2/H3 blocks (unique ids per merchant)
         let trendingOffers = [];
         const trendingBlocks = [
           ...(store.coupon_h2_blocks || []),
           ...(store.coupon_h3_blocks || []),
         ];
+
         trendingOffers = trendingBlocks.map((b, idx) => ({
-          id: `trending-${idx + 1}`,
+          // make id unique across merchants: trending-<merchantId>-<1-based-index>
+          id: `trending-${store.id}-${idx + 1}`,
           title: b.heading,
           coupon_type: "deal",
           short_desc: b.description,
@@ -365,8 +367,15 @@ export async function detail(req, res) {
           is_active: true,
           click_count: 0,
           code: null,
+          // optional metadata so callers don’t need to refetch
+          _block_meta: {
+            kind: idx < (store.coupon_h2_blocks || []).length ? "h2" : "h3",
+            index:
+              idx < (store.coupon_h2_blocks || []).length
+                ? idx
+                : idx - (store.coupon_h2_blocks || []).length,
+          },
         }));
-
         // Trending offers fallback
         // let trendingOffers = [];
         // if (
