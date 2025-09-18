@@ -48,11 +48,8 @@ export async function withCache(req, compute, options = {}) {
   // Try cache
   const cached = await memoryCacheStore.get(key);
   if (cached !== null && cached !== undefined) {
-    console.info("[withCache] cache hit:", key);
     return cached;
   }
-
-  console.info("[withCache] cache miss:", key);
 
   // Miss -> compute and store
   const value = await compute();
