@@ -2,7 +2,7 @@
 import { LRUCache } from "lru-cache";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { supabase } from "../dbhelper/dbclient.js";
-import * as StoresRepo from "../dbhelper/StoresRepoPublic.js";
+import * as MerchantsRepo from "../dbhelper/MerchantsRepoPublic.js";
 
 /**
  * POST /api/offers/:offerId/click
@@ -19,13 +19,26 @@ if (!global.__offerClickRateCache) {
 }
 const rateCache = global.__offerClickRateCache;
 
+// Heuristics to detect coupon primary keys that safely map to your coupons table.
+// Accept plain integer IDs or UUIDs. Anything else is treated as a non-coupon (block) id.
+const isLikelyCouponId = (id) => {
+  if (!id || typeof id !== "string") return false;
+  if (/^\d+$/.test(id)) return true; // numeric pk
+  // UUID v4-ish detection (hex-8-4-4-12)
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  )
+    return true;
+  return false;
+};
+
 export async function click(req, res) {
   try {
     const offerIdRaw = String(req.params.offerId || "").trim();
     if (!offerIdRaw) {
       return res.status(400).json({ ok: false, message: "Invalid offer id" });
     }
-    const offerId = offerIdRaw; // keep as string to remain compatible with your repo
+    const offerId = offerIdRaw;
 
     // ------- robust IP extraction -------
     const forwarded = req.headers["x-forwarded-for"];
@@ -53,50 +66,78 @@ export async function click(req, res) {
     }
     // ------------------------------------------------------------------
 
-    // Fetch the offer (coupon path first). If not found, attempt merchant-block fallback.
-    let offer = await CouponsRepo.getById(offerId);
-    let source = "coupon"; // "coupon" or "merchant-block"
+    // NOTE: avoid calling CouponsRepo.getById for prefixed/compound ids (like h2-..., trending-..., etc.)
+    // First detect if it's likely a real coupon id; if so, call CouponsRepo.getById, else fallback to merchant-block parsing.
+    let offer = null;
+    let source = null; // "coupon" | "merchant-block"
+
+    if (isLikelyCouponId(offerId)) {
+      try {
+        offer = await CouponsRepo.getById(offerId);
+        if (offer) source = "coupon";
+      } catch (dbErr) {
+        // defensive: log and continue to merchant-block fallback (do not crash)
+        console.warn(
+          "CouponsRepo.getById error (continuing to fallback):",
+          dbErr
+        );
+        offer = null;
+        source = null;
+      }
+    }
 
     if (!offer) {
-      // ===== Parse prefixed block IDs like "h2-<merchantId>-<index>" or "h3-<merchantId>-<index>" =====
+      // ===== Recognize IDs:
+      //  - trending-<merchantId>-<1-based-index>
+      //  - h2-<merchantId>-<0-based-index> or h3-<merchantId>-<0-based-index>
+      //  - legacy: merchant-<id>-h2-<index> or plain merchant id
       let parsed = null;
-      const prefixMatch = offerId.match(/^(h[23])-(\d+)-(\d+)$/i);
-      if (prefixMatch) {
+
+      const trendingMatch = offerId.match(/^trending-(\d+)-(\d+)$/i);
+      if (trendingMatch) {
         parsed = {
-          kind: prefixMatch[1].toLowerCase(), // "h2" or "h3"
-          merchantId: prefixMatch[2],
-          index: Number(prefixMatch[3]),
+          type: "trending",
+          merchantId: trendingMatch[1],
+          index1: Number(trendingMatch[2]), // 1-based
         };
       } else {
-        // legacy/heuristic patterns: allow plain numeric merchantId or patterns like merchant-123-h2-0
-        const legacyMatch = offerId.match(
-          /^(?:merchant[:\-])?(\d+)(?:[:\-]h([23])[:\-]?(\d+))?$/i
-        );
-        if (legacyMatch) {
+        const prefixMatch = offerId.match(/^(h[23])-(\d+)-(\d+)$/i);
+        if (prefixMatch) {
           parsed = {
-            kind: legacyMatch[2] ? `h${legacyMatch[2]}` : null,
-            merchantId: legacyMatch[1],
-            index: legacyMatch[3] !== undefined ? Number(legacyMatch[3]) : null,
+            type: "block",
+            kind: prefixMatch[1].toLowerCase(), // "h2" or "h3"
+            merchantId: prefixMatch[2],
+            index: Number(prefixMatch[3]), // 0-based
           };
+        } else {
+          const legacyMatch = offerId.match(
+            /^(?:merchant[:\-])?(\d+)(?:[:\-]h([23])[:\-]?(\d+))?$/i
+          );
+          if (legacyMatch) {
+            parsed = {
+              type: legacyMatch[2] ? "block" : "merchant",
+              kind: legacyMatch[2] ? `h${legacyMatch[2]}` : null,
+              merchantId: legacyMatch[1],
+              index:
+                legacyMatch[3] !== undefined ? Number(legacyMatch[3]) : null,
+            };
+          }
         }
       }
 
       if (parsed && parsed.merchantId) {
         try {
-          // Try StoresRepo.getById if it exists (some projects might have it).
-          // Otherwise fall back to a direct Supabase fetch by id (safe & reliable).
+          // Try SDK repo first; fall back to direct supabase fetch if repo lacks getById behavior.
           let store = null;
-          if (typeof StoresRepo.getById === "function") {
+          if (typeof MerchantsRepo.getById === "function") {
             try {
-              store = await StoresRepo.getById(parsed.merchantId);
+              store = await MerchantsRepo.getById(parsed.merchantId);
             } catch (e) {
-              // ignore and fallback to supabase below
               store = null;
             }
           }
 
           if (!store) {
-            // direct supabase fetch by id (Stores table = "merchants")
             const { data: sdata, error: sErr } = await supabase
               .from("merchants")
               .select(
@@ -108,17 +149,22 @@ export async function click(req, res) {
           }
 
           if (store) {
-            // pick the requested block or fallback to first H2 then H3
             let chosen = null;
-            if (parsed.kind && Number.isFinite(parsed.index)) {
+
+            if (parsed.type === "trending") {
+              const combined = [
+                ...(store.coupon_h2_blocks || []),
+                ...(store.coupon_h3_blocks || []),
+              ];
+              const idx0 = Math.max(0, Number(parsed.index1 || 1) - 1);
+              chosen = combined[idx0] ?? null;
+            } else if (parsed.type === "block") {
               const arr =
                 parsed.kind === "h2"
                   ? store.coupon_h2_blocks || []
                   : store.coupon_h3_blocks || [];
               chosen = arr[parsed.index] ?? null;
-            }
-
-            if (!chosen) {
+            } else {
               chosen =
                 (Array.isArray(store.coupon_h2_blocks) &&
                   store.coupon_h2_blocks[0]) ||
@@ -144,23 +190,34 @@ export async function click(req, res) {
                   web_url: store.web_url ?? store.website ?? null,
                   logo_url: store.logo_url ?? null,
                 },
-                // merchant-blocks have no coupon code
                 code: null,
-                // use block-provided redirect if present
                 redirect_url: chosen.redirect_url ?? null,
-                // attach block metadata for auditing/debugging
                 block: {
                   kind:
-                    parsed.kind ||
-                    (Array.isArray(store.coupon_h2_blocks) ? "h2" : "h3"),
-                  index: Number.isFinite(parsed.index) ? parsed.index : 0,
+                    parsed.type === "trending"
+                      ? Array.isArray(store.coupon_h2_blocks) &&
+                        store.coupon_h2_blocks.length
+                        ? "h2"
+                        : "h3"
+                      : parsed.kind ||
+                        (Array.isArray(store.coupon_h2_blocks) ? "h2" : "h3"),
+                  index:
+                    parsed.type === "trending"
+                      ? Math.max(0, Number(parsed.index1 || 1) - 1)
+                      : Number.isFinite(parsed.index)
+                      ? parsed.index
+                      : 0,
                   raw: chosen,
                 },
               };
             }
           }
         } catch (err) {
-          console.warn("StoresRepo fallback failed:", err);
+          console.warn(
+            "MerchantsRepo / supabase fetch failed for parsed id:",
+            offerId,
+            err
+          );
         }
       }
     }
@@ -189,7 +246,7 @@ export async function click(req, res) {
       if (source === "coupon") {
         await CouponsRepo.incrementClickCount(offerId);
       } else {
-        // merchant-block: intentionally do NOT maintain click_count (per decision)
+        // merchant-block: intentionally do NOT maintain click_count per decision
       }
     } catch (e) {
       console.warn("incrementClick failed for", offerId, e);
@@ -205,18 +262,16 @@ export async function click(req, res) {
             ip: ip,
             user_agent: req.headers["user-agent"] || null,
             created_at: new Date().toISOString(),
-            // optional: include source for analytics
             source: source,
             block_meta: offer.block ? JSON.stringify(offer.block) : null,
           },
         ]);
       } catch (auditErr) {
-        // don't let analytics failures affect main response
         console.warn("Failed to insert audit offer_clicks record:", auditErr);
       }
     })();
 
-    // Prepare response: include code only here (do NOT include in GET /stores responses)
+    // Prepare response
     const code = offer.code || null;
 
     return res.status(200).json({

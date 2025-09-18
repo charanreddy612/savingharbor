@@ -67,8 +67,13 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
 
     setItemState(id, { loading: true });
     try {
-      const resp = await fetch(
-        `/api/offers/${encodeURIComponent(String(id))}/click`,
+      const base = import.meta.env.PUBLIC_API_BASE_URL || "";
+      const endpoint =
+        (base || "").replace(/\/+$/, "") +
+        `/offers/${encodeURIComponent(String(id))}/click`;
+
+      const resp = await fetchWithRetry(
+        endpoint,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -77,7 +82,8 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
             referrer: "trending_sidebar",
             platform: "web",
           }),
-        }
+        },
+        2
       );
 
       if (resp.status === 429) {
