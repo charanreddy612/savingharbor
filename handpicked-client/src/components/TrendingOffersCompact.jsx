@@ -5,6 +5,18 @@ import React, { useState, useRef } from "react";
  *
  */
 
+async function fetchWithRetry(url, options, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.ok || resp.status === 429) return resp;
+    } catch (err) {
+      if (i === retries) throw err;
+    }
+  }
+  throw new Error("Fetch failed after retries");
+}
+
 function CompactToast({ message, onClose }) {
   React.useEffect(() => {
     const t = setTimeout(onClose, 2200);
