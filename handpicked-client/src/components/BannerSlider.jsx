@@ -10,21 +10,21 @@ const banners = [
     id: 1,
     title: "Explore the Best Collections",
     subtitle: "Curated just for you",
-    image: "/images/banner1-1600x500.webp", // your single file (recommended 1600x500)
+    image: "/images/banner1-1600x500.png", // your single file (recommended 1600x500)
     alt: "Curated collection banner",
   },
   {
     id: 2,
     title: "Discover New Arrivals",
     subtitle: "Trending this week",
-    image: "/images/banner2-1600x500.webp",
+    image: "/images/banner2-1600x500.png",
     alt: "New arrivals banner",
   },
   {
     id: 3,
     title: "Seasonal Highlights",
     subtitle: "Don't miss out",
-    image: "/images/banner3-1600x500.webp",
+    image: "/images/banner3-1600x500.png",
     alt: "Seasonal highlights banner",
   },
 ];
