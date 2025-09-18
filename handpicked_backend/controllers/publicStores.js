@@ -275,6 +275,8 @@ export async function detail(req, res) {
               id: store.id,
               slug: store.slug,
               name: store.name,
+              aff_url: store.merchant.aff_url,
+              web_url: store.merchant.web_url,
               logo_url: store.logo_url,
             },
           }));
