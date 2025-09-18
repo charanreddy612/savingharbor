@@ -32,6 +32,12 @@ export default {
         'surface': 'var(--surface)',
         'surface-2': 'var(--surface-2)',
         'on-surface': 'var(--on-surface)',
+        'brand-saving': '#00C48C', /* teal */
+        'brand-harbor': '#0077FF', /* blue */
+        'brand-anchor': '#00B4DB', /* gradient midpoint */
+        'brand-waves': '#0083B0', /* background navy */
+        'brand-navybg': '#0B0F1A', /* dark navy */
+        'brand-tagline': '#E4E4E4', /* light gray */
       },
     },
   },
