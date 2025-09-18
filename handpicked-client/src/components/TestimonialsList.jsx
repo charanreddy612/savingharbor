@@ -51,9 +51,9 @@ export default function TestimonialsList({
     <section className="card-base p-4" aria-labelledby="testimonials-heading">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 id="testimonials-heading" className="section-heading">
-            Customer testimonials
-          </h2>
+          <h2 class="text-2xl font-bold text-brand-secondary">
+              Customer testimonials
+            </h2> 
 
           <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
             <div className="flex items-center" aria-hidden="true">
