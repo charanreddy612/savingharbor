@@ -2,14 +2,10 @@
 import { LRUCache } from "lru-cache";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { supabase } from "../dbhelper/dbclient.js";
-import * as MerchantsRepo from "../dbhelper/MerchantsRepoPublic.js";
+import * as StoresRepo from "../dbhelper/StoresRepoPublic.js";
 
 /**
  * POST /api/offers/:offerId/click
- * Records a click, increments click_count (only for real coupons),
- * returns coupon code (for coupons) and redirect_url.
- *
- * Uses an in-process LRU rate limiter (ttl) as a safety net. Replace with Redis limiter in multi-instance prod.
  */
 
 // create a single global LRU rate cache (max keys + ttl)
@@ -129,9 +125,9 @@ export async function click(req, res) {
         try {
           // Try SDK repo first; fall back to direct supabase fetch if repo lacks getById behavior.
           let store = null;
-          if (typeof MerchantsRepo.getById === "function") {
+          if (typeof StoresRepo.getById === "function") {
             try {
-              store = await MerchantsRepo.getById(parsed.merchantId);
+              store = await StoresRepo.getById(parsed.merchantId);
             } catch (e) {
               store = null;
             }
@@ -214,7 +210,7 @@ export async function click(req, res) {
           }
         } catch (err) {
           console.warn(
-            "MerchantsRepo / supabase fetch failed for parsed id:",
+            "StoresRepo / supabase fetch failed for parsed id:",
             offerId,
             err
           );
