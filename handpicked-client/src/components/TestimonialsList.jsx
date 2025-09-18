@@ -79,7 +79,7 @@ export default function TestimonialsList({
         <div>
           <a
             href="#reviews"
-            className="btn btn-secondary" aria-label="See all reviews"
+            className="btn btn-outline" aria-label="See all reviews"
           >
             See all reviews
           </a>
