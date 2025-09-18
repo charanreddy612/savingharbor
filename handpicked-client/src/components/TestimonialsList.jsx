@@ -41,7 +41,7 @@ export default function TestimonialsList({
   avgRating = any,
   totalReviews = 0,
 }) {
-  const displayItems = Array.isArray(items) ? items.slice(0, 3) : [];
+  const displayItems = Array.isArray(items) ? items.slice(0, 5) : [];
 
   const ratingNumber = typeof avgRating === "number" ? avgRating : null;
   const roundedAvg = ratingNumber !== null ? Math.round(ratingNumber) : 0;
