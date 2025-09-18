@@ -142,14 +142,14 @@ export default function TestimonialsList({
                           </>
                         )}
 
-                        {t.posted_at && (
+                        {/* {t.posted_at && (
                           <time
                             className="ml-2"
                             dateTime={new Date(t.posted_at).toISOString()}
                           >
                             • {new Date(t.posted_at).toLocaleDateString()}
                           </time>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   </div>

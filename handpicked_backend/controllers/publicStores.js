@@ -253,13 +253,33 @@ export async function detail(req, res) {
         let couponsItems = [];
 
         if (total === 0) {
-          // 🔹 Use H2 + H3 blocks as default coupons
-          const fallbackBlocks = [
-            ...(store.coupon_h2_blocks || []),
-            ...(store.coupon_h3_blocks || []),
-          ];
-          couponsItems = fallbackBlocks.map((b, idx) => ({
-            id: `block-${idx + 1}`,
+          // build H2 blocks (preserve index) then H3 blocks
+          const h2 = (store.coupon_h2_blocks || []).map((b, idx) => ({
+            id: `h2-${store.id}-${idx}`, // unique & parseable
+            coupon_type: "deal",
+            title: b.heading,
+            description: b.description,
+            type_text: "deal",
+            code: null,
+            ends_at: null,
+            show_proof: false,
+            proof_image_url: null,
+            is_editor: false,
+            click_count: 0, // you decided not to maintain counts for blocks
+            merchant_id: store.id,
+            merchant: {
+              id: store.id,
+              slug: store.slug,
+              name: store.name,
+              aff_url: store.aff_url,
+              web_url: store.web_url,
+              logo_url: store.logo_url,
+            },
+            _block_source: { kind: "h2", index: idx, raw: b }, // optional metadata
+          }));
+
+          const h3 = (store.coupon_h3_blocks || []).map((b, idx) => ({
+            id: `h3-${store.id}-${idx}`,
             coupon_type: "deal",
             title: b.heading,
             description: b.description,
@@ -279,8 +299,12 @@ export async function detail(req, res) {
               web_url: store.web_url,
               logo_url: store.logo_url,
             },
+            _block_source: { kind: "h3", index: idx, raw: b },
           }));
-          //setting coupon counts for stores with zero active coupons but have H2/H3 blocks
+
+          // combine — you can control ordering here (h2 first then h3)
+          couponsItems = [...h2, ...h3];
+
           store.active_coupons = couponsItems.length;
           total = couponsItems.length;
         } else {

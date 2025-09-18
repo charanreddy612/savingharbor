@@ -8,6 +8,14 @@
   --brand-accent: #1282a2; /* gradient midpoint */
   --brand-dark: #0b1220; /* background navy */
 
+  --brand-saving: #00C48C; /* teal */
+  --brand-harbor: #0077FF; /* blue */
+  --brand-anchor: #00B4DB; /* gradient midpoint */
+  --brand-waves: #0083B0; /* background navy */
+  --brand-navybg: #0B0F1A; /* dark navy */
+  --brand-tagline: #E4E4E4l /* light gray */
+
+
   /* surface tokens — used for cards and light surfaces */
   --surface: #ffffff; /* default light surface */
   --surface-2: rgba(255, 255, 255, 0.03); /* subtle dark-surface */
