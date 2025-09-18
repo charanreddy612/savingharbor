@@ -48,10 +48,10 @@ export default function TrendingOffersCompact({ offers, storeSlug }) {
   const fallbackRedirect = (offer) => {
     const m = offer?.merchant || {};
     if (
-      m.affl_url &&
-      (m.affl_url.startsWith("http://") || m.affl_url.startsWith("https://"))
+      m.aff_url &&
+      (m.aff_url.startsWith("http://") || m.aff_url.startsWith("https://"))
     )
-      return m.affl_url;
+      return m.aff_url;
     if (
       m.web_url &&
       (m.web_url.startsWith("http://") || m.web_url.startsWith("https://"))
