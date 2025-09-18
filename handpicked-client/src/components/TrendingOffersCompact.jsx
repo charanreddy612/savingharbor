@@ -3,11 +3,6 @@ import React, { useState, useRef } from "react";
 /**
  * TrendingOffersCompact.jsx - polished drop-in replacement
  *
- * Props:
- *  - offers: [{ id, title, coupon_type, short_desc?, click_count?, merchant? }]
- *  - storeSlug: string
- *
- * Behavior unchanged. Styling/markup aligned with global classes.
  */
 
 function CompactToast({ message, onClose }) {

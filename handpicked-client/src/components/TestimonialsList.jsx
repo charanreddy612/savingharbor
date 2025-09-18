@@ -20,12 +20,6 @@ import React from "react";
 
 /**
  * TestimonialsList.jsx - refactored to use global card styles
- *
- * - Uses .card-base for the outer container to match other cards.
- * - Avatars use loading="lazy" and decoding="async".
- * - Dates rendered in <time> with readable text.
- * - Stars keep sr-only text for screen readers.
- * - Comments use clamp-3 to avoid overly tall cards (falls back to CSS clamp utility).
  */
 
 function StarIcon({ filled = false }) {
@@ -44,7 +38,7 @@ function StarIcon({ filled = false }) {
 
 export default function TestimonialsList({
   items,
-  avgRating = null,
+  avgRating = any,
   totalReviews = 0,
 }) {
   const displayItems = Array.isArray(items) ? items.slice(0, 3) : [];

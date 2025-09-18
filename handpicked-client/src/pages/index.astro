@@ -9,6 +9,8 @@ import CouponRevealIsland from "../components/islands/CouponRevealIsland.astro";
 import CardStore from "../components/CardStore.astro";
 import { api } from "../lib/api";
 import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland.jsx";
+import TestimonialsList from "../components/TestimonialsList";
+import { SAMPLE_TESTIMONIALS } from "../content/testimonials.sample";
 
 const pageMeta = {
   title: "Saving Harbor | Verified Coupons & Discounts",
@@ -63,6 +65,8 @@ const stores = resp?.data || [];
 const coupons = cresp?.data || [];
 const meta = resp?.meta || {};
 const cmeta = cresp?.meta || {};
+// average rating calculation
+const avg = (SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating||0), 0) / SAMPLE_TESTIMONIALS.length) || null;
 ---
 
 <Base meta={pageMeta}>
@@ -162,33 +166,8 @@ const cmeta = cresp?.meta || {};
     </div>
 
     <!-- Testimonials -->
-    <section class="mt-16">
-      <h2 class="text-xl font-semibold mb-6 text-gray-900">What people say</h2>
-
-      <div class="grid gap-6 md:grid-cols-3">
-        <div
-          class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-sm text-gray-700"
-        >
-          "Testimonial 1 — The Saving Harbor experience was amazing and saved me
-          real money!" — User 1
-        </div>
-
-        <div
-          class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-sm text-gray-700"
-        >
-          "Testimonial 2 — The Saving Harbor experience was amazing and saved me
-          real money!" — User 2
-        </div>
-
-        <div
-          class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-sm text-gray-700"
-        >
-          "Testimonial 3 — The Saving Harbor experience was amazing and saved me
-          real money!" — User 3
-        </div>
-      </div>
-    </section>
-
+     <TestimonialsList items={SAMPLE_TESTIMONIALS} avgRating={avg} totalReviews={SAMPLE_TESTIMONIALS.length} />
+     
     <!-- Newsletter / CTA -->
     <section
       class="mt-16 bg-brand-primary text-white rounded-xl p-6 text-center shadow-md"
