@@ -5,7 +5,7 @@ import fetch from "node-fetch";
 const OUT_DIR = "public/_data";
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
-const BACKEND = process.env.PUBLIC_API_BASE_URL || "https://your-render-backend.example";
+const BACKEND = process.env.PUBLIC_API_BASE_URL;
 
 async function fetchAndWrite(path, outFile) {
   try {
