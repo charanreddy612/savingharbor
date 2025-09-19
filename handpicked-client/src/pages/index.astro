@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
-/* src/pages/index.astro — frontmatter (DROP-IN REPLACEMENT) */
+
+/* src/pages/index.astro — full frontmatter (DROP-IN, preserves pageMeta + imports) */
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -41,45 +42,89 @@ type Coupon = {
 };
 type CouponsResponse = { data: Coupon[]; meta: any };
 
-/*
-  Fetch strategy:
-  - Read static JSON files produced during build: public/_data/home.json and public/_data/coupons.json
-  - These are created by the build script `scripts/fetch-home.js` (run during build)
-  - Files are allowed to be missing; we fall back to empty arrays to ensure build never fails
-*/
+// server-safe file reads (deterministic at build time)
+import fs from "fs/promises";
+import path from "path";
 
-let resp = null,
-  cresp = null;
-
-async function safeRead(url: string) {
+async function readStaticFile(filename: string) {
   try {
-    const base = import.meta.env.SITE || "";
-    const fetchUrl = base ? new URL(url, base).href : url;
-    const res = await fetch(fetchUrl);
-    if (!res.ok) return { data: [], meta: {} };
-    return await res.json();
+    const full = path.join(process.cwd(), "public", "_data", filename);
+    const raw = await fs.readFile(full, "utf-8");
+    return JSON.parse(raw);
   } catch (e) {
     return { data: [], meta: {} };
   }
 }
 
-try {
-  // read combined home payload (if you saved both stores+coupons together)
-  const home = await safeRead("/_data/home.json");
-  // some fetch scripts may write a single file with { stores, coupons } shape
-  // normalise both possibilities:
-  if (home && (home.stores || home.coupons)) {
-    resp = { data: Array.isArray(home.stores) ? home.stores : home.stores?.data || [], meta: home.meta || {} };
-    cresp = { data: Array.isArray(home.coupons) ? home.coupons : home.coupons?.data || [], meta: home.meta || {} };
-  } else {
-    // try separate files
-    const storesFile = await safeRead("/_data/home.json");
-    const couponsFile = await safeRead("/_data/coupons.json");
-    resp = { data: Array.isArray(storesFile.data) ? storesFile.data : storesFile.stores || [], meta: storesFile.meta || {} };
-    cresp = { data: Array.isArray(couponsFile.data) ? couponsFile.data : couponsFile.coupons || [], meta: couponsFile.meta || {} };
+// browser-safe fetch fallback (only used if this code runs client-side)
+async function fetchFallback(url: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { data: [], meta: {} };
+    return await res.json();
+  } catch {
+    return { data: [], meta: {} };
   }
-} catch (err) {
-  // guaranteed fallback to empty arrays
+}
+
+let resp = { data: [], meta: {} },
+  cresp = { data: [], meta: {} };
+
+try {
+  // prefer reading from disk (build / prerender)
+  const [homeFile, couponsFile] = await Promise.all([
+    readStaticFile("home.json"),
+    readStaticFile("coupons.json"),
+  ]);
+
+  // support combined payloads (home.json containing stores+coupons)
+  if (homeFile && (homeFile.stores || homeFile.coupons)) {
+    const h = homeFile;
+    resp = {
+      data: Array.isArray(h.stores) ? h.stores : h.stores?.data || [],
+      meta: h.meta || {},
+    };
+    cresp = {
+      data: Array.isArray(h.coupons) ? h.coupons : h.coupons?.data || [],
+      meta: h.meta || {},
+    };
+  } else {
+    resp = {
+      data: Array.isArray(homeFile.data)
+        ? homeFile.data
+        : homeFile.stores || [],
+      meta: homeFile.meta || {},
+    };
+    cresp = {
+      data: Array.isArray(couponsFile.data)
+        ? couponsFile.data
+        : couponsFile.coupons || [],
+      meta: couponsFile.meta || {},
+    };
+  }
+
+  // If running client-side and files were empty, attempt fetch fallback
+  const likelyEmpty = (arr: any) =>
+    !arr || (Array.isArray(arr) && arr.length === 0);
+  if (
+    typeof window !== "undefined" &&
+    likelyEmpty(resp.data) &&
+    likelyEmpty(cresp.data)
+  ) {
+    const [hf, cf] = await Promise.all([
+      fetchFallback("/_data/home.json"),
+      fetchFallback("/_data/coupons.json"),
+    ]);
+    resp = {
+      data: Array.isArray(hf.data) ? hf.data : hf.stores || [],
+      meta: hf.meta || {},
+    };
+    cresp = {
+      data: Array.isArray(cf.data) ? cf.data : cf.coupons || [],
+      meta: cf.meta || {},
+    };
+  }
+} catch (e) {
   resp = { data: [], meta: {} };
   cresp = { data: [], meta: {} };
 }
@@ -89,11 +134,11 @@ const coupons = cresp?.data || [];
 const meta = resp?.meta || {};
 const cmeta = cresp?.meta || {};
 
-// average rating calculation (kept as-is)
+// average rating calculation (unchanged)
 const avg =
-  SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating || 0), 0) / SAMPLE_TESTIMONIALS.length || null;
+  SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating || 0), 0) /
+    SAMPLE_TESTIMONIALS.length || null;
 ---
-
 
 <Base meta={pageMeta}>
   <Header />
