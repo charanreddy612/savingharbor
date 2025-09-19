@@ -100,6 +100,7 @@ export default function BannerSlider() {
                 width="1600"
                 height="500"
                 style={{ aspectRatio: "1600/500" }}
+                fetchpriority="high"
               />
 
               {/* subtle overlay for text contrast */}
