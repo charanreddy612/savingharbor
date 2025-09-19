@@ -45,13 +45,13 @@ export function renderCouponCardHtml(item = {}) {
   const badgesHtml = `
     <div class="w-full flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <img src="/images/verified-badge.png" alt="Verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
+        <img src="/images/verified-badge.webp" alt="Verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
         <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Verified</span>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-[12px] sm:text-sm text-emerald-700 font-medium">Re-verified</span>
-        <img src="/images/reverified-badge.png" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
+        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-4 w-4 sm:h-5 sm:w-5 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>
   `;
