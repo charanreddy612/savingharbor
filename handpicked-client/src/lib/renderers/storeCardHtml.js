@@ -1,20 +1,28 @@
 // src/lib/renderers/storeCardHtml.js
-import fs from "fs";
-import path from "path";
 import { escapeHtml } from "./couponCardHtml.js";
 
-// load manifest once (safe if run in build / server)
+// load manifest once (server-safe OR browser-safe)
 let logoManifest = {};
 try {
-  const manifestPath = path.join(
-    process.cwd(),
-    "public/optimized/logos/manifest.json"
-  );
-  if (fs.existsSync(manifestPath)) {
-    logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (typeof window === "undefined") {
+    // Node / server / build-time → use fs
+    const fs = await import("fs");
+    const path = await import("path");
+    const manifestPath = path.join(
+      process.cwd(),
+      "public/optimized/logos/manifest.json"
+    );
+    if (fs.existsSync(manifestPath)) {
+      logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    }
+  } else {
+    // Browser → fetch static JSON instead of fs
+    const res = await fetch("/optimized/logos/manifest.json");
+    if (res.ok) {
+      logoManifest = await res.json();
+    }
   }
 } catch (e) {
-  // non-fatal: if manifest fails to load we'll just use the original logic
   console.warn("Logo manifest load failed:", e.message || e);
 }
 
@@ -26,15 +34,17 @@ export function renderStoreCardHtml(store = {}) {
   const slug = escapeHtml(store.slug ?? "");
   const name = escapeHtml(store.name ?? "");
   const logoUrl = store.logo_url ? String(store.logo_url) : "";
-  // try manifest lookup by id first, then slug as fallback key
+
+  // try manifest lookup by id first
   const idKey = String(store.id);
   const manifestEntry = logoManifest[idKey];
+
   const active =
     store.stats && typeof store.stats.active_coupons === "number"
       ? Number(store.stats.active_coupons)
       : null;
 
-  // build logo HTML (non-breaking: fallback to original logo_url if manifestEntry missing)
+  // build logo HTML (non-breaking)
   let logoHtml = `<div class="w-full flex items-center justify-center text-xs text-gray-400">Logo</div>`;
 
   if (
@@ -46,7 +56,7 @@ export function renderStoreCardHtml(store = {}) {
       .map((v) => `${v.src} ${v.width}w`)
       .join(", ");
     const middle = Math.floor(manifestEntry.variants.length / 2);
-    const fallback = manifestEntry.variants[middle].src; // pick middle size as fallback
+    const fallback = manifestEntry.variants[middle].src;
     const blur = manifestEntry.blurDataURL || "";
 
     logoHtml = `
@@ -65,7 +75,6 @@ export function renderStoreCardHtml(store = {}) {
         )}'); background-size: cover; background-position: center;"
       />`;
   } else if (logoUrl) {
-    // exact previous behavior preserved when no optimized asset found
     logoHtml = `<img src="${escapeHtml(
       logoUrl
     )}" alt="${name}" width="96" height="80" loading="lazy" decoding="async" class="max-h-full max-w-full object-contain" />`;

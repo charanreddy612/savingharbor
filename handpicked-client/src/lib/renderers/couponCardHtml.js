@@ -1,8 +1,5 @@
 // src/lib/renderers/couponCardHtml.js
 
-import fs from "fs";
-import path from "path";
-
 // keep your existing escapeHtml
 export function escapeHtml(s = "") {
   return String(s ?? "")
@@ -11,15 +8,26 @@ export function escapeHtml(s = "") {
     .replace(/>/g, "&gt;");
 }
 
-// load manifest once (non-fatal if missing)
+// load manifest once (server-safe OR browser-safe)
 let logoManifest = {};
 try {
-  const manifestPath = path.join(
-    process.cwd(),
-    "public/optimized/logos/manifest.json"
-  );
-  if (fs.existsSync(manifestPath)) {
-    logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (typeof window === "undefined") {
+    // Node / server / build-time → use fs
+    const fs = await import("fs");
+    const path = await import("path");
+    const manifestPath = path.join(
+      process.cwd(),
+      "public/optimized/logos/manifest.json"
+    );
+    if (fs.existsSync(manifestPath)) {
+      logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    }
+  } else {
+    // Browser → fetch static JSON instead of fs
+    const res = await fetch("/optimized/logos/manifest.json");
+    if (res.ok) {
+      logoManifest = await res.json();
+    }
   }
 } catch (e) {
   console.warn("Logo manifest load failed:", e.message || e);
