@@ -17,7 +17,7 @@ Disallow: /register/
 Disallow: /*?*
 
 # Sitemap reference
-Sitemap: https://savingharbor.com/sitemap-index.xml
+Sitemap: https://handpickedclient.vercel.app.com/sitemap-index.xml
 
 # Host directive (optional, some crawlers honor this)
-Host: savingharbor.com
+Host: handpickedclient.vercel.app
