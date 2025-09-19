@@ -16,6 +16,13 @@ const pageMeta = {
   title: "Saving Harbor | Verified Coupons & Discounts",
   description:
     "Verified coupons, real savings, no expired junk — handpicked by real humans.",
+  // LCP hero preload
+  preloadHero: true,
+  heroSrc: "/optimized/banner1-1600.webp",
+  // fonts to preload (self-hosted .woff2 recommended)
+  preloadFonts: [
+    { href: "/fonts/Inter-Variable.woff2", type: "font/woff2" }
+  ]
 };
 
 type Store = {
@@ -99,19 +106,8 @@ const avg =
 
     <!-- Banner -->
     <div class="mt-8">
-      <!-- server-side hero fallback for LCP
-      <img
-        class = "hero-fallback"
-        src="/optimized/banner1-1024.webp"
-        srcset="/optimized/banner1-320.webp 320w, /optimized/banner1-480.webp 480w, /optimized/banner1-768.webp 768w, /optimized/banner1-1024.webp 1024w, /optimized/banner1-1600.webp 1600w"
-        sizes="100vw"
-        alt="Curated collection banner"
-        loading="eager"
-        width="1600"
-        height="500"
-        style="width:100%;aspect-ratio:1600/500;object-fit:cover;display:block;"
-      />  -->
-
+      <!-- server-side hero fallback for LCP  -->
+      <div class="hero-placeholder"></div>
       <!-- interactive slider mounts here; it should use the same image sources for slide #1 -->
       <BannerSlider client:visible />
     </div>

@@ -277,9 +277,8 @@
   @apply space-y-3;
 }
 
-.hero-fallback {
-  display: block;
-}
-.js-ready .hero-fallback {
-  display: none;
+.hero-placeholder {
+  width: 100%;
+  aspect-ratio: 16/5;
+  background: #f3f4f6; /* neutral gray or brand color */
 }

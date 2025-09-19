@@ -63,6 +63,21 @@ const jsonld = meta.jsonld;
   {defaultDesc && <meta name="twitter:description" content={defaultDesc} />}
   <meta name="twitter:image" content={ogImage} />
 
+  <!-- Preload fonts and hero image -->
+  {
+    meta.preloadFonts && Array.isArray(meta.preloadFonts)
+      ? meta.preloadFonts.map((f: { href: string; type: string }) => (
+          <link
+            rel="preload"
+            as="font"
+            href={f.href}
+            type={f.type}
+            crossorigin
+          />
+        ))
+      : null
+  }
+
   {
     meta.preloadHero && meta.heroSrc ? (
       <link
