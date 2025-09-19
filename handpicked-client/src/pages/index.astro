@@ -53,7 +53,9 @@ let resp = null,
 
 async function safeRead(url: string) {
   try {
-    const res = await fetch(new URL(url, import.meta.env.SITE).href);
+    const base = import.meta.env.SITE || "";
+    const fetchUrl = base ? new URL(url, base).href : url;
+    const res = await fetch(fetchUrl);
     if (!res.ok) return { data: [], meta: {} };
     return await res.json();
   } catch (e) {
