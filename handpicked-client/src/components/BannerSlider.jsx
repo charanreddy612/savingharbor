@@ -75,7 +75,34 @@ export default function BannerSlider() {
           <SwiperSlide key={banner.id}>
             {/* keep a locked aspect ratio 16:5 */}
             <div className="relative w-full aspect-[16/5] bg-gray-100">
-              <img
+              <picture>
+                <source
+                  type="image/avif"
+                  srcSet={banner.variants.avif
+                    .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                    .join(", ")}
+                  sizes="(max-width:640px) 100vw, 1200px"
+                />
+                <source
+                  type="image/webp"
+                  srcSet={banner.variants.webp
+                    .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                    .join(", ")}
+                  sizes="(max-width:640px) 100vw, 1200px"
+                />
+                <img
+                  src={banner.variants.fallback}
+                  alt={banner.alt}
+                  loading={banner.id === 1 ? "eager" : "lazy"}
+                  fetchpriority={banner.id === 1 ? "high" : "auto"}
+                  decoding="async"
+                  width="1600"
+                  height="500"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  style={{ aspectRatio: "1600/500" }}
+                />
+              </picture>
+              {/* <img
                 src={banner.variants.fallback}
                 srcSet={banner.variants.webp
                   .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
@@ -89,22 +116,7 @@ export default function BannerSlider() {
                 height="500"
                 style={{ aspectRatio: "1600/500" }}
                 fetchpriority="high"
-              />
-
-              {/* subtle overlay for text contrast */}
-              {/* <div className="absolute inset-0 bg-black/40" />
-
-              <div className="relative z-10 flex items-center justify-center h-full px-4 text-center text-white">
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-1 text-brand-primary drop-shadow-sm">
-                    {banner.title}
-                  </h2>
-                  <p className="text-sm md:text-base text-gray-100 mb-3">
-                    {banner.subtitle}
-                  </p>
-                  <button className="btn btn-primary">Shop Now</button>
-                </div>
-              </div> */}
+              /> */}
             </div>
           </SwiperSlide>
         ))}
