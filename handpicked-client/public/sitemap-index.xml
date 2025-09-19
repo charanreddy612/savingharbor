@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>https://handpickedclient.vercel.app.com/sitemaps/sitemap-pages.xml.gz</loc>
-    <lastmod>2025-09-18</lastmod>
+    <loc>https://handpickedclient.vercel.app//sitemaps/sitemap-blog.xml.gz</loc>
+    <lastmod>2025-09-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://handpickedclient.vercel.app.com/sitemaps/sitemap-stores.xml.gz</loc>
-    <lastmod>2025-09-18</lastmod>
+    <loc>https://handpickedclient.vercel.app//sitemaps/sitemap-pages.xml.gz</loc>
+    <lastmod>2025-09-19</lastmod>
   </sitemap>
   <sitemap>
-    <loc>https://handpickedclient.vercel.app.com/sitemaps/sitemap-coupons.xml.gz</loc>
-    <lastmod>2025-09-18</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>https://handpickedclient.vercel.app.com/sitemaps/sitemap-blog.xml.gz</loc>
-    <lastmod>2025-09-18</lastmod>
+    <loc>https://handpickedclient.vercel.app//sitemaps/sitemap-stores.xml.gz</loc>
+    <lastmod>2025-09-19</lastmod>
   </sitemap>
 </sitemapindex>
