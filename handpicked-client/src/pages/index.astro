@@ -66,7 +66,9 @@ const coupons = cresp?.data || [];
 const meta = resp?.meta || {};
 const cmeta = cresp?.meta || {};
 // average rating calculation
-const avg = (SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating||0), 0) / SAMPLE_TESTIMONIALS.length) || null;
+const avg =
+  SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating || 0), 0) /
+    SAMPLE_TESTIMONIALS.length || null;
 ---
 
 <Base meta={pageMeta}>
@@ -79,7 +81,9 @@ const avg = (SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating||0), 0) / SAMPLE
       >
         Saving Harbor...
       </h1>
-      <h2 class = "text-2xl md:text-3xl font-bold tracking-tight text-brand-primary">
+      <h2
+        class="text-2xl md:text-3xl font-bold tracking-tight text-brand-primary"
+      >
         Your trusted source for verified coupons & discounts.
         <!-- Your safe harbor for savings — reliable coupons, verified deals. -->
       </h2>
@@ -95,6 +99,20 @@ const avg = (SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating||0), 0) / SAMPLE
 
     <!-- Banner -->
     <div class="mt-8">
+      <!-- server-side hero fallback for LCP -->
+      <img
+        class = "hero-fallback"
+        src="/optimized/banner1-1024.webp"
+        srcset="/optimized/banner1-320.webp 320w, /optimized/banner1-480.webp 480w, /optimized/banner1-768.webp 768w, /optimized/banner1-1024.webp 1024w, /optimized/banner1-1600.webp 1600w"
+        sizes="100vw"
+        alt="Curated collection banner"
+        loading="eager"
+        width="1600"
+        height="500"
+        style="width:100%;aspect-ratio:1600/500;object-fit:cover;display:block;"
+      />
+
+      <!-- interactive slider mounts here; it should use the same image sources for slide #1 -->
       <BannerSlider client:visible />
     </div>
 
@@ -166,7 +184,11 @@ const avg = (SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating||0), 0) / SAMPLE
     </div>
 
     <!-- Testimonials -->
-     <TestimonialsList items={SAMPLE_TESTIMONIALS} avgRating={avg} totalReviews={SAMPLE_TESTIMONIALS.length} />
+    <TestimonialsList
+      items={SAMPLE_TESTIMONIALS}
+      avgRating={avg}
+      totalReviews={SAMPLE_TESTIMONIALS.length}
+    />
 
     <!-- Newsletter / CTA -->
     <section

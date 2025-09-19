@@ -20,5 +20,7 @@ const { meta = {} } = Astro.props as {
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="theme-color" content="#ffffff" />
 
-  <body class="min-h-screen"> <slot /> </body>
+  <body class="min-h-screen" onload="document.body.classList.add('js-ready')">
+    <slot />
+  </body>
 </html>

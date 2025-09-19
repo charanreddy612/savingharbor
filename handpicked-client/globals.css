@@ -276,3 +276,10 @@
 .footer-col {
   @apply space-y-3;
 }
+
+.hero-fallback {
+  display: block;
+}
+.js-ready .hero-fallback {
+  display: none;
+}
