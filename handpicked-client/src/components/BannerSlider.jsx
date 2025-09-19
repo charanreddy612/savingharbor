@@ -5,7 +5,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-const banners = [
+export const banners = [
   {
     id: 1,
     alt: "Curated collection banner",
@@ -17,7 +17,7 @@ const banners = [
       ],
       avif: [
         "/optimized/banner1-320.avif",
-        "/optimized/banner1-768.webp",
+        "/optimized/banner1-768.avif",
         "/optimized/banner1-1600.avif",
       ],
       fallback: "/optimized/banner1-1024.webp",
@@ -34,7 +34,7 @@ const banners = [
       ],
       avif: [
         "/optimized/banner2-320.avif",
-        "/optimized/banner2-768.webp",
+        "/optimized/banner2-768.avif",
         "/optimized/banner2-1600.avif",
       ],
       fallback: "/optimized/banner2-1024.webp",
@@ -51,7 +51,7 @@ const banners = [
       ],
       avif: [
         "/optimized/banner3-320.avif",
-        "/optimized/banner3-768.webp",
+        "/optimized/banner3-768.avif",
         "/optimized/banner3-1600.avif",
       ],
       fallback: "/optimized/banner3-1024.webp",

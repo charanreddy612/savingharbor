@@ -12,15 +12,25 @@ import CardStore from "../components/CardStore.astro";
 import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland.jsx";
 import TestimonialsList from "../components/TestimonialsList";
 import { SAMPLE_TESTIMONIALS } from "../content/testimonials.sample";
+import { banners } from "../components/BannerSlider.jsx";
+
+const firstBanner = banners[0]; // LCP hero = first slide
 
 const pageMeta = {
   title: "Saving Harbor | Verified Coupons & Discounts",
   description:
     "Verified coupons, real savings, no expired junk — handpicked by real humans.",
-  // LCP hero preload
+
+  // auto preload from first banner
   preloadHero: true,
-  heroSrc: "/optimized/banner1-1600.webp",
-  // fonts to preload (self-hosted .woff2 recommended)
+  heroSrc: firstBanner.variants.avif[2], // largest AVIF (1600w)
+  heroSrcSetAvif: firstBanner.variants.avif
+    .map((src, i) => `${src} ${[320, 768, 1600][i]}w`)
+    .join(", "),
+  heroSrcSetWebp: firstBanner.variants.webp
+    .map((src, i) => `${src} ${[320, 768, 1600][i]}w`)
+    .join(", "),
+
   preloadFonts: [{ href: "/fonts/Inter-Variable.woff2", type: "font/woff2" }],
 };
 

@@ -64,12 +64,18 @@ const jsonld = meta.jsonld;
   <meta name="twitter:image" content={ogImage} />
 
   <!-- Preload fonts and hero image -->
-  {meta.preloadFonts && meta.preloadFonts.length ? (
-    <>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    </>
-  ) : null}
+  {
+    meta.preloadFonts && meta.preloadFonts.length ? (
+      <>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossorigin
+        />
+      </>
+    ) : null
+  }
 
   {
     meta.preloadFonts && Array.isArray(meta.preloadFonts)
@@ -87,14 +93,26 @@ const jsonld = meta.jsonld;
 
   {
     meta.preloadHero && meta.heroSrc ? (
-      <link
-      rel="preload"
-      as="image"
-      href={meta.heroSrc}
-      imagesrcset={`${meta.heroSrc} 320w, ${meta.heroSrc} 768w, ${meta.heroSrc} 1600w`}
-      imagesizes="(max-width: 640px) 100vw, 1200px"
-      fetchpriority="high"
-    />
+      <>
+        <link
+          rel="preload"
+          as="image"
+          href={meta.heroSrc}
+          imagesrcset={meta.heroSrcSetAvif}
+          imagesizes="(max-width: 640px) 100vw, 1200px"
+          type="image/avif"
+          fetchpriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href={meta.heroSrc.replace(".avif", ".webp")}
+          imagesrcset={meta.heroSrcSetWebp}
+          imagesizes="(max-width: 640px) 100vw, 1200px"
+          type="image/webp"
+          fetchpriority="high"
+        />
+      </>
     ) : null
   }
   {
