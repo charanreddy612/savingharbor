@@ -8,6 +8,7 @@ import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro"; // explicit .astro
 
 type merchant = {
+  id: number | null;
   slug: string | null;
   logo_url: String | null;
 };
@@ -18,6 +19,7 @@ type Coupon = {
   code?: string | null;
   ends_at?: string | null;
   merchant_name?: string | null;
+  merchant_id?: number | null;
   merchant: merchant | null;
 };
 
