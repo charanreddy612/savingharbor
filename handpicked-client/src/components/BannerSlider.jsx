@@ -12,16 +12,12 @@ const banners = [
     variants: {
       webp: [
         "/optimized/banner1-320.webp",
-        "/optimized/banner1-480.webp",
         "/optimized/banner1-768.webp",
-        "/optimized/banner1-1024.webp",
         "/optimized/banner1-1600.webp",
       ],
       avif: [
         "/optimized/banner1-320.avif",
-        "/optimized/banner1-480.webp",
         "/optimized/banner1-768.webp",
-        "/optimized/banner1-1024.webp",
         "/optimized/banner1-1600.avif",
       ],
       fallback: "/optimized/banner1-1024.webp",
@@ -33,16 +29,12 @@ const banners = [
     variants: {
       webp: [
         "/optimized/banner2-320.webp",
-        "/optimized/banner2-480.webp",
         "/optimized/banner2-768.webp",
-        "/optimized/banner2-1024.webp",
         "/optimized/banner2-1600.webp",
       ],
       avif: [
         "/optimized/banner2-320.avif",
-        "/optimized/banner2-480.webp",
         "/optimized/banner2-768.webp",
-        "/optimized/banner2-1024.webp",
         "/optimized/banner2-1600.avif",
       ],
       fallback: "/optimized/banner2-1024.webp",
@@ -54,16 +46,12 @@ const banners = [
     variants: {
       webp: [
         "/optimized/banner3-320.webp",
-        "/optimized/banner3-480.webp",
         "/optimized/banner3-768.webp",
-        "/optimized/banner3-1024.webp",
         "/optimized/banner3-1600.webp",
       ],
       avif: [
         "/optimized/banner3-320.avif",
-        "/optimized/banner3-480.webp",
         "/optimized/banner3-768.webp",
-        "/optimized/banner3-1024.webp",
         "/optimized/banner3-1600.avif",
       ],
       fallback: "/optimized/banner3-1024.webp",
@@ -90,9 +78,9 @@ export default function BannerSlider() {
               <img
                 src={banner.variants.fallback}
                 srcSet={banner.variants.webp
-                  .map((u, i) => `${u} ${[320, 480, 768, 1024, 1600][i]}w`)
+                  .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
                   .join(", ")}
-                sizes="100vw"
+                sizes="(max-width:640px)100vw,1200px"
                 alt={banner.alt}
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 loading={banner.id === 1 ? "eager" : "lazy"} // eager for first slide only
