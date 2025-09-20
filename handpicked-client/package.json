@@ -3,15 +3,15 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "prebuild": "node scripts/fetch-home.js",
+    "prebuild": "node scripts/fetch-home.js && npm run export:banners",
     "dev": "astro dev",
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "generate-sitemaps": "node scripts/generate-sitemaps.js",
     "optimize:logos": "node scripts/optimize-logos.js",
-    "export:banners": "node scripts/export-banners.js",
-    "build": "npm run export:bannners && astro build"
+    "export:banners": "node scripts/export-banners.mjs",
+    "build": "astro build"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.4",
