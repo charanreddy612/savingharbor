@@ -41,12 +41,12 @@
 ========================== */
 /* Root brand tokens (these will override or extend above vars) */
 :root {
-  --brand-primary: #1abc9c; /* teal */
-  --brand-secondary: #2e86de; /* blue */
+  --brand-primary: #12866f; /* teal */
+  --brand-secondary: #2076cd; /* blue */
   --brand-accent: #1282a2; /* gradient midpoint */
   --brand-dark: #0b1220; /* background navy */
 
-  --brand-saving: #00c48c; /* teal */
+  --brand-saving: #008660; /* teal */
   --brand-harbor: #0077ff; /* blue */
   --brand-anchor: #00b4db; /* gradient midpoint */
   --brand-waves: #0083b0; /* background navy */

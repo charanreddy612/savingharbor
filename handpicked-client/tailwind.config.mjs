@@ -24,15 +24,15 @@ export default {
           bronze: "#CD7F32",
         },
         // ✅ Brand Colors (from logo)
-        "brand-primary": "#1ABC9C", // Teal
-        "brand-secondary": "#2E86DE", // Blue
+        "brand-primary": "#12866f", // Teal
+        "brand-secondary": "#2076cd", // Blue
         "brand-accent": "#1282A2", // Gradient midpoint
         "brand-dark": "#0B1220", // Navy background
         'brand-muted': '#0C324F', // muted dark (muted backgrounds)
         'surface': 'var(--surface)',
         'surface-2': 'var(--surface-2)',
         'on-surface': 'var(--on-surface)',
-        'brand-saving': '#00C48C', /* teal */
+        'brand-saving': '#008660', /* teal */
         'brand-harbor': '#0077FF', /* blue */
         'brand-anchor': '#00B4DB', /* gradient midpoint */
         'brand-waves': '#0083B0', /* background navy */
