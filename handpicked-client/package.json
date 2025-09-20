@@ -20,6 +20,7 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@upstash/redis": "^1.35.4",
+    "astro-critters": "^2.2.1",
     "dompurify": "^3.2.6",
     "isomorphic-dompurify": "^2.26.0",
     "lru-cache": "^11.2.1",

@@ -62,35 +62,6 @@ const jsonld = meta.jsonld;
   {defaultTitle && <meta name="twitter:title" content={defaultTitle} />}
   {defaultDesc && <meta name="twitter:description" content={defaultDesc} />}
   <meta name="twitter:image" content={ogImage} />
-
-  <!-- Preload fonts and hero image -->
-  {
-    meta.preloadFonts && meta.preloadFonts.length ? (
-      <>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-          crossorigin
-        />
-      </>
-    ) : null
-  }
-<!--
-  {
-    meta.preloadFonts && Array.isArray(meta.preloadFonts)
-      ? meta.preloadFonts.map((f: { href: string; type: string }) => (
-          <link
-            rel="preload"
-            as="font"
-            href={f.href}
-            type={f.type || "font/woff2"}
-            crossorigin="anonymous"
-          />
-        ))
-      : null
-  } -->
-
   {
     meta.preloadHero && meta.heroSrc ? (
       <>
