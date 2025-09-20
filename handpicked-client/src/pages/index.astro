@@ -198,70 +198,81 @@ const avg =
         <div id="hero-slider-mount" class="absolute inset-0 w-full h-full"></div>
       </div>
 
-      <!-- server-rendered banners JSON -->
+      <!-- safe server-rendered banners JSON + guarded parse + hydrate -->
       <script id="banners-data" type="application/json" is:inline>
-        {JSON.stringify(banners)}
+        {JSON.stringify(banners).replace(/<\/script>/g, '<\\/script>')}
       </script>
 
       <script type="module" is:inline>
-        window.__BANNERS__ = JSON.parse(document.getElementById('banners-data').textContent);
+        (function () {
+          const el = document.getElementById('banners-data');
+          if (!el) { window.__BANNERS__ = []; return; }
 
-        const hideStatic = () => {
-          const s = document.getElementById('hero-static');
-          if (!s) return;
-          s.style.opacity = '0';
-          // keep it in DOM to preserve layout; set pointer-events none so slider handles interactions
-          s.style.pointerEvents = 'none';
-          // optionally remove after fade completes (~220ms)
-          setTimeout(()=> { if (s.parentNode) s.parentNode.removeChild(s); }, 350);
-        };
+          const raw = el.textContent || el.innerText || '';
 
-        const hydrate = async () => {
           try {
-            // load slider chunk
-            const mod = await import('../components/BannerSlider.jsx');
-            const Slider = mod?.default;
-            const mountWrapper = document.getElementById('hero-slider-mount');
-            if (!mountWrapper) return;
+            window.__BANNERS__ = JSON.parse(raw);
+          } catch (err) {
+            console.error('banners JSON parse failed — raw payload:', raw, err);
+            // last-resort safe fallback (only for server-controlled data)
+            try {
+              /* eslint-disable no-eval */
+              window.__BANNERS__ = eval('(' + raw + ')');
+            } catch (err2) {
+              console.error('banners eval fallback also failed:', err2);
+              window.__BANNERS__ = [];
+            }
+          }
 
-            // create an inner container exactly like Slider expects (matches markup)
-            const mountTarget = document.createElement('div');
-            mountTarget.className = 'relative w-full aspect-[16/5]';
-            mountWrapper.appendChild(mountTarget);
+          // hide helper (kept from your code)
+          const hideStatic = () => {
+            const s = document.getElementById('hero-static');
+            if (!s) return;
+            s.style.opacity = '0';
+            s.style.pointerEvents = 'none';
+            setTimeout(()=> { if (s.parentNode) s.parentNode.removeChild(s); }, 350);
+          };
 
-            if (Slider) {
-              // render with React DOM client for proper mounting
-              try {
-                const React = (await import('react')).default;
-                const { createRoot } = await import('react-dom/client');
-                const root = createRoot(mountTarget);
-                root.render(React.createElement(Slider, { banners: window.__BANNERS__ }));
-              } catch (e) {
-                // fallback: use module mount helper if present
-                if (typeof mod.mount === 'function') {
-                  mod.mount(mountTarget, window.__BANNERS__);
-                } else {
-                  // last resort: inject first slide only so user sees something interactive later
-                  const b = window.__BANNERS__[0];
-                  mountTarget.innerHTML = `<picture>
-                    <source type="image/avif" srcset="${b.variants.avif.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <source type="image/webp" srcset="${b.variants.webp.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <img src="${b.variants.fallback}" alt="${b.alt}" class="absolute inset-0 w-full h-full object-cover object-center" loading="eager" decoding="async" width="1600" height="500">
-                  </picture>`;
+          // hydrate slider (kept from your code)
+          const hydrate = async () => {
+            try {
+              const mod = await import('../components/BannerSlider.jsx');
+              const Slider = mod?.default;
+              const mountWrapper = document.getElementById('hero-slider-mount');
+              if (!mountWrapper) return;
+
+              const mountTarget = document.createElement('div');
+              mountTarget.className = 'relative w-full aspect-[16/5]';
+              mountWrapper.appendChild(mountTarget);
+
+              if (Slider) {
+                try {
+                  const React = (await import('react')).default;
+                  const { createRoot } = await import('react-dom/client');
+                  const root = createRoot(mountTarget);
+                  root.render(React.createElement(Slider, { banners: window.__BANNERS__ }));
+                } catch (e) {
+                  if (typeof mod.mount === 'function') mod.mount(mountTarget, window.__BANNERS__);
+                  else {
+                    const b = window.__BANNERS__[0] || {};
+                    mountTarget.innerHTML = `<picture>
+                      <source type="image/avif" srcset="${(b.variants?.avif||[]).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                      <source type="image/webp" srcset="${(b.variants?.webp||[]).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                      <img src="${b.variants?.fallback||''}" alt="${b.alt||''}" class="absolute inset-0 w-full h-full object-cover object-center" loading="eager" decoding="async" width="1600" height="500">
+                    </picture>`;
+                  }
                 }
               }
+
+              requestAnimationFrame(()=> setTimeout(hideStatic, 80));
+            } catch (err) {
+              console.error('hero hydrate failed:', err);
             }
+          };
 
-            // once slider content is present, hide the static hero (smooth fade)
-            // small delay to ensure slider paints first-frame
-            requestAnimationFrame(()=> setTimeout(hideStatic, 80));
-          } catch (err) {
-            console.error('hero hydrate failed:', err);
-          }
-        };
-
-        if ('requestIdleCallback' in window) requestIdleCallback(hydrate, { timeout: 500 });
-        else setTimeout(hydrate, 500);
+          if ('requestIdleCallback' in window) requestIdleCallback(hydrate, { timeout: 500 });
+          else setTimeout(hydrate, 500);
+        })();
       </script>
     </div>
 
