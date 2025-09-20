@@ -1,18 +1,16 @@
----
 export const prerender = true;
 
 /* src/pages/index.astro — full frontmatter (DROP-IN, preserves pageMeta + imports) */
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import BannerSlider from "../components/BannerSlider.jsx";
 import CouponRevealIsland from "../components/islands/CouponRevealIsland.astro";
 import CardStore from "../components/CardStore.astro";
 // removed runtime api import - using build-time/static files instead
 import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland.jsx";
 import TestimonialsList from "../components/TestimonialsList";
 import { SAMPLE_TESTIMONIALS } from "../content/testimonials.sample";
-import { banners } from "../components/BannerSlider.jsx";
+import banners from "../content/banners.server";
 
 const firstBanner = banners[0]; // LCP hero = first slide
 
@@ -30,8 +28,6 @@ const pageMeta = {
   heroSrcSetWebp: firstBanner.variants.webp
     .map((src, i) => `${src} ${[320, 768, 1600][i]}w`)
     .join(", "),
-
-  // preloadFonts: [{ href: "/fonts/Inter-Variable.woff2", type: "font/woff2" }],
 };
 
 type Store = {
@@ -164,7 +160,6 @@ const avg =
         class="text-2xl md:text-3xl font-bold tracking-tight text-brand-primary"
       >
         Your trusted source for verified coupons & discounts.
-        <!-- Your safe harbor for savings — reliable coupons, verified deals. -->
       </h2>
       <p class="mt-3 text-gray-400">
         Save on top brands with codes we test ourselves.
@@ -173,10 +168,83 @@ const avg =
 
     <!-- Banner -->
     <div class="mt-8">
-      <!-- server-side hero fallback for LCP  -->
-      <!-- <div class="hero-placeholder"></div> -->
-      <!-- interactive slider mounts here; it should use the same image sources for slide #1 -->
-      <BannerSlider client:load />
+      <!-- static-first hero (SSR) -->
+      <section id="hero-static" class="homepage-hero my-8 mx-auto max-w-6xl">
+        <picture>
+          <source
+            type="image/avif"
+            srcset={pageMeta.heroSrcSetAvif}
+            sizes="(max-width:640px) 100vw, 1200px"
+          />
+          <source
+            type="image/webp"
+            srcset={pageMeta.heroSrcSetWebp}
+            sizes="(max-width:640px) 100vw, 1200px"
+          />
+          <img
+            src={pageMeta.heroSrc}
+            alt={firstBanner.alt}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            width="1600"
+            height="500"
+            class="absolute inset-0 w-full h-full object-cover object-center rounded-lg"
+            style="aspect-ratio:1600/500"
+          />
+        </picture>
+      </section>
+
+      <!-- slider mount (idle hydrate) -->
+      <div id="hero-slider-mount" class="sr-only" aria-hidden="true"></div>
+
+      <!-- banners JSON (server-rendered, safe) -->
+      <script id="banners-data" type="application/json" is:inline>
+        {JSON.stringify(banners)}
+      </script>
+      <script type="module" is:inline>
+        window.__BANNERS__ = JSON.parse(
+          document.getElementById("banners-data").textContent
+        );
+      </script>
+
+      <script type="module" is:inline>
+        // idle-hydrate: import slider only after idle
+        const hydrate = async () => {
+          try {
+            const mod = await import("../components/BannerSlider.jsx");
+            const Slider = mod.default;
+            if (!Slider) return;
+            const mount = document.getElementById("hero-slider-mount");
+
+            // If React/ReactDOM are present globally (CDN or bundled), use them.
+            if (window.React && window.ReactDOM) {
+              ReactDOM.render(
+                React.createElement(Slider, { banners: window.__BANNERS__ }),
+                mount
+              );
+            } else if (mod.mount) {
+              // If the module exposes a mount helper, use it.
+              mod.mount(mount, window.__BANNERS__);
+            } else {
+              // As a fallback, insert the slider HTML string if exported.
+              if (mod.renderToString) {
+                mount.innerHTML = mod.renderToString({ banners: window.__BANNERS__ });
+              }
+            }
+
+            const s = document.getElementById("hero-static");
+            if (s && mount.children.length) s.remove();
+          } catch (e) {
+            // no-op
+          }
+        };
+
+        if ("requestIdleCallback" in window) requestIdleCallback(hydrate, { timeout: 2000 });
+        else setTimeout(hydrate, 2000);
+      </script>
+
+      <!-- <BannerSlider client:load /> -->
     </div>
 
     <!-- Stores -->
