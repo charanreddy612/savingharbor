@@ -39,15 +39,24 @@
 /* ==========================
    CSS Variables
 ========================== */
+/* Root brand tokens (these will override or extend above vars) */
 :root {
-  --color-bg: #ffffff;
-  --color-text: #1a202c;
-  --color-muted: #718096;
-  --color-border: #e2e8f0;
-  --color-accent: #38b2ac;
-  --color-accent-hover: #2c7a7b;
-  --color-card-bg: #f9fafb;
-  --color-btn-hover: #2c7a7b;
+  --brand-primary: #1abc9c; /* teal */
+  --brand-secondary: #2e86de; /* blue */
+  --brand-accent: #1282a2; /* gradient midpoint */
+  --brand-dark: #0b1220; /* background navy */
+
+  --brand-saving: #00c48c; /* teal */
+  --brand-harbor: #0077ff; /* blue */
+  --brand-anchor: #00b4db; /* gradient midpoint */
+  --brand-waves: #0083b0; /* background navy */
+  --brand-navybg: #0b0f1a; /* dark navy */
+  --brand-tagline: #e4e4e4; /* light gray */
+
+  /* surface tokens — used for cards and light surfaces */
+  --surface: #ffffff; /* default light surface */
+  --surface-2: rgba(255, 255, 255, 0.03); /* subtle dark-surface */
+  --on-surface: #0f1724; /* text on light surface */
 }
 
 /* ==========================
@@ -96,140 +105,6 @@ a {
 
 .section-sm {
   @apply py-6;
-}
-
-/* ==========================
-   Components
-========================== */
-.card {
-  @apply border border-[var(--color-border)] rounded-xl bg-[var(--color-card-bg)] shadow-sm hover:shadow-md transition-shadow duration-200;
-}
-
-.btn {
-  @apply inline-flex items-center justify-center px-5 py-3 rounded-lg font-medium transition-colors duration-200;
-}
-
-.btn-primary {
-  @apply bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)];
-}
-
-.btn-outline {
-  @apply border border-[var(--color-border)] text-[var(--color-text)] bg-transparent hover:bg-[var(--color-border)];
-}
-
-/* ==========================
-   Typography / Prose
-========================== */
-.prose {
-  @apply max-w-prose;
-}
-
-.prose h1 {
-  @apply text-4xl font-bold mb-4 leading-tight;
-}
-
-.prose h2 {
-  @apply text-3xl font-semibold mb-3 leading-snug;
-}
-
-.prose h3 {
-  @apply text-2xl font-medium mb-2 leading-snug;
-}
-
-.prose p {
-  @apply text-base leading-7 text-[var(--color-text)] mb-4;
-}
-
-.prose a {
-  @apply underline text-[var(--color-accent)] hover:text-[var(--color-accent-hover)];
-}
-
-/* ==========================
-   Header / Footer
-========================== */
-.site-header {
-  @apply sticky top-0 z-50 border-b border-[var(--color-border)] bg-white/90 backdrop-blur-md shadow-md px-6 py-4;
-}
-
-.site-footer {
-  @apply border-t border-[var(--color-border)] bg-white/95 px-6 py-8;
-}
-
-.site-footer .copyright {
-  @apply border-t border-[var(--color-border)] mt-4 pt-4 text-sm text-[var(--color-muted)] text-center;
-}
-
-/* ==========================
-   Hero Section
-========================== */
-.homepage-hero {
-  @apply max-w-4xl mx-auto text-center my-12;
-}
-
-.hero-cta {
-  @apply flex justify-center gap-4 mt-6;
-}
-
-/* ==========================
-   Equal Column Grids
-========================== */
-.grid-2-equal,
-.grid-2 {
-  @apply grid gap-6 grid-cols-1 md:grid-cols-2;
-}
-
-.grid-3-equal,
-.grid-3 {
-  @apply grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
-}
-
-/* ==========================
-   Store Header
-========================== */
-.store-header {
-  @apply flex items-center gap-4 mb-6;
-}
-
-.store-logo {
-  @apply w-20 h-20 flex items-center justify-center border border-[var(--color-border)] rounded-xl overflow-hidden bg-white;
-}
-
-.store-logo__placeholder {
-  @apply text-xs text-gray-400;
-}
-
-.store-title {
-  @apply min-w-0 font-semibold text-lg;
-}
-
-/* ==========================
-   END: original src/styles/global.css content
-   ========================== */
-
-/* ==========================
-   START: root global.css content (appended so it overrides)
-   - From your root file; kept here and applied after above rules
-   - Note: font-face names adjusted to use Inter-Variable files (already defined earlier)
-   ========================== */
-
-/* Root brand tokens (these will override or extend above vars) */
-:root {
-  --brand-primary: #1abc9c; /* teal */
-  --brand-secondary: #2e86de; /* blue */
-  --brand-accent: #1282a2; /* gradient midpoint */
-  --brand-dark: #0b1220; /* background navy */
-
-  --brand-saving: #00c48c; /* teal */
-  --brand-harbor: #0077ff; /* blue */
-  --brand-anchor: #00b4db; /* gradient midpoint */
-  --brand-waves: #0083b0; /* background navy */
-  --brand-navybg: #0b0f1a; /* dark navy */
-  --brand-tagline: #e4e4e4; /* light gray */
-
-  /* surface tokens — used for cards and light surfaces */
-  --surface: #ffffff; /* default light surface */
-  --surface-2: rgba(255, 255, 255, 0.03); /* subtle dark-surface */
-  --on-surface: #0f1724; /* text on light surface */
 }
 
 /* ---------- existing helpers ---------- */
@@ -369,31 +244,24 @@ a {
   margin: 0;
 }
 
-.details-panel.hidden {
-  display: none !important;
+/* ==========================
+   Typography / Prose
+========================== */
+/* Prose overrides to nudge colors to brand tokens (safe & minimal) */
+.prose :where(h1, h2, h3, h4) {
+  @apply text-on-surface;
+}
+.prose {
+  /* default link color inside prose */
+  --tw-prose-links: var(--brand-primary);
+}
+.prose a {
+  @apply underline-offset-2 hover:underline;
+  color: var(--brand-primary);
 }
 
-.preview-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono",
-    monospace;
-  letter-spacing: 0.02em;
-}
-
-.hp-summary::marker,
-.hp-summary::-webkit-details-marker {
-  display: none;
-}
-
-/* optional: subtle transition for expanded content */
-.hp-details > div {
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-/* ensure expanded block displays normally */
-.group-open\\:line-clamp-none {
-  -webkit-line-clamp: unset;
-  display: block;
-  white-space: normal;
+.prose p {
+  @apply text-base leading-7 text-[var(--color-text)] mb-4;
 }
 
 /* Tailwind utilities (put in your globals or component CSS) */
@@ -450,19 +318,6 @@ a {
 /* Hero helper */
 .site-hero {
   @apply text-3xl md:text-4xl font-bold tracking-tight;
-}
-
-/* Prose overrides to nudge colors to brand tokens (safe & minimal) */
-.prose :where(h1, h2, h3, h4) {
-  @apply text-on-surface;
-}
-.prose {
-  /* default link color inside prose */
-  --tw-prose-links: var(--brand-primary);
-}
-.prose a {
-  @apply underline-offset-2 hover:underline;
-  color: var(--brand-primary);
 }
 
 /* small utility to ensure readable text on brand-primary backgrounds */

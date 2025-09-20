@@ -241,7 +241,8 @@
   /* use --surface tokens — override these in dark mode if needed */
   background-color: var(--surface-2);
   color: var(--on-surface);
-  @apply rounded-md p-4 border border-white/6;
+  @apply rounded-md p-4 border;
+  border-color: var(--surface-6);
 }
 
 /* Accent border helpers for card top */
