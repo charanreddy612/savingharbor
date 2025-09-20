@@ -149,7 +149,7 @@ a {
 
 /* Swiper pagination bullets */
 .swiper-pagination-bullet {
-  @apply bg-gray-300 opacity-80;
+  @apply w-4 h-4 mx-2 rounded-full bg-gray-300 opacity-80; /* 16×16px with spacing */
 }
 
 .swiper-pagination-bullet-active {
