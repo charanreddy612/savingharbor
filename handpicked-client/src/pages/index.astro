@@ -196,55 +196,69 @@ const avg =
         </picture>
       </section>
 
-      <!-- slider mount (idle hydrate) -->
-      <div id="hero-slider-mount" class="sr-only" aria-hidden="true"></div>
+    <!-- slider mount (idle hydrate) — FIXED -->
+    <div id="hero-slider-mount" aria-hidden="false"></div>
 
-      <!-- banners JSON (server-rendered, safe) -->
-      <script id="banners-data" type="application/json" is:inline>
-        {JSON.stringify(banners)}
-      </script>
-      <script type="module" is:inline>
-        window.__BANNERS__ = JSON.parse(
-          document.getElementById("banners-data").textContent
-        );
-      </script>
+    <!-- banners JSON (server-rendered, safe) -->
+    <script id="banners-data" type="application/json" is:inline>
+      {JSON.stringify(banners)}
+    </script>
+    <script type="module" is:inline>
+      // expose banners
+      window.__BANNERS__ = JSON.parse(document.getElementById("banners-data").textContent);
 
-      <script type="module" is:inline>
-        // idle-hydrate: import slider only after idle
-        const hydrate = async () => {
-          try {
-            const mod = await import("../components/BannerSlider.jsx");
-            const Slider = mod.default;
-            if (!Slider) return;
-            const mount = document.getElementById("hero-slider-mount");
+      // idle-hydrate: import slider + react renderer only after idle
+      const hydrate = async () => {
+        try {
+          // dynamic import slider component module (Vite will chunk it)
+          const mod = await import("../components/BannerSlider.jsx");
+          const Slider = mod?.default;
 
-            // If React/ReactDOM are present globally (CDN or bundled), use them.
-            if (window.React && window.ReactDOM) {
-              ReactDOM.render(
-                React.createElement(Slider, { banners: window.__BANNERS__ }),
-                mount
-              );
-            } else if (mod.mount) {
-              // If the module exposes a mount helper, use it.
-              mod.mount(mount, window.__BANNERS__);
-            } else {
-              // As a fallback, insert the slider HTML string if exported.
-              if (mod.renderToString) {
-                mount.innerHTML = mod.renderToString({ banners: window.__BANNERS__ });
+          // client mount node
+          const mount = document.getElementById("hero-slider-mount");
+          if (!mount) return;
+
+          // ensure mount has same wrapper style as the slider slides so visual match is consistent
+          mount.innerHTML = '<section class="homepage-hero my-8 mx-auto max-w-6xl"><div class="relative w-full aspect-[16/5] rounded-lg overflow-hidden shadow-lg border border-gray-100"></div></section>';
+          const mountTarget = mount.querySelector('div');
+
+          // Prefer React render if Slider is a React component
+          if (Slider) {
+            try {
+              const React = (await import('react')).default;
+              const ReactDOMClient = await import('react-dom/client');
+              const root = ReactDOMClient.createRoot(mountTarget);
+              root.render(React.createElement(Slider, { banners: window.__BANNERS__ }));
+            } catch (e) {
+              // fallback: if module exposes mount/render helpers
+              if (typeof mod.mount === 'function') {
+                mod.mount(mountTarget, window.__BANNERS__);
+              } else if (typeof mod.renderToString === 'function') {
+                mountTarget.innerHTML = mod.renderToString({ banners: window.__BANNERS__ });
+              } else {
+                // last resort: shallow DOM injection for first slide
+                const b = window.__BANNERS__[0];
+                mountTarget.innerHTML = `<picture>
+                  <source type="image/avif" srcset="${b.variants.avif.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                  <source type="image/webp" srcset="${b.variants.webp.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                  <img src="${b.variants.fallback}" alt="${b.alt}" width="1600" height="500" loading="eager" fetchpriority="high" decoding="async" class="absolute inset-0 w-full h-full object-cover object-center">
+                </picture>`;
               }
             }
-
-            const s = document.getElementById("hero-static");
-            if (s && mount.children.length) s.remove();
-          } catch (e) {
-            // no-op
           }
-        };
 
-        if ("requestIdleCallback" in window) requestIdleCallback(hydrate, { timeout: 2000 });
-        else setTimeout(hydrate, 2000);
-      </script>
+          // remove the static fallback hero once slider is mounted
+          const s = document.getElementById("hero-static");
+          if (s && mount.children.length) s.remove();
+        } catch (err) {
+          // log for quick debugging
+          console.error('hero hydrate failed:', err);
+        }
+      };
 
+      if ('requestIdleCallback' in window) requestIdleCallback(hydrate, { timeout: 500 });
+      else setTimeout(hydrate, 500);
+    </script>
       <!-- <BannerSlider client:load /> -->
     </div>
 
