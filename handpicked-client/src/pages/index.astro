@@ -167,118 +167,145 @@ const avg =
       </p>
     </section>
 
-    <!-- Banner -->
-    <div class="mt-8">
-      <!-- ---------- Banner (drop-in replacement) ---------- -->
-      <link rel="preload" as="image" href={pageMeta.heroSrc} imagesrcset={pageMeta.heroSrcSetAvif} imagesizes="(max-width:640px) 100vw, 1200px" fetchpriority="high" />
+<!-- ---------- Banner (production-ready drop-in) ---------- -->
+    <link
+      rel="preload"
+      as="image"
+      href={pageMeta.heroSrc}
+      imagesrcset={pageMeta.heroSrcSetAvif}
+      imagesizes="(max-width:640px) 100vw, 1200px"
+      fetchpriority="high"
+    />
 
-      <div id="hero-wrap" class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden">
-        <!-- static LCP image (display size matches slider container) -->
-        <div id="hero-static" class="relative w-full aspect-[16/5] bg-gray-100">
-          <picture>
-            <source type="image/avif" srcset={pageMeta.heroSrcSetAvif} sizes="(max-width:640px) 100vw, 1200px" />
-            <source type="image/webp" srcset={pageMeta.heroSrcSetWebp} sizes="(max-width:640px) 100vw, 1200px" />
-            <img src={pageMeta.heroSrc} alt={firstBanner.alt} loading="eager" fetchpriority="high" decoding="async" width="1200" height="375" class="absolute inset-0 w-full h-full object-cover object-center" />
-          </picture>
-        </div>
-
-        <!-- slider will mount on top -->
-        <div id="hero-slider-mount" class="absolute inset-0 w-full h-full"></div>
+    <div id="hero-wrap" class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden">
+      <!-- static LCP image (display size matches slider container) -->
+      <div id="hero-static" class="relative w-full aspect-[16/5] bg-gray-100 z-10">
+        <picture>
+          <source type="image/avif" srcset={pageMeta.heroSrcSetAvif} sizes="(max-width:640px) 100vw, 1200px" />
+          <source type="image/webp" srcset={pageMeta.heroSrcSetWebp} sizes="(max-width:640px) 100vw, 1200px" />
+          <img
+            src={pageMeta.heroSrc}
+            alt={firstBanner.alt}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            width="1200"
+            height="375"
+            class="absolute inset-0 w-full h-full object-cover object-center"
+          />
+        </picture>
       </div>
 
-      <script type="module" is:inline>
-        (async function(){
-          // defer heavy work until idle
-          const doHydrate = async () => {
+      <!-- slider will mount on top; keep as sibling so we don't remove it accidentally -->
+      <div id="hero-slider-mount" class="absolute inset-0 w-full h-full z-20"></div>
+    </div>
+
+    <script type="module" is:inline>
+      (async function () {
+        const doHydrate = async () => {
+          try {
+            // fetch banners (public/_data/banners.json created by export script)
+            let banners = [];
             try {
-              // 1) fetch banners JSON from public/_data (safe, no inline JSON injection)
-              let banners = [];
-              try {
-                const r = await fetch('/_data/banners.json', { cache: 'no-store' });
-                if (r.ok) banners = await r.json();
-              } catch (e) { console.error('fetch banners failed', e); }
+              const r = await fetch('/_data/banners.json', { cache: 'no-store' });
+              if (r.ok) banners = await r.json();
+            } catch (e) { console.error('fetch banners failed', e); }
 
-              if (!banners || banners.length === 0) return;
+            if (!banners || banners.length === 0) return;
 
-              // 2) inject Swiper CSS (non-blocking)
-              const cssHref = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css';
-              if (![...document.styleSheets].some(s => s.href && s.href.includes('swiper-bundle.min.css'))) {
-                const l = document.createElement('link');
-                l.rel = 'stylesheet'; l.href = cssHref; l.crossOrigin = '';
-                document.head.appendChild(l);
-              }
+            // ensure mount exists and is sibling (defensive)
+            const heroWrap = document.getElementById('hero-wrap');
+            const heroStatic = document.getElementById('hero-static');
+            let mountWrapper = document.getElementById('hero-slider-mount');
+            if (!mountWrapper && heroWrap) {
+              mountWrapper = document.createElement('div');
+              mountWrapper.id = 'hero-slider-mount';
+              mountWrapper.className = 'absolute inset-0 w-full h-full z-20';
+              heroWrap.appendChild(mountWrapper);
+            }
+            if (!mountWrapper) return;
 
-              // 3) create DOM structure required by Swiper inside mount
-              const mountWrapper = document.getElementById('hero-slider-mount');
-              if (!mountWrapper) return;
+            // ensure mount is sibling (not nested inside hero-static)
+            if (heroStatic && heroStatic.contains(mountWrapper)) {
+              heroStatic.parentNode.insertBefore(mountWrapper, heroStatic.nextSibling);
+            }
 
-              const sliderRoot = document.createElement('div');
-              sliderRoot.className = 'swiper';
-              sliderRoot.innerHTML = `
-                <div class="swiper-wrapper"></div>
-                <div class="swiper-button-prev"></div>
-                <div class="swiper-button-next"></div>
-                <div class="swiper-pagination"></div>
+            // inject Swiper CSS once (non-blocking)
+            const cssHref = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css';
+            if (![...document.styleSheets].some(s => s.href && s.href.includes('swiper-bundle.min.css'))) {
+              const l = document.createElement('link');
+              l.rel = 'stylesheet'; l.href = cssHref; l.crossOrigin = '';
+              document.head.appendChild(l);
+            }
+
+            // build slider DOM inside mountWrapper
+            const sliderRoot = document.createElement('div');
+            sliderRoot.className = 'swiper';
+            sliderRoot.innerHTML = `
+              <div class="swiper-wrapper"></div>
+              <div class="swiper-button-prev"></div>
+              <div class="swiper-button-next"></div>
+              <div class="swiper-pagination"></div>
+            `;
+            mountWrapper.appendChild(sliderRoot);
+            const wrapper = sliderRoot.querySelector('.swiper-wrapper');
+
+            // append slides (first slide eager)
+            banners.forEach((b, idx) => {
+              const slide = document.createElement('div');
+              slide.className = 'swiper-slide relative w-full aspect-[16/5]';
+              slide.innerHTML = `
+                <picture>
+                  <source type="image/avif" srcset="${(b.variants.avif||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                  <source type="image/webp" srcset="${(b.variants.webp||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                  <img src="${b.variants.fallback||''}" alt="${b.alt||''}" class="absolute inset-0 w-full h-full object-cover object-center" loading="${idx===0 ? 'eager' : 'lazy'}" decoding="async" width="1200" height="375" />
+                </picture>
               `;
-              mountWrapper.appendChild(sliderRoot);
-              const wrapper = sliderRoot.querySelector('.swiper-wrapper');
+              wrapper.appendChild(slide);
+            });
 
-              // append slides
-              banners.forEach(b => {
-                const slide = document.createElement('div');
-                slide.className = 'swiper-slide relative w-full aspect-[16/5]';
-                slide.innerHTML = `
-                  <picture>
-                    <source type="image/avif" srcset="${(b.variants.avif||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <source type="image/webp" srcset="${(b.variants.webp||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <img src="${b.variants.fallback||''}" alt="${b.alt||''}" class="absolute inset-0 w-full h-full object-cover object-center" loading="lazy" decoding="async" width="1200" height="375" />
-                  </picture>
-                `;
-                wrapper.appendChild(slide);
-              });
+            // load Swiper JS from CDN and init
+            await new Promise((resolve, reject) => {
+              if (window.Swiper) return resolve();
+              const s = document.createElement('script');
+              s.src = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js';
+              s.async = true;
+              s.onload = () => resolve();
+              s.onerror = (e) => reject(e);
+              document.head.appendChild(s);
+            });
 
-              // 4) load Swiper JS from CDN (UMD) and init once loaded
-              await new Promise((resolve, reject) => {
-                if (window.Swiper) return resolve();
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js';
-                s.async = true;
-                s.onload = () => resolve();
-                s.onerror = (e) => reject(e);
-                document.head.appendChild(s);
-              });
+            // initialize Swiper (will paint)
+            const swiper = new window.Swiper(sliderRoot, {
+              slidesPerView: 1,
+              loop: true,
+              autoplay: { delay: 5000, disableOnInteraction: false },
+              navigation: { nextEl: sliderRoot.querySelector('.swiper-button-next'), prevEl: sliderRoot.querySelector('.swiper-button-prev') },
+              pagination: { el: sliderRoot.querySelector('.swiper-pagination'), clickable: true },
+            });
 
-              // create Swiper instance
-              const swiper = new window.Swiper(sliderRoot, {
-                modules: [],
-                slidesPerView: 1,
-                loop: true,
-                autoplay: { delay: 5000, disableOnInteraction: false },
-                navigation: { nextEl: sliderRoot.querySelector('.swiper-button-next'), prevEl: sliderRoot.querySelector('.swiper-button-prev') },
-                pagination: { el: sliderRoot.querySelector('.swiper-pagination'), clickable: true },
-              });
-
-              // ensure slider painted, then fade out static image
-              requestAnimationFrame(()=> setTimeout(()=> {
+            // ensure slider painted, then fade out static image only
+            requestAnimationFrame(() => {
+              setTimeout(() => {
                 const s = document.getElementById('hero-static');
                 if (s) {
                   s.style.transition = 'opacity 220ms ease';
                   s.style.opacity = '0';
                   s.style.pointerEvents = 'none';
-                  setTimeout(()=> s.parentNode && s.parentNode.removeChild(s), 350);
+                  setTimeout(() => { s.parentNode && s.parentNode.removeChild(s); }, 350);
                 }
-              }, 80));
-            } catch (err) {
-              console.error('banner hydrate error', err);
-            }
-          };
+              }, 80);
+            });
+          } catch (err) {
+            console.error('banner hydrate error', err);
+          }
+        };
 
-          if ('requestIdleCallback' in window) requestIdleCallback(doHydrate, { timeout: 800 });
-          else setTimeout(doHydrate, 800);
-        })();
-      </script>
-    </div>
-
+        if ('requestIdleCallback' in window) requestIdleCallback(doHydrate, { timeout: 800 });
+        else setTimeout(doHydrate, 800);
+      })();
+    </script>
+    <!-- ---------- end banner block ---------- -->
     <!-- Stores -->
     <div class="mt-10">
       <div class="flex items-center justify-between mb-4">
