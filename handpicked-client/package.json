@@ -5,12 +5,13 @@
   "scripts": {
     "prebuild": "node scripts/fetch-home.js",
     "dev": "astro dev",
-    "build": "astro build",
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "generate-sitemaps": "node scripts/generate-sitemaps.js",
-    "optimize:logos": "node scripts/optimize-logos.js"
+    "optimize:logos": "node scripts/optimize-logos.js",
+    "export:banners": "node scripts/export-banners.js",
+    "build": "npm run export:bannners && astro build"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.4",
