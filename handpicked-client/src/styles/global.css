@@ -401,7 +401,7 @@ a {
   @apply inline-block text-gray-300 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary rounded px-1;
 }
 .social-btn {
-  @apply p-2 rounded hover:bg-white/5 hover:text-brand-primary transition focus:outline-none focus:ring-2 focus:ring-brand-primary;
+  @apply p-2 rounded hover:bg-white/50 hover:text-brand-primary transition focus:outline-none focus:ring-2 focus:ring-brand-primary;
 }
 .social-btn.small {
   @apply p-1;
@@ -419,7 +419,7 @@ a {
 
 /* unified card helper used across index and pages */
 .card {
-  @apply rounded-md bg-white/3 p-4 transition-shadow;
+  @apply rounded-md bg-white/30 p-4 transition-shadow;
 }
 
 /* card variant for light surfaces (e.g. testimonials) */
