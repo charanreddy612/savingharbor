@@ -1,4 +1,3 @@
----
 export const prerender = true;
 
 /* src/pages/index.astro — full frontmatter (DROP-IN, preserves pageMeta + imports) */
@@ -167,7 +166,7 @@ const avg =
       </p>
     </section>
 
-<!-- ---------- Banner (production-ready drop-in) ---------- -->
+    <!-- ---------- Banner (production-ready drop-in) ---------- -->
     <link
       rel="preload"
       as="image"
@@ -240,7 +239,7 @@ const avg =
 
             // build slider DOM inside mountWrapper
             const sliderRoot = document.createElement('div');
-            sliderRoot.className = 'swiper';
+            sliderRoot.className = 'swiper rounded-lg overflow-hidden shadow-lg border border-gray-100';
             sliderRoot.innerHTML = `
               <div class="swiper-wrapper"></div>
               <div class="swiper-button-prev"></div>
@@ -253,18 +252,30 @@ const avg =
             // append slides (first slide eager)
             banners.forEach((b, idx) => {
               const slide = document.createElement('div');
-              slide.className = 'swiper-slide relative w-full aspect-[16/5]';
+              slide.className = 'swiper-slide';
               slide.innerHTML = `
-                <picture>
-                  <source type="image/avif" srcset="${(b.variants.avif||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                  <source type="image/webp" srcset="${(b.variants.webp||[]).map((u,i)=>`${u} ${[320,768,1200][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                  <img src="${b.variants.fallback||''}" alt="${b.alt||''}" class="absolute inset-0 w-full h-full object-cover object-center" loading="${idx===0 ? 'eager' : 'lazy'}" decoding="async" width="1200" height="375" />
-                </picture>
+                <div class="relative w-full aspect-[16/5] bg-gray-100">
+                  <picture>
+                    <source type="image/avif" srcset="${(b.variants.avif||[]).map((u,i)=>`${u} ${[320,768,1600][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                    <source type="image/webp" srcset="${(b.variants.webp||[]).map((u,i)=>`${u} ${[320,768,1600][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                    <img
+                      src="${b.variants.fallback||''}"
+                      alt="${b.alt||''}"
+                      loading="${idx===0 ? 'eager' : 'lazy'}"
+                      fetchpriority="${idx===0 ? 'high' : 'auto'}"
+                      decoding="async"
+                      width="1600"
+                      height="500"
+                      class="absolute inset-0 w-full h-full object-cover object-center"
+                      style="aspect-ratio:1600/500;"
+                    />
+                  </picture>
+                </div>
               `;
               wrapper.appendChild(slide);
             });
 
-            // load Swiper JS from CDN and init
+            // load Swiper JS from CDN and init (wait for script to load)
             await new Promise((resolve, reject) => {
               if (window.Swiper) return resolve();
               const s = document.createElement('script');
@@ -275,27 +286,31 @@ const avg =
               document.head.appendChild(s);
             });
 
-            // initialize Swiper (will paint)
-            const swiper = new window.Swiper(sliderRoot, {
-              slidesPerView: 1,
-              loop: true,
-              autoplay: { delay: 5000, disableOnInteraction: false },
-              navigation: { nextEl: sliderRoot.querySelector('.swiper-button-next'), prevEl: sliderRoot.querySelector('.swiper-button-prev') },
-              pagination: { el: sliderRoot.querySelector('.swiper-pagination'), clickable: true },
-            });
-
-            // ensure slider painted, then fade out static image only
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                const s = document.getElementById('hero-static');
-                if (s) {
-                  s.style.transition = 'opacity 220ms ease';
-                  s.style.opacity = '0';
-                  s.style.pointerEvents = 'none';
-//                  setTimeout(() => { s.parentNode && s.parentNode.removeChild(s); }, 350);
+            // initialize Swiper and wait for init event before fading static
+            try {
+              const swiper = new window.Swiper(sliderRoot, {
+                slidesPerView: 1,
+                loop: true,
+                autoplay: { delay: 5000, disableOnInteraction: false },
+                navigation: { nextEl: sliderRoot.querySelector('.swiper-button-next'), prevEl: sliderRoot.querySelector('.swiper-button-prev') },
+                pagination: { el: sliderRoot.querySelector('.swiper-pagination'), clickable: true },
+                on: {
+                  init() {
+                    requestAnimationFrame(() => {
+                      const s = document.getElementById('hero-static');
+                      if (s) {
+                        s.style.transition = 'opacity 220ms ease';
+                        s.style.opacity = '0';
+                        s.style.pointerEvents = 'none';
+                        // keep the static node in DOM to avoid reparenting issues
+                      }
+                    });
+                  }
                 }
-              }, 80);
-            });
+              });
+            } catch (e) {
+              console.error('swiper init failed', e);
+            }
           } catch (err) {
             console.error('banner hydrate error', err);
           }
@@ -306,6 +321,7 @@ const avg =
       })();
     </script>
     <!-- ---------- end banner block ---------- -->
+
     <!-- Stores -->
     <div class="mt-10">
       <div class="flex items-center justify-between mb-4">
