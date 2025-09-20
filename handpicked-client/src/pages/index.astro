@@ -169,97 +169,100 @@ const avg =
 
     <!-- Banner -->
     <div class="mt-8">
-      <!-- static-first hero (SSR) -->
-      <section id="hero-static" class="homepage-hero my-8 mx-auto max-w-6xl">
-        <picture>
-          <source
-            type="image/avif"
-            srcset={pageMeta.heroSrcSetAvif}
-            sizes="(max-width:640px) 100vw, 1200px"
-          />
-          <source
-            type="image/webp"
-            srcset={pageMeta.heroSrcSetWebp}
-            sizes="(max-width:640px) 100vw, 1200px"
-          />
-          <img
-            src={pageMeta.heroSrc}
-            alt={firstBanner.alt}
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-            width="1600"
-            height="500"
-            class="absolute inset-0 w-full h-full object-cover object-center rounded-lg"
-            style="aspect-ratio:1600/500"
-          />
-        </picture>
-      </section>
+      <!-- ---------- Banner (drop-in replacement) ---------- -->
+      <!-- preload LCP hero (ensure head sees this; duplicate safe if already present) -->
+      <link rel="preload" as="image" href={pageMeta.heroSrc} fetchpriority="high" />
 
-    <!-- slider mount (idle hydrate) — FIXED -->
-    <div id="hero-slider-mount" aria-hidden="false"></div>
+      <!-- outer container matches slider max width -->
+      <div id="hero-wrap" class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden">
+        <!-- static LCP image (exact same aspect + classes as BannerSlider's slide) -->
+        <div id="hero-static" class="relative w-full aspect-[16/5] bg-gray-100 transition-opacity duration-200" style="opacity:1;">
+          <picture>
+            <source type="image/avif" srcset={pageMeta.heroSrcSetAvif} sizes="(max-width:640px) 100vw, 1200px" />
+            <source type="image/webp" srcset={pageMeta.heroSrcSetWebp} sizes="(max-width:640px) 100vw, 1200px" />
+            <img
+              src={pageMeta.heroSrc}
+              alt={firstBanner.alt}
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              width="1600"
+              height="500"
+              class="absolute inset-0 w-full h-full object-cover object-center"
+              style="aspect-ratio:1600/500"
+            />
+          </picture>
+        </div>
 
-    <!-- banners JSON (server-rendered, safe) -->
-    <script id="banners-data" type="application/json" is:inline>
-      {JSON.stringify(banners)}
-    </script>
-    <script type="module" is:inline>
-      // expose banners
-      window.__BANNERS__ = JSON.parse(document.getElementById("banners-data").textContent);
+        <!-- mount target sits on top of the static image, same sizing -->
+        <div id="hero-slider-mount" class="absolute inset-0 w-full h-full"></div>
+      </div>
 
-      // idle-hydrate: import slider + react renderer only after idle
-      const hydrate = async () => {
-        try {
-          // dynamic import slider component module (Vite will chunk it)
-          const mod = await import("../components/BannerSlider.jsx");
-          const Slider = mod?.default;
+      <!-- server-rendered banners JSON -->
+      <script id="banners-data" type="application/json" is:inline>
+        {JSON.stringify(banners)}
+      </script>
 
-          // client mount node
-          const mount = document.getElementById("hero-slider-mount");
-          if (!mount) return;
+      <script type="module" is:inline>
+        window.__BANNERS__ = JSON.parse(document.getElementById('banners-data').textContent);
 
-          // ensure mount has same wrapper style as the slider slides so visual match is consistent
-          mount.innerHTML = '<section class="homepage-hero my-8 mx-auto max-w-6xl"><div class="relative w-full aspect-[16/5] rounded-lg overflow-hidden shadow-lg border border-gray-100"></div></section>';
-          const mountTarget = mount.querySelector('div');
+        const hideStatic = () => {
+          const s = document.getElementById('hero-static');
+          if (!s) return;
+          s.style.opacity = '0';
+          // keep it in DOM to preserve layout; set pointer-events none so slider handles interactions
+          s.style.pointerEvents = 'none';
+          // optionally remove after fade completes (~220ms)
+          setTimeout(()=> { if (s.parentNode) s.parentNode.removeChild(s); }, 350);
+        };
 
-          // Prefer React render if Slider is a React component
-          if (Slider) {
-            try {
-              const React = (await import('react')).default;
-              const ReactDOMClient = await import('react-dom/client');
-              const root = ReactDOMClient.createRoot(mountTarget);
-              root.render(React.createElement(Slider, { banners: window.__BANNERS__ }));
-            } catch (e) {
-              // fallback: if module exposes mount/render helpers
-              if (typeof mod.mount === 'function') {
-                mod.mount(mountTarget, window.__BANNERS__);
-              } else if (typeof mod.renderToString === 'function') {
-                mountTarget.innerHTML = mod.renderToString({ banners: window.__BANNERS__ });
-              } else {
-                // last resort: shallow DOM injection for first slide
-                const b = window.__BANNERS__[0];
-                mountTarget.innerHTML = `<picture>
-                  <source type="image/avif" srcset="${b.variants.avif.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                  <source type="image/webp" srcset="${b.variants.webp.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                  <img src="${b.variants.fallback}" alt="${b.alt}" width="1600" height="500" loading="eager" fetchpriority="high" decoding="async" class="absolute inset-0 w-full h-full object-cover object-center">
-                </picture>`;
+        const hydrate = async () => {
+          try {
+            // load slider chunk
+            const mod = await import('../components/BannerSlider.jsx');
+            const Slider = mod?.default;
+            const mountWrapper = document.getElementById('hero-slider-mount');
+            if (!mountWrapper) return;
+
+            // create an inner container exactly like Slider expects (matches markup)
+            const mountTarget = document.createElement('div');
+            mountTarget.className = 'relative w-full aspect-[16/5]';
+            mountWrapper.appendChild(mountTarget);
+
+            if (Slider) {
+              // render with React DOM client for proper mounting
+              try {
+                const React = (await import('react')).default;
+                const { createRoot } = await import('react-dom/client');
+                const root = createRoot(mountTarget);
+                root.render(React.createElement(Slider, { banners: window.__BANNERS__ }));
+              } catch (e) {
+                // fallback: use module mount helper if present
+                if (typeof mod.mount === 'function') {
+                  mod.mount(mountTarget, window.__BANNERS__);
+                } else {
+                  // last resort: inject first slide only so user sees something interactive later
+                  const b = window.__BANNERS__[0];
+                  mountTarget.innerHTML = `<picture>
+                    <source type="image/avif" srcset="${b.variants.avif.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                    <source type="image/webp" srcset="${b.variants.webp.join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
+                    <img src="${b.variants.fallback}" alt="${b.alt}" class="absolute inset-0 w-full h-full object-cover object-center" loading="eager" decoding="async" width="1600" height="500">
+                  </picture>`;
+                }
               }
             }
+
+            // once slider content is present, hide the static hero (smooth fade)
+            // small delay to ensure slider paints first-frame
+            requestAnimationFrame(()=> setTimeout(hideStatic, 80));
+          } catch (err) {
+            console.error('hero hydrate failed:', err);
           }
+        };
 
-          // remove the static fallback hero once slider is mounted
-          const s = document.getElementById("hero-static");
-          if (s && mount.children.length) s.remove();
-        } catch (err) {
-          // log for quick debugging
-          console.error('hero hydrate failed:', err);
-        }
-      };
-
-      if ('requestIdleCallback' in window) requestIdleCallback(hydrate, { timeout: 500 });
-      else setTimeout(hydrate, 500);
-    </script>
-      <!-- <BannerSlider client:load /> -->
+        if ('requestIdleCallback' in window) requestIdleCallback(hydrate, { timeout: 500 });
+        else setTimeout(hydrate, 500);
+      </script>
     </div>
 
     <!-- Stores -->
