@@ -18,10 +18,9 @@ const { meta = {} } = Astro.props as {
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
-  <link rel="preload" href="/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="theme-color" content="#ffffff" />
 
-  <body class="min-h-screen" onload="document.body.classList.add('js-ready')">
+  <body class="min-h-screen">
     <slot />
   </body>
 </html>
