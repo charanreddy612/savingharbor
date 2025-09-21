@@ -151,7 +151,15 @@ export function renderCouponCardHtml(item = {}) {
       : 0;
 
   // Build logo HTML (preserve original behavior if no manifest)
-  let logoHtml = `<div class="text-[10px] text-gray-400">Logo</div>`;
+  let logoHtml = `
+  <div class="w-[40px] h-[40px] flex items-center justify-center bg-gray-50 rounded overflow-hidden"
+       style="min-width:40px;min-height:40px;" aria-hidden="true">
+    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" focusable="false" role="img" aria-hidden="true">
+      <rect width="40" height="40" fill="#f8fafc"/>
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="9" fill="#9ca3af">Logo</text>
+    </svg>
+  </div>
+`;
 
   if (
     manifestEntry &&
@@ -165,26 +173,38 @@ export function renderCouponCardHtml(item = {}) {
     const fallback = manifestEntry.variants[middle].src; // pick a medium size as fallback
     const blur = manifestEntry.blurDataURL || "";
 
+    // wrapper reserves space and shows blurred background while image loads
     logoHtml = `
+    <div class="w-[40px] h-[40px] rounded overflow-hidden flex items-center justify-center" 
+         style="min-width:40px;min-height:40px; background-image: url('${escapeHtml(
+           blur
+         )}'); background-size: cover; background-position: center;">
       <img
         src="${escapeHtml(fallback)}"
         srcset="${escapeHtml(srcset)}"
         sizes="40px"
-        alt="${merchantName || "Store"}"
+        alt="${escapeHtml(merchantName || "Store")}"
         width="40"
         height="40"
-        class="object-contain"
+        class="object-contain block"
         loading="lazy"
         decoding="async"
-        style="background-image: url('${escapeHtml(
-          blur
-        )}'); background-size: cover; background-position: center;"
-      />`;
+        style="display:block;width:40px;height:40px;object-fit:contain;background:transparent;"
+      />
+    </div>`;
   } else if (logoUrl) {
-    // exact previous fallback (keeps same dimensions and classes)
-    logoHtml = `<img src="${escapeHtml(logoUrl)}" alt="${
-      merchantName || "Store"
-    }" width="40" height="40" class="object-contain" loading="lazy" decoding="async" />`;
+    logoHtml = `
+    <div class="w-[40px] h-[40px] rounded overflow-hidden flex items-center justify-center" 
+         style="min-width:40px;min-height:40px;">
+      <img src="${escapeHtml(logoUrl)}"
+           alt="${escapeHtml(merchantName || "Store")}"
+           width="40"
+           height="40"
+           class="object-contain block"
+           loading="lazy"
+           decoding="async"
+           style="display:block;width:40px;height:40px;object-fit:contain;background:transparent;" />
+    </div>`;
   }
 
   const badgesHtml = `
