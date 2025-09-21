@@ -217,21 +217,15 @@ const avg =
 
     <script type="module" is:inline>
       (async function () {
-        // ----- configuration -----
-        const SWIPER_CSS =
-          "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"; // keep min css fallback
-        const SWIPER_ESM =
-          "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.esm.browser.min.js"; // module build (better for modern browsers)
+        // ----- configuration (NO CDN urls here) -----
         const HERO_SELECTOR = "#hero-wrap";
-        const HERO_STATIC_SELECTOR = "#hero-static";
         const MOUNT_ID = "hero-slider-mount";
-        const CSS_STYLE_ID = "hero-swiper-inline-styles"; // small injected styles id
+        const CSS_STYLE_ID = "hero-swiper-inline-styles";
 
         // ----- low-bandwidth / save-data guard -----
         function isNetworkConstrained() {
           try {
             const nav = navigator.connection || {};
-            // if user enabled Save-Data, or connection is 2g/slow-3g, avoid heavy loads
             if (nav.saveData) return true;
             if (nav.effectiveType && /2g|slow-2g/.test(nav.effectiveType))
               return true;
@@ -239,64 +233,23 @@ const avg =
           return false;
         }
 
-        // ----- minimal inline styles for controls (still fine to add early) -----
+        // ----- minimal inline styles for controls (safe, cheap) -----
         function injectInlineStyles() {
           if (document.getElementById(CSS_STYLE_ID)) return;
           const style = document.createElement("style");
           style.id = CSS_STYLE_ID;
           style.textContent = `
-      .swiper-pagination-bullet { width: 16px; height: 16px; margin: 8px; border-radius: 9999px; }
-      .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
-      .swiper { --swiper-navigation-size: 44px; }
-      #hero-static { transition: opacity 220ms ease; }
-    `;
+        /* touch-friendly pagination hit area — visual dot can be smaller via ::before */
+        .swiper-pagination-bullet { width: 44px; height: 44px; margin: 8px; border-radius: 9999px; display:inline-flex; align-items:center; justify-content:center; }
+        .swiper-pagination-bullet::before { content:""; width:10px; height:10px; border-radius:9999px; background:currentColor; display:block; opacity:.9; }
+        .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+        .swiper { --swiper-navigation-size: 44px; }
+        #hero-static { transition: opacity 220ms ease; }
+      `;
           document.head.appendChild(style);
         }
 
-        // ----- load the Swiper CSS (called only when about to init) -----
-        function loadSwiperCSS() {
-          // if a stylesheet already present, skip
-          if (
-            [...document.styleSheets].some(
-              (s) => s.href && s.href.includes("swiper-bundle.min.css")
-            )
-          )
-            return Promise.resolve();
-          return new Promise((resolve, reject) => {
-            // use preload-to-stylesheet trick to avoid render-blocking network priority
-            const link = document.createElement("link");
-            link.rel = "preload";
-            link.as = "style";
-            link.href = SWIPER_CSS;
-            link.crossOrigin = "";
-            link.onload = () => {
-              link.rel = "stylesheet";
-              resolve();
-            };
-            link.onerror = () => {
-              // fallback: append stylesheet directly
-              const l = document.createElement("link");
-              l.rel = "stylesheet";
-              l.href = SWIPER_CSS;
-              l.crossOrigin = "";
-              l.onload = () => resolve();
-              l.onerror = (e) => reject(e);
-              document.head.appendChild(l);
-            };
-            document.head.appendChild(link);
-          });
-        }
-
-        // ----- dynamic import of Swiper ESM bundle (module build) -----
-        async function loadSwiperModule() {
-          // prefer dynamic import of a module URL (modern browsers)
-          // this returns a module namespace object; for the ESM bundle, Swiper is the default export
-          // NOTE: CORS/ServiceWorker rules apply; this CDN path is known to work as module.
-          const mod = await import(/* @vite-ignore */ SWIPER_ESM);
-          return mod;
-        }
-
-        // ----- create mount wrapper lazily -----
+        // ----- create mount wrapper lazily (no Swiper init here) -----
         function ensureMountWrapper() {
           const heroWrap = document.getElementById("hero-wrap");
           if (!heroWrap) return null;
@@ -307,7 +260,6 @@ const avg =
             mountWrapper.className = "absolute inset-0 w-full h-full z-20";
             heroWrap.appendChild(mountWrapper);
           }
-          // place sibling to static if required
           const heroStatic = document.getElementById("hero-static");
           if (heroStatic && heroStatic.contains(mountWrapper)) {
             heroStatic.parentNode.insertBefore(
@@ -318,7 +270,7 @@ const avg =
           return mountWrapper;
         }
 
-        // ----- fetch banners (only when about to init) -----
+        // ----- fetch banners (only when needed) -----
         async function fetchBanners() {
           try {
             const r = await fetch("/_data/banners.json");
@@ -329,72 +281,45 @@ const avg =
           return [];
         }
 
-        // ----- build DOM slides (same as your implementation, but only run on init) -----
-        function buildSlides(mountWrapper, banners) {
-          const sliderRoot = document.createElement("div");
-          sliderRoot.className =
-            "swiper rounded-lg overflow-hidden shadow-lg border border-gray-100";
+        // ----- build static slides DOM (no swiper init) -----
+        function buildStaticSlides(mountWrapper, banners) {
+          // build a simple, accessible static carousel shell so CSS and BannerSlider can reuse it
+          const root = document.createElement("div");
+          root.className =
+            "hero-static-slides rounded-lg overflow-hidden shadow-lg border border-gray-100";
 
-          const wrapper = document.createElement("div");
-          wrapper.className = "swiper-wrapper";
-          sliderRoot.appendChild(wrapper);
-
-          const prevBtn = document.createElement("div");
-          prevBtn.className = "swiper-button-prev";
-          prevBtn.setAttribute("aria-label", "Previous slide");
-          prevBtn.setAttribute("role", "button");
-          prevBtn.tabIndex = 0;
-          sliderRoot.appendChild(prevBtn);
-
-          const nextBtn = document.createElement("div");
-          nextBtn.className = "swiper-button-next";
-          nextBtn.setAttribute("aria-label", "Next slide");
-          nextBtn.setAttribute("role", "button");
-          nextBtn.tabIndex = 0;
-          sliderRoot.appendChild(nextBtn);
-
-          const pagination = document.createElement("div");
-          pagination.className = "swiper-pagination";
-          sliderRoot.appendChild(pagination);
-
-          const widths = [320, 768, 1600];
+          const inner = document.createElement("div");
+          inner.className = "hero-static-wrapper";
+          root.appendChild(inner);
 
           banners.forEach((b, idx) => {
             const slide = document.createElement("div");
-            slide.className = "swiper-slide";
-
-            const outer = document.createElement("div");
-            outer.className = "relative w-full aspect-[16/5] bg-gray-100";
+            slide.className = "hero-static-slide";
+            slide.setAttribute("role", "group");
+            slide.setAttribute("aria-roledescription", "slide");
+            slide.setAttribute("aria-label", b.alt || `Slide ${idx + 1}`);
 
             const picture = document.createElement("picture");
-
             if (b.variants && b.variants.avif && b.variants.avif.length) {
-              const srcset = b.variants.avif
-                .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
-                .join(", ");
               const s = document.createElement("source");
               s.type = "image/avif";
-              s.setAttribute("srcset", srcset);
-              s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
-              picture.appendChild(s);
-            }
-
-            if (b.variants && b.variants.webp && b.variants.webp.length) {
-              const srcset = b.variants.webp
-                .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
+              s.srcset = b.variants.avif
+                .map((u, i) => `${u} ${[320, 768, 1600][i] || 1600}w`)
                 .join(", ");
-              const s = document.createElement("source");
-              s.type = "image/webp";
-              s.setAttribute("srcset", srcset);
-              s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
+              s.sizes = "(max-width:640px) 100vw, 1200px";
               picture.appendChild(s);
             }
-
+            if (b.variants && b.variants.webp && b.variants.webp.length) {
+              const s2 = document.createElement("source");
+              s2.type = "image/webp";
+              s2.srcset = b.variants.webp
+                .map((u, i) => `${u} ${[320, 768, 1600][i] || 1600}w`)
+                .join(", ");
+              s2.sizes = "(max-width:640px) 100vw, 1200px";
+              picture.appendChild(s2);
+            }
             const img = document.createElement("img");
-            img.src =
-              b.variants && b.variants.fallback
-                ? b.variants.fallback
-                : b.src || "";
+            img.src = b.variants?.fallback || b.src || "";
             img.alt = b.alt || "";
             img.loading = idx === 0 ? "eager" : "lazy";
             if (idx === 0) img.setAttribute("fetchpriority", "high");
@@ -404,101 +329,59 @@ const avg =
             img.className =
               "absolute inset-0 w-full h-full object-cover object-center";
             img.style.aspectRatio = "1600/500";
-
             picture.appendChild(img);
-            outer.appendChild(picture);
-            slide.appendChild(outer);
-            wrapper.appendChild(slide);
+
+            slide.appendChild(picture);
+            inner.appendChild(slide);
           });
 
-          mountWrapper.appendChild(sliderRoot);
-          return { sliderRoot, pagination, prevBtn, nextBtn };
+          mountWrapper.appendChild(root);
+          return root;
         }
 
-        // ----- initialization sequence (lazy) -----
-        let initialized = false;
+        // ----- initIfNeeded: do NOT import any Swiper CDN/module here -----
         async function initIfNeeded() {
-          if (initialized) return;
-          initialized = true;
+          // ensure this runs only once
+          if (window.__heroInitDone) return;
+          window.__heroInitDone = true;
 
-          // Respect save-data and slow networks
+          // Respect save-data and very slow networks: do nothing in that case (BannerSlider can fallback)
           if (isNetworkConstrained()) {
-            // do not auto-load heavy slider on constrained networks
-            // optionally you could show a lightweight static fallback and a "Load carousel" button
             console.log(
-              "Network constrained or Save-Data enabled — skipping slider auto-load."
+              "Network constrained or Save-Data enabled — skipping hero auto-init."
             );
             return;
           }
 
-          // small inline style can be added immediately (cheap)
+          // cheap style injection
           injectInlineStyles();
 
+          // fetch banners and create static shell (no JS carousel)
           const banners = await fetchBanners();
           if (!banners || banners.length === 0) return;
 
           const mountWrapper = ensureMountWrapper();
           if (!mountWrapper) return;
 
-          // load CSS (non-blocking pattern)
-          await loadSwiperCSS();
+          // build a static DOM the React BannerSlider can optionally enhance
+          buildStaticSlides(mountWrapper, banners);
 
-          // build slides DOM
-          const { sliderRoot, pagination, prevBtn, nextBtn } = buildSlides(
-            mountWrapper,
-            banners
-          );
-
-          // load the ESM module (modern browsers)
-          try {
-            const mod = await loadSwiperModule(); // module namespace
-            // Swiper may be default export (depends on bundle). Support both:
-            const Swiper = mod?.default || mod?.Swiper || window.Swiper;
-            // initialize Swiper with only the options you need
-            const swiper = new Swiper(sliderRoot, {
-              slidesPerView: 1,
-              loop: true,
-              autoplay: { delay: 5000, disableOnInteraction: false },
-              navigation: { nextEl: nextBtn, prevEl: prevBtn },
-              pagination: { el: pagination, clickable: true },
-              a11y: {
-                enabled: true,
-                prevSlideMessage: "Previous slide",
-                nextSlideMessage: "Next slide",
-              },
-              on: {
-                init() {
-                  requestAnimationFrame(() => {
-                    const s = document.getElementById("hero-static");
-                    if (s) {
-                      s.style.opacity = "0";
-                      s.style.pointerEvents = "none";
-                    }
-                  });
-                },
-              },
-            });
-
-            // label bullets a11y
-            setTimeout(() => {
-              const bullets = pagination.querySelectorAll(
-                ".swiper-pagination-bullet"
-              );
-              bullets.forEach((bEl, i) => {
-                if (!bEl.getAttribute("aria-label"))
-                  bEl.setAttribute("aria-label", `Go to slide ${i + 1}`);
-                bEl.tabIndex = 0;
-              });
-            }, 50);
-          } catch (err) {
-            console.error("swiper module load/init failed", err);
+          // Instead of loading Swiper from CDN, ask the React BannerSlider to initialize itself.
+          // BannerSlider exposes window.__triggerHeroSliderInit when it mounts.
+          if (typeof window.__triggerHeroSliderInit === "function") {
+            try {
+              window.__triggerHeroSliderInit();
+            } catch (e) {
+              // ignore - BannerSlider may not be ready yet
+            }
           }
+
+          // do NOT load or import any swiper script or css here.
         }
 
-        // ----- triggers: intersection (preferred) OR interaction OR idle fallback -----
+        // ----- triggers: intersection or interaction or idle fallback -----
         const heroEl = document.querySelector(HERO_SELECTOR);
 
-        // user interaction fallback (click / touch / scroll / keydown) - one-time
         const userInteractionHandler = () => {
           removeInteractionListeners();
           initIfNeeded();
@@ -537,19 +420,17 @@ const avg =
               });
             },
             { rootMargin: "200px" }
-          ); // starts loading slightly before visibility
+          );
           io.observe(heroEl);
-          // still add interaction listeners in case user interacts before intersection
           addInteractionListeners();
         } else {
-          // fallback: if idle available, run after a reasonable idle; also add interaction listeners
           addInteractionListeners();
           if ("requestIdleCallback" in window)
             requestIdleCallback(initIfNeeded, { timeout: 1200 });
           else setTimeout(initIfNeeded, 1200);
         }
 
-        // safety: if someone programmatically requests slider (e.g., CTA), expose a trigger
+        // expose trigger for other code (keeps old integration points working)
         window.__triggerHeroSliderInit = initIfNeeded;
       })();
     </script>
