@@ -535,16 +535,27 @@ const avg =
     />
 
     <!-- Newsletter / CTA -->
-    <section
-      class="mt-16 bg-brand-primary text-white rounded-xl p-6 text-center shadow-md"
-    >
-      <h2 class="text-white font-semibold">
-        Subscribe and stay ahead — no spam, ever.
-      </h2>
-      <p class="mt-2 text-white opacity-90">
-        Get the best deals delivered weekly.
-      </p>
-      <LandingSubscribeIsland client:idle />
+    <!-- Newsletter / CTA — darken overlay approach -->
+    <section class="relative mt-16 rounded-xl overflow-hidden">
+      <!-- background brand color (kept as the source of truth) -->
+      <div class="absolute inset-0 bg-brand-primary" aria-hidden="true"></div>
+
+      <!-- dark overlay that increases contrast for white text -->
+      <div class="absolute inset-0 bg-black/25" aria-hidden="true"></div>
+
+      <!-- content sits above the overlays -->
+      <div
+        class="relative z-10 p-6 text-center text-white"
+        aria-labelledby="newsletter-cta-heading"
+      >
+        <h2 id="newsletter-cta-heading" class="text-white font-semibold">
+          Subscribe and stay ahead — no spam, ever.
+        </h2>
+        <p class="mt-2 text-white font-medium">
+          Get the best deals delivered weekly.
+        </p>
+        <LandingSubscribeIsland client:idle />
+      </div>
     </section>
   </main>
 
