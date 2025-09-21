@@ -161,25 +161,56 @@ a {
   @apply bg-white border border-gray-100 rounded-md p-4;
 }
 
-/* Swiper pagination bullets */
+/* Make swiper bullets large enough for touch (recommended minimum 44x44) */
 .swiper-pagination-bullet {
-  @apply w-4 h-4 mx-2 rounded-full bg-gray-300 opacity-80; /* 16×16px with spacing */
+  display: inline-flex;           /* center any inner "dot" */
+  align-items: center;
+  justify-content: center;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 8px !important;         /* spacing between targets */
+  border-radius: 9999px;
+  box-sizing: content-box;
+  cursor: pointer;
+  /* keep visual dot small while hit area is large (if you want a small inner circle) */
+  background-color: transparent;  /* keep control over color in your theme */
 }
 
-.swiper-pagination-bullet-active {
-  @apply bg-brand-primary opacity-100;
+/* Optional: draw a visible small dot inside the large hit area */
+.swiper-pagination-bullet::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background-color: currentColor; /* inherits color (text-color) */
+  display: block;
+  opacity: 0.9;
 }
 
-/* Swiper navigation arrows */
+/* Focus & keyboard visibility */
+.swiper-pagination-bullet:focus {
+  outline: 3px solid rgba(0,0,0,0.12);
+  outline-offset: 3px;
+}
+
+/* Make bullets even larger on coarse (touch) devices */
+@media (pointer: coarse) {
+  .swiper-pagination-bullet { width: 48px !important; height: 48px !important; margin: 10px !important; }
+  .swiper-pagination-bullet::before { width: 12px; height: 12px; }
+}
+
+/* Ensure prev/next nav buttons are also touch-friendly */
 .swiper-button-next,
 .swiper-button-prev {
-  @apply text-brand-primary;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
 
-.swiper-button-next:hover,
-.swiper-button-prev:hover {
-  @apply text-brand-secondary;
-}
 
 /* Card base: smoother hover */
 .card-base {
