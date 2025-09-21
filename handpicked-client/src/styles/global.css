@@ -127,8 +127,22 @@ a {
 
 /* Outline button */
 .btn-outline {
-  @apply border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
+  @apply inline-flex items-center justify-center px-4 py-2 min-w-[96px] rounded font-semibold transition;
+  /* Use white border + white text so it contrasts against brand or the brand+overlay composite */
+  @apply border border-white text-white hover:bg-white hover:text-brand-primary;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white;
+}
+
+/* For colored/dark backgrounds (hero, overlays) */
+.btn-outline--dark {
+  @apply border border-white text-white hover:bg-white hover:text-brand-primary;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white;
+}
+
+/* For light/pale backgrounds (cards, light sections) */
+.btn-outline--light {
+  @apply border border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark;
 }
 
 /* Disabled state */

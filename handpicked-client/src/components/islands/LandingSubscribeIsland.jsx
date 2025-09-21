@@ -78,10 +78,11 @@ export default function LandingSubscribeIsland() {
 
         <button
           type="submit"
-          aria-busy="false"
-          class="btn border-brand-dark text-brand-dark font-semibold hover:bg-brand-dark hover:text-white px-4 py-2 min-w-[96px] touch-manipulation"
+          disabled={loading}
+          aria-busy={loading}
+          className="btn btn-outline px-4 py-2 min-w-[96px] touch-manipulation"
         >
-          Subscribe
+          {loading ? "Please wait…" : "Subscribe"}
         </button>
       </form>
 
