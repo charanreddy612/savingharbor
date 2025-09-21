@@ -217,244 +217,340 @@ const avg =
 
     <script type="module" is:inline>
       (async function () {
-        const doHydrate = async () => {
+        // ----- configuration -----
+        const SWIPER_CSS =
+          "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"; // keep min css fallback
+        const SWIPER_ESM =
+          "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.esm.browser.min.js"; // module build (better for modern browsers)
+        const HERO_SELECTOR = "#hero-wrap";
+        const HERO_STATIC_SELECTOR = "#hero-static";
+        const MOUNT_ID = "hero-slider-mount";
+        const CSS_STYLE_ID = "hero-swiper-inline-styles"; // small injected styles id
+
+        // ----- low-bandwidth / save-data guard -----
+        function isNetworkConstrained() {
           try {
-            // ---------- fetch banners (allow normal HTTP caching) ----------
-            let banners = [];
-            try {
-              const r = await fetch("/_data/banners.json"); // allow browser cache
-              if (r.ok) banners = await r.json();
-            } catch (e) {
-              console.error("fetch banners failed", e);
-            }
+            const nav = navigator.connection || {};
+            // if user enabled Save-Data, or connection is 2g/slow-3g, avoid heavy loads
+            if (nav.saveData) return true;
+            if (nav.effectiveType && /2g|slow-2g/.test(nav.effectiveType))
+              return true;
+          } catch (e) {}
+          return false;
+        }
 
-            if (!banners || banners.length === 0) return;
+        // ----- minimal inline styles for controls (still fine to add early) -----
+        function injectInlineStyles() {
+          if (document.getElementById(CSS_STYLE_ID)) return;
+          const style = document.createElement("style");
+          style.id = CSS_STYLE_ID;
+          style.textContent = `
+      .swiper-pagination-bullet { width: 16px; height: 16px; margin: 8px; border-radius: 9999px; }
+      .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+      .swiper { --swiper-navigation-size: 44px; }
+      #hero-static { transition: opacity 220ms ease; }
+    `;
+          document.head.appendChild(style);
+        }
 
-            // ---------- ensure mount exists and is sibling ----------
-            const heroWrap = document.getElementById("hero-wrap");
-            const heroStatic = document.getElementById("hero-static");
-            let mountWrapper = document.getElementById("hero-slider-mount");
-            if (!mountWrapper && heroWrap) {
-              mountWrapper = document.createElement("div");
-              mountWrapper.id = "hero-slider-mount";
-              mountWrapper.className = "absolute inset-0 w-full h-full z-20";
-              heroWrap.appendChild(mountWrapper);
-            }
-            if (!mountWrapper) return;
+        // ----- load the Swiper CSS (called only when about to init) -----
+        function loadSwiperCSS() {
+          // if a stylesheet already present, skip
+          if (
+            [...document.styleSheets].some(
+              (s) => s.href && s.href.includes("swiper-bundle.min.css")
+            )
+          )
+            return Promise.resolve();
+          return new Promise((resolve, reject) => {
+            // use preload-to-stylesheet trick to avoid render-blocking network priority
+            const link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "style";
+            link.href = SWIPER_CSS;
+            link.crossOrigin = "";
+            link.onload = () => {
+              link.rel = "stylesheet";
+              resolve();
+            };
+            link.onerror = () => {
+              // fallback: append stylesheet directly
+              const l = document.createElement("link");
+              l.rel = "stylesheet";
+              l.href = SWIPER_CSS;
+              l.crossOrigin = "";
+              l.onload = () => resolve();
+              l.onerror = (e) => reject(e);
+              document.head.appendChild(l);
+            };
+            document.head.appendChild(link);
+          });
+        }
 
-            if (heroStatic && heroStatic.contains(mountWrapper)) {
-              heroStatic.parentNode.insertBefore(
-                mountWrapper,
-                heroStatic.nextSibling
-              );
-            }
+        // ----- dynamic import of Swiper ESM bundle (module build) -----
+        async function loadSwiperModule() {
+          // prefer dynamic import of a module URL (modern browsers)
+          // this returns a module namespace object; for the ESM bundle, Swiper is the default export
+          // NOTE: CORS/ServiceWorker rules apply; this CDN path is known to work as module.
+          const mod = await import(/* @vite-ignore */ SWIPER_ESM);
+          return mod;
+        }
 
-            // ---------- inject small CSS to improve touch targets & ensure bullets size ----------
-            if (!document.getElementById("hero-swiper-inline-styles")) {
-              const style = document.createElement("style");
-              style.id = "hero-swiper-inline-styles";
-              style.textContent = `
-            /* Improve swiper controls hit area */
-            .swiper-pagination-bullet { width: 16px; height: 16px; margin: 8px; border-radius: 9999px; }
-            .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
-            .swiper { --swiper-navigation-size: 44px; }
-            /* keep static image visible until init fades it */
-            #hero-static { transition: opacity 220ms ease; }
-          `;
-              document.head.appendChild(style);
-            }
-
-            // ---------- preload then apply Swiper CSS (non-blocking) ----------
-            const cssHref =
-              "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css";
-            if (
-              ![...document.styleSheets].some(
-                (s) => s.href && s.href.includes("swiper-bundle.min.css")
-              )
-            ) {
-              const pre = document.createElement("link");
-              pre.rel = "preload";
-              pre.as = "style";
-              pre.href = cssHref;
-              pre.crossOrigin = "";
-              pre.onload = () => {
-                pre.rel = "stylesheet";
-              };
-              pre.onerror = () => {
-                // fallback: insert regular stylesheet if preload fails
-                const l = document.createElement("link");
-                l.rel = "stylesheet";
-                l.href = cssHref;
-                l.crossOrigin = "";
-                document.head.appendChild(l);
-              };
-              document.head.appendChild(pre);
-            }
-
-            // ---------- build slider DOM safely (no innerHTML) ----------
-            const sliderRoot = document.createElement("div");
-            sliderRoot.className =
-              "swiper rounded-lg overflow-hidden shadow-lg border border-gray-100";
-
-            const wrapper = document.createElement("div");
-            wrapper.className = "swiper-wrapper";
-            sliderRoot.appendChild(wrapper);
-
-            const prevBtn = document.createElement("div");
-            prevBtn.className = "swiper-button-prev";
-            prevBtn.setAttribute("aria-label", "Previous slide");
-            prevBtn.setAttribute("role", "button");
-            prevBtn.tabIndex = 0;
-            sliderRoot.appendChild(prevBtn);
-
-            const nextBtn = document.createElement("div");
-            nextBtn.className = "swiper-button-next";
-            nextBtn.setAttribute("aria-label", "Next slide");
-            nextBtn.setAttribute("role", "button");
-            nextBtn.tabIndex = 0;
-            sliderRoot.appendChild(nextBtn);
-
-            const pagination = document.createElement("div");
-            pagination.className = "swiper-pagination";
-            sliderRoot.appendChild(pagination);
-
-            mountWrapper.appendChild(sliderRoot);
-
-            // ---------- append slides (create elements for safety) ----------
-            const widths = [320, 768, 1600];
-            banners.forEach((b, idx) => {
-              const slide = document.createElement("div");
-              slide.className = "swiper-slide";
-
-              const outer = document.createElement("div");
-              outer.className = "relative w-full aspect-[16/5] bg-gray-100";
-
-              const picture = document.createElement("picture");
-
-              // avif sources
-              if (b.variants && b.variants.avif && b.variants.avif.length) {
-                const srcset = b.variants.avif
-                  .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
-                  .join(", ");
-                const s = document.createElement("source");
-                s.type = "image/avif";
-                s.setAttribute("srcset", srcset);
-                s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
-                picture.appendChild(s);
-              }
-
-              // webp sources
-              if (b.variants && b.variants.webp && b.variants.webp.length) {
-                const srcset = b.variants.webp
-                  .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
-                  .join(", ");
-                const s = document.createElement("source");
-                s.type = "image/webp";
-                s.setAttribute("srcset", srcset);
-                s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
-                picture.appendChild(s);
-              }
-
-              const img = document.createElement("img");
-              img.src =
-                b.variants && b.variants.fallback
-                  ? b.variants.fallback
-                  : b.src || "";
-              img.alt = b.alt || "";
-              img.loading = idx === 0 ? "eager" : "lazy";
-              if (idx === 0) img.setAttribute("fetchpriority", "high");
-              img.decoding = "async";
-              img.width = 1600;
-              img.height = 500;
-              img.className =
-                "absolute inset-0 w-full h-full object-cover object-center";
-              img.style.aspectRatio = "1600/500";
-
-              picture.appendChild(img);
-              outer.appendChild(picture);
-              slide.appendChild(outer);
-              wrapper.appendChild(slide);
-            });
-
-            // ---------- load Swiper JS from CDN (async) ----------
-            await new Promise((resolve, reject) => {
-              if (window.Swiper) return resolve();
-              const s = document.createElement("script");
-              s.src =
-                "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js";
-              s.async = true;
-              s.crossOrigin = "";
-              s.onload = () => resolve();
-              s.onerror = (e) => {
-                console.error("swiper script load failed", e);
-                reject(e);
-              };
-              document.head.appendChild(s);
-            });
-
-            // ---------- initialize Swiper with accessibility and pagination config ----------
-            try {
-              const swiper = new window.Swiper(sliderRoot, {
-                slidesPerView: 1,
-                loop: true,
-                autoplay: { delay: 5000, disableOnInteraction: false },
-                navigation: { nextEl: nextBtn, prevEl: prevBtn },
-                pagination: { el: pagination, clickable: true },
-                a11y: {
-                  enabled: true,
-                  prevSlideMessage: "Previous slide",
-                  nextSlideMessage: "Next slide",
-                },
-                on: {
-                  init() {
-                    // fade out static image after next frame to ensure paint
-                    requestAnimationFrame(() => {
-                      const s = document.getElementById("hero-static");
-                      if (s) {
-                        s.style.opacity = "0";
-                        s.style.pointerEvents = "none";
-                      }
-                    });
-                  },
-                },
-              });
-
-              // ensure pagination bullets have accessible labels (Swiper may create them)
-              // add labels shortly after init (guard with timeout)
-              setTimeout(() => {
-                const bullets = pagination.querySelectorAll(
-                  ".swiper-pagination-bullet"
-                );
-                bullets.forEach((bEl, i) => {
-                  if (!bEl.getAttribute("aria-label"))
-                    bEl.setAttribute("aria-label", `Go to slide ${i + 1}`);
-                  bEl.tabIndex = 0;
-                });
-              }, 50);
-            } catch (e) {
-              console.error("swiper init failed", e);
-            }
-
-            // ---------- safety timeout: if slider never initializes, unhide static after 3s ----------
-            setTimeout(() => {
-              const s = document.getElementById("hero-static");
-              if (
-                s &&
-                s.style.opacity !== "0" &&
-                !document.querySelector(".swiper-slide")
-              ) {
-                // leave static visible but remove any pointer-blocking
-                s.style.pointerEvents = "auto";
-              }
-            }, 3000);
-          } catch (err) {
-            console.error("banner hydrate error", err);
+        // ----- create mount wrapper lazily -----
+        function ensureMountWrapper() {
+          const heroWrap = document.getElementById("hero-wrap");
+          if (!heroWrap) return null;
+          let mountWrapper = document.getElementById(MOUNT_ID);
+          if (!mountWrapper) {
+            mountWrapper = document.createElement("div");
+            mountWrapper.id = MOUNT_ID;
+            mountWrapper.className = "absolute inset-0 w-full h-full z-20";
+            heroWrap.appendChild(mountWrapper);
           }
-        };
+          // place sibling to static if required
+          const heroStatic = document.getElementById("hero-static");
+          if (heroStatic && heroStatic.contains(mountWrapper)) {
+            heroStatic.parentNode.insertBefore(
+              mountWrapper,
+              heroStatic.nextSibling
+            );
+          }
+          return mountWrapper;
+        }
 
-        if ("requestIdleCallback" in window)
-          requestIdleCallback(doHydrate, { timeout: 800 });
-        else setTimeout(doHydrate, 800);
+        // ----- fetch banners (only when about to init) -----
+        async function fetchBanners() {
+          try {
+            const r = await fetch("/_data/banners.json");
+            if (r.ok) return await r.json();
+          } catch (e) {
+            console.error("fetch banners failed", e);
+          }
+          return [];
+        }
+
+        // ----- build DOM slides (same as your implementation, but only run on init) -----
+        function buildSlides(mountWrapper, banners) {
+          const sliderRoot = document.createElement("div");
+          sliderRoot.className =
+            "swiper rounded-lg overflow-hidden shadow-lg border border-gray-100";
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "swiper-wrapper";
+          sliderRoot.appendChild(wrapper);
+
+          const prevBtn = document.createElement("div");
+          prevBtn.className = "swiper-button-prev";
+          prevBtn.setAttribute("aria-label", "Previous slide");
+          prevBtn.setAttribute("role", "button");
+          prevBtn.tabIndex = 0;
+          sliderRoot.appendChild(prevBtn);
+
+          const nextBtn = document.createElement("div");
+          nextBtn.className = "swiper-button-next";
+          nextBtn.setAttribute("aria-label", "Next slide");
+          nextBtn.setAttribute("role", "button");
+          nextBtn.tabIndex = 0;
+          sliderRoot.appendChild(nextBtn);
+
+          const pagination = document.createElement("div");
+          pagination.className = "swiper-pagination";
+          sliderRoot.appendChild(pagination);
+
+          const widths = [320, 768, 1600];
+
+          banners.forEach((b, idx) => {
+            const slide = document.createElement("div");
+            slide.className = "swiper-slide";
+
+            const outer = document.createElement("div");
+            outer.className = "relative w-full aspect-[16/5] bg-gray-100";
+
+            const picture = document.createElement("picture");
+
+            if (b.variants && b.variants.avif && b.variants.avif.length) {
+              const srcset = b.variants.avif
+                .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
+                .join(", ");
+              const s = document.createElement("source");
+              s.type = "image/avif";
+              s.setAttribute("srcset", srcset);
+              s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
+              picture.appendChild(s);
+            }
+
+            if (b.variants && b.variants.webp && b.variants.webp.length) {
+              const srcset = b.variants.webp
+                .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
+                .join(", ");
+              const s = document.createElement("source");
+              s.type = "image/webp";
+              s.setAttribute("srcset", srcset);
+              s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
+              picture.appendChild(s);
+            }
+
+            const img = document.createElement("img");
+            img.src =
+              b.variants && b.variants.fallback
+                ? b.variants.fallback
+                : b.src || "";
+            img.alt = b.alt || "";
+            img.loading = idx === 0 ? "eager" : "lazy";
+            if (idx === 0) img.setAttribute("fetchpriority", "high");
+            img.decoding = "async";
+            img.width = 1600;
+            img.height = 500;
+            img.className =
+              "absolute inset-0 w-full h-full object-cover object-center";
+            img.style.aspectRatio = "1600/500";
+
+            picture.appendChild(img);
+            outer.appendChild(picture);
+            slide.appendChild(outer);
+            wrapper.appendChild(slide);
+          });
+
+          mountWrapper.appendChild(sliderRoot);
+          return { sliderRoot, pagination, prevBtn, nextBtn };
+        }
+
+        // ----- initialization sequence (lazy) -----
+        let initialized = false;
+        async function initIfNeeded() {
+          if (initialized) return;
+          initialized = true;
+
+          // Respect save-data and slow networks
+          if (isNetworkConstrained()) {
+            // do not auto-load heavy slider on constrained networks
+            // optionally you could show a lightweight static fallback and a "Load carousel" button
+            console.log(
+              "Network constrained or Save-Data enabled — skipping slider auto-load."
+            );
+            return;
+          }
+
+          // small inline style can be added immediately (cheap)
+          injectInlineStyles();
+
+          const banners = await fetchBanners();
+          if (!banners || banners.length === 0) return;
+
+          const mountWrapper = ensureMountWrapper();
+          if (!mountWrapper) return;
+
+          // load CSS (non-blocking pattern)
+          await loadSwiperCSS();
+
+          // build slides DOM
+          const { sliderRoot, pagination, prevBtn, nextBtn } = buildSlides(
+            mountWrapper,
+            banners
+          );
+
+          // load the ESM module (modern browsers)
+          try {
+            const mod = await loadSwiperModule(); // module namespace
+            // Swiper may be default export (depends on bundle). Support both:
+            const Swiper = mod?.default || mod?.Swiper || window.Swiper;
+            // initialize Swiper with only the options you need
+            const swiper = new Swiper(sliderRoot, {
+              slidesPerView: 1,
+              loop: true,
+              autoplay: { delay: 5000, disableOnInteraction: false },
+              navigation: { nextEl: nextBtn, prevEl: prevBtn },
+              pagination: { el: pagination, clickable: true },
+              a11y: {
+                enabled: true,
+                prevSlideMessage: "Previous slide",
+                nextSlideMessage: "Next slide",
+              },
+              on: {
+                init() {
+                  requestAnimationFrame(() => {
+                    const s = document.getElementById("hero-static");
+                    if (s) {
+                      s.style.opacity = "0";
+                      s.style.pointerEvents = "none";
+                    }
+                  });
+                },
+              },
+            });
+
+            // label bullets a11y
+            setTimeout(() => {
+              const bullets = pagination.querySelectorAll(
+                ".swiper-pagination-bullet"
+              );
+              bullets.forEach((bEl, i) => {
+                if (!bEl.getAttribute("aria-label"))
+                  bEl.setAttribute("aria-label", `Go to slide ${i + 1}`);
+                bEl.tabIndex = 0;
+              });
+            }, 50);
+          } catch (err) {
+            console.error("swiper module load/init failed", err);
+          }
+        }
+
+        // ----- triggers: intersection (preferred) OR interaction OR idle fallback -----
+        const heroEl = document.querySelector(HERO_SELECTOR);
+
+        // user interaction fallback (click / touch / scroll / keydown) - one-time
+        const userInteractionHandler = () => {
+          removeInteractionListeners();
+          initIfNeeded();
+        };
+        function addInteractionListeners() {
+          window.addEventListener("scroll", userInteractionHandler, {
+            passive: true,
+            once: true,
+          });
+          window.addEventListener("mousemove", userInteractionHandler, {
+            once: true,
+          });
+          window.addEventListener("touchstart", userInteractionHandler, {
+            once: true,
+          });
+          window.addEventListener("keydown", userInteractionHandler, {
+            once: true,
+          });
+        }
+        function removeInteractionListeners() {
+          window.removeEventListener("scroll", userInteractionHandler);
+          window.removeEventListener("mousemove", userInteractionHandler);
+          window.removeEventListener("touchstart", userInteractionHandler);
+          window.removeEventListener("keydown", userInteractionHandler);
+        }
+
+        if (heroEl && "IntersectionObserver" in window) {
+          const io = new IntersectionObserver(
+            (entries, obs) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  obs.disconnect();
+                  removeInteractionListeners();
+                  initIfNeeded();
+                }
+              });
+            },
+            { rootMargin: "200px" }
+          ); // starts loading slightly before visibility
+          io.observe(heroEl);
+          // still add interaction listeners in case user interacts before intersection
+          addInteractionListeners();
+        } else {
+          // fallback: if idle available, run after a reasonable idle; also add interaction listeners
+          addInteractionListeners();
+          if ("requestIdleCallback" in window)
+            requestIdleCallback(initIfNeeded, { timeout: 1200 });
+          else setTimeout(initIfNeeded, 1200);
+        }
+
+        // safety: if someone programmatically requests slider (e.g., CTA), expose a trigger
+        window.__triggerHeroSliderInit = initIfNeeded;
       })();
     </script>
 
@@ -534,7 +630,6 @@ const avg =
       totalReviews={SAMPLE_TESTIMONIALS.length}
     />
 
-    <!-- Newsletter / CTA -->
     <!-- Newsletter / CTA — darken overlay approach -->
     <section class="relative mt-16 rounded-xl overflow-hidden">
       <!-- background brand color (kept as the source of truth) -->
