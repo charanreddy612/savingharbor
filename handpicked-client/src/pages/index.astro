@@ -177,12 +177,26 @@ const avg =
       fetchpriority="high"
     />
 
-    <div id="hero-wrap" class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden">
+    <div
+      id="hero-wrap"
+      class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden"
+    >
       <!-- static LCP image (display size matches slider container) -->
-      <div id="hero-static" class="relative w-full aspect-[16/5] bg-gray-100 z-10">
+      <div
+        id="hero-static"
+        class="relative w-full aspect-[16/5] bg-gray-100 z-10"
+      >
         <picture>
-          <source type="image/avif" srcset={pageMeta.heroSrcSetAvif} sizes="(max-width:640px) 100vw, 1200px" />
-          <source type="image/webp" srcset={pageMeta.heroSrcSetWebp} sizes="(max-width:640px) 100vw, 1200px" />
+          <source
+            type="image/avif"
+            srcset={pageMeta.heroSrcSetAvif}
+            sizes="(max-width:640px) 100vw, 1200px"
+          />
+          <source
+            type="image/webp"
+            srcset={pageMeta.heroSrcSetWebp}
+            sizes="(max-width:640px) 100vw, 1200px"
+          />
           <img
             src={pageMeta.heroSrc}
             alt={firstBanner.alt}
@@ -197,130 +211,253 @@ const avg =
       </div>
 
       <!-- slider will mount on top; keep as sibling so we don't remove it accidentally -->
-      <div id="hero-slider-mount" class="absolute inset-0 w-full h-full z-20"></div>
+      <div id="hero-slider-mount" class="absolute inset-0 w-full h-full z-20">
+      </div>
     </div>
 
     <script type="module" is:inline>
       (async function () {
         const doHydrate = async () => {
           try {
-            // fetch banners (public/_data/banners.json created by export script)
+            // ---------- fetch banners (allow normal HTTP caching) ----------
             let banners = [];
             try {
-              const r = await fetch('/_data/banners.json', { cache: 'no-store' });
+              const r = await fetch("/_data/banners.json"); // allow browser cache
               if (r.ok) banners = await r.json();
-            } catch (e) { console.error('fetch banners failed', e); }
+            } catch (e) {
+              console.error("fetch banners failed", e);
+            }
 
             if (!banners || banners.length === 0) return;
 
-            // ensure mount exists and is sibling (defensive)
-            const heroWrap = document.getElementById('hero-wrap');
-            const heroStatic = document.getElementById('hero-static');
-            let mountWrapper = document.getElementById('hero-slider-mount');
+            // ---------- ensure mount exists and is sibling ----------
+            const heroWrap = document.getElementById("hero-wrap");
+            const heroStatic = document.getElementById("hero-static");
+            let mountWrapper = document.getElementById("hero-slider-mount");
             if (!mountWrapper && heroWrap) {
-              mountWrapper = document.createElement('div');
-              mountWrapper.id = 'hero-slider-mount';
-              mountWrapper.className = 'absolute inset-0 w-full h-full z-20';
+              mountWrapper = document.createElement("div");
+              mountWrapper.id = "hero-slider-mount";
+              mountWrapper.className = "absolute inset-0 w-full h-full z-20";
               heroWrap.appendChild(mountWrapper);
             }
             if (!mountWrapper) return;
 
-            // ensure mount is sibling (not nested inside hero-static)
             if (heroStatic && heroStatic.contains(mountWrapper)) {
-              heroStatic.parentNode.insertBefore(mountWrapper, heroStatic.nextSibling);
+              heroStatic.parentNode.insertBefore(
+                mountWrapper,
+                heroStatic.nextSibling
+              );
             }
 
-            // inject Swiper CSS once (non-blocking)
-            const cssHref = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css';
-            if (![...document.styleSheets].some(s => s.href && s.href.includes('swiper-bundle.min.css'))) {
-              const l = document.createElement('link');
-              l.rel = 'stylesheet'; l.href = cssHref; l.crossOrigin = '';
-              document.head.appendChild(l);
+            // ---------- inject small CSS to improve touch targets & ensure bullets size ----------
+            if (!document.getElementById("hero-swiper-inline-styles")) {
+              const style = document.createElement("style");
+              style.id = "hero-swiper-inline-styles";
+              style.textContent = `
+            /* Improve swiper controls hit area */
+            .swiper-pagination-bullet { width: 16px; height: 16px; margin: 8px; border-radius: 9999px; }
+            .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+            .swiper { --swiper-navigation-size: 44px; }
+            /* keep static image visible until init fades it */
+            #hero-static { transition: opacity 220ms ease; }
+          `;
+              document.head.appendChild(style);
             }
 
-            // build slider DOM inside mountWrapper
-            const sliderRoot = document.createElement('div');
-            sliderRoot.className = 'swiper rounded-lg overflow-hidden shadow-lg border border-gray-100';
-            sliderRoot.innerHTML = `
-              <div class="swiper-wrapper"></div>
-              <div class="swiper-button-prev"></div>
-              <div class="swiper-button-next"></div>
-              <div class="swiper-pagination"></div>
-            `;
+            // ---------- preload then apply Swiper CSS (non-blocking) ----------
+            const cssHref =
+              "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css";
+            if (
+              ![...document.styleSheets].some(
+                (s) => s.href && s.href.includes("swiper-bundle.min.css")
+              )
+            ) {
+              const pre = document.createElement("link");
+              pre.rel = "preload";
+              pre.as = "style";
+              pre.href = cssHref;
+              pre.crossOrigin = "";
+              pre.onload = () => {
+                pre.rel = "stylesheet";
+              };
+              pre.onerror = () => {
+                // fallback: insert regular stylesheet if preload fails
+                const l = document.createElement("link");
+                l.rel = "stylesheet";
+                l.href = cssHref;
+                l.crossOrigin = "";
+                document.head.appendChild(l);
+              };
+              document.head.appendChild(pre);
+            }
+
+            // ---------- build slider DOM safely (no innerHTML) ----------
+            const sliderRoot = document.createElement("div");
+            sliderRoot.className =
+              "swiper rounded-lg overflow-hidden shadow-lg border border-gray-100";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "swiper-wrapper";
+            sliderRoot.appendChild(wrapper);
+
+            const prevBtn = document.createElement("div");
+            prevBtn.className = "swiper-button-prev";
+            prevBtn.setAttribute("aria-label", "Previous slide");
+            prevBtn.setAttribute("role", "button");
+            prevBtn.tabIndex = 0;
+            sliderRoot.appendChild(prevBtn);
+
+            const nextBtn = document.createElement("div");
+            nextBtn.className = "swiper-button-next";
+            nextBtn.setAttribute("aria-label", "Next slide");
+            nextBtn.setAttribute("role", "button");
+            nextBtn.tabIndex = 0;
+            sliderRoot.appendChild(nextBtn);
+
+            const pagination = document.createElement("div");
+            pagination.className = "swiper-pagination";
+            sliderRoot.appendChild(pagination);
+
             mountWrapper.appendChild(sliderRoot);
-            const wrapper = sliderRoot.querySelector('.swiper-wrapper');
 
-            // append slides (first slide eager)
+            // ---------- append slides (create elements for safety) ----------
+            const widths = [320, 768, 1600];
             banners.forEach((b, idx) => {
-              const slide = document.createElement('div');
-              slide.className = 'swiper-slide';
-              slide.innerHTML = `
-                <div class="relative w-full aspect-[16/5] bg-gray-100">
-                  <picture>
-                    <source type="image/avif" srcset="${(b.variants.avif||[]).map((u,i)=>`${u} ${[320,768,1600][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <source type="image/webp" srcset="${(b.variants.webp||[]).map((u,i)=>`${u} ${[320,768,1600][i]||1200}w`).join(', ')}" sizes="(max-width:640px) 100vw, 1200px">
-                    <img
-                      src="${b.variants.fallback||''}"
-                      alt="${b.alt||''}"
-                      loading="${idx===0 ? 'eager' : 'lazy'}"
-                      fetchpriority="${idx===0 ? 'high' : 'auto'}"
-                      decoding="async"
-                      width="1600"
-                      height="500"
-                      class="absolute inset-0 w-full h-full object-cover object-center"
-                      style="aspect-ratio:1600/500;"
-                    />
-                  </picture>
-                </div>
-              `;
+              const slide = document.createElement("div");
+              slide.className = "swiper-slide";
+
+              const outer = document.createElement("div");
+              outer.className = "relative w-full aspect-[16/5] bg-gray-100";
+
+              const picture = document.createElement("picture");
+
+              // avif sources
+              if (b.variants && b.variants.avif && b.variants.avif.length) {
+                const srcset = b.variants.avif
+                  .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
+                  .join(", ");
+                const s = document.createElement("source");
+                s.type = "image/avif";
+                s.setAttribute("srcset", srcset);
+                s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
+                picture.appendChild(s);
+              }
+
+              // webp sources
+              if (b.variants && b.variants.webp && b.variants.webp.length) {
+                const srcset = b.variants.webp
+                  .map((u, i) => `${u} ${widths[i] || widths[2]}w`)
+                  .join(", ");
+                const s = document.createElement("source");
+                s.type = "image/webp";
+                s.setAttribute("srcset", srcset);
+                s.setAttribute("sizes", "(max-width:640px) 100vw, 1200px");
+                picture.appendChild(s);
+              }
+
+              const img = document.createElement("img");
+              img.src =
+                b.variants && b.variants.fallback
+                  ? b.variants.fallback
+                  : b.src || "";
+              img.alt = b.alt || "";
+              img.loading = idx === 0 ? "eager" : "lazy";
+              if (idx === 0) img.setAttribute("fetchpriority", "high");
+              img.decoding = "async";
+              img.width = 1600;
+              img.height = 500;
+              img.className =
+                "absolute inset-0 w-full h-full object-cover object-center";
+              img.style.aspectRatio = "1600/500";
+
+              picture.appendChild(img);
+              outer.appendChild(picture);
+              slide.appendChild(outer);
               wrapper.appendChild(slide);
             });
 
-            // load Swiper JS from CDN and init (wait for script to load)
+            // ---------- load Swiper JS from CDN (async) ----------
             await new Promise((resolve, reject) => {
               if (window.Swiper) return resolve();
-              const s = document.createElement('script');
-              s.src = 'https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js';
+              const s = document.createElement("script");
+              s.src =
+                "https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js";
               s.async = true;
+              s.crossOrigin = "";
               s.onload = () => resolve();
-              s.onerror = (e) => reject(e);
+              s.onerror = (e) => {
+                console.error("swiper script load failed", e);
+                reject(e);
+              };
               document.head.appendChild(s);
             });
 
-            // initialize Swiper and wait for init event before fading static
+            // ---------- initialize Swiper with accessibility and pagination config ----------
             try {
               const swiper = new window.Swiper(sliderRoot, {
                 slidesPerView: 1,
                 loop: true,
                 autoplay: { delay: 5000, disableOnInteraction: false },
-                navigation: { nextEl: sliderRoot.querySelector('.swiper-button-next'), prevEl: sliderRoot.querySelector('.swiper-button-prev') },
-                pagination: { el: sliderRoot.querySelector('.swiper-pagination'), clickable: true },
+                navigation: { nextEl: nextBtn, prevEl: prevBtn },
+                pagination: { el: pagination, clickable: true },
+                a11y: {
+                  enabled: true,
+                  prevSlideMessage: "Previous slide",
+                  nextSlideMessage: "Next slide",
+                },
                 on: {
                   init() {
+                    // fade out static image after next frame to ensure paint
                     requestAnimationFrame(() => {
-                      const s = document.getElementById('hero-static');
+                      const s = document.getElementById("hero-static");
                       if (s) {
-                        s.style.transition = 'opacity 220ms ease';
-                        s.style.opacity = '0';
-                        s.style.pointerEvents = 'none';
-                        // keep the static node in DOM to avoid reparenting issues
+                        s.style.opacity = "0";
+                        s.style.pointerEvents = "none";
                       }
                     });
-                  }
-                }
+                  },
+                },
               });
+
+              // ensure pagination bullets have accessible labels (Swiper may create them)
+              // add labels shortly after init (guard with timeout)
+              setTimeout(() => {
+                const bullets = pagination.querySelectorAll(
+                  ".swiper-pagination-bullet"
+                );
+                bullets.forEach((bEl, i) => {
+                  if (!bEl.getAttribute("aria-label"))
+                    bEl.setAttribute("aria-label", `Go to slide ${i + 1}`);
+                  bEl.tabIndex = 0;
+                });
+              }, 50);
             } catch (e) {
-              console.error('swiper init failed', e);
+              console.error("swiper init failed", e);
             }
+
+            // ---------- safety timeout: if slider never initializes, unhide static after 3s ----------
+            setTimeout(() => {
+              const s = document.getElementById("hero-static");
+              if (
+                s &&
+                s.style.opacity !== "0" &&
+                !document.querySelector(".swiper-slide")
+              ) {
+                // leave static visible but remove any pointer-blocking
+                s.style.pointerEvents = "auto";
+              }
+            }, 3000);
           } catch (err) {
-            console.error('banner hydrate error', err);
+            console.error("banner hydrate error", err);
           }
         };
 
-        if ('requestIdleCallback' in window) requestIdleCallback(doHydrate, { timeout: 800 });
+        if ("requestIdleCallback" in window)
+          requestIdleCallback(doHydrate, { timeout: 800 });
         else setTimeout(doHydrate, 800);
       })();
     </script>
+
     <!-- ---------- end banner block ---------- -->
 
     <!-- Stores -->
@@ -401,10 +538,12 @@ const avg =
     <section
       class="mt-16 bg-brand-primary text-white rounded-xl p-6 text-center shadow-md"
     >
-      <h2 class="text-brand-dark font-semibold ">
+      <h2 class="text-brand-dark font-semibold">
         Subscribe and stay ahead — no spam, ever.
       </h2>
-      <p class="mt-2 text-brand-dark opacity-90">Get the best deals delivered weekly.</p>
+      <p class="mt-2 text-brand-dark opacity-90">
+        Get the best deals delivered weekly.
+      </p>
       <LandingSubscribeIsland client:idle />
     </section>
   </main>

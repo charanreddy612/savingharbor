@@ -86,7 +86,25 @@ const jsonld = meta.jsonld;
       </>
     ) : null
   }
-  <link rel="preload" href="/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link
+    rel="preload"
+    href="/fonts/Inter-Regular.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+  />
+  <link
+    rel="preload"
+    href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"
+    as="style"
+    onload="this.rel='stylesheet'"
+  />
+  <noscript>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"
+    />
+  </noscript>
   {
     jsonld && (
       <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />
