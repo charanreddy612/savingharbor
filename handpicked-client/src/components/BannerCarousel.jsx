@@ -1,21 +1,9 @@
 // src/components/BannerCarousel.jsx
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * Styled, SSR-safe BannerCarousel
- * - No external deps
- * - Precise srcset / sizes for crisp images
- * - Autoplay with progress bar, pause on hover/focus
- * - Touch swipe, keyboard nav, prev/next buttons, dots
- *
- * Props:
- * - banners: [{ id, alt, variants: { avif: [], webp: [], fallback }, src }]
- */
-
 const WIDTHS = [320, 768, 1024, 1600];
 const SIZES = "(max-width:640px) 100vw, 1200px";
 const AUTOPLAY_MS = 5000; // slide interval
-const PROGRESS_TICK_MS = 80; // progress update tick
 
 function makeSrcset(arr = []) {
   return arr
@@ -28,11 +16,9 @@ export default function BannerCarousel({ banners = [] }) {
   const trackRef = useRef(null);
   const touchStartX = useRef(null);
   const autoplayTimer = useRef(null);
-  const progressTimer = useRef(null);
 
   const [index, setIndex] = useState(0);
   const [isPaused, setPaused] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..100
   const total = (banners && banners.length) || 0;
   if (!total) return null;
 
@@ -42,18 +28,9 @@ export default function BannerCarousel({ banners = [] }) {
     setIndex(wrapped);
     if (trackRef.current)
       trackRef.current.style.transform = `translateX(-${wrapped * 100}%)`;
-    resetProgress();
   };
 
-  // Reset progress timers
-  const resetProgress = () => {
-    setProgress(0);
-    if (progressTimer.current) clearInterval(progressTimer.current);
-    if (autoplayTimer.current) clearInterval(autoplayTimer.current);
-    startAutoplay();
-  };
-
-  // Start autoplay + progress
+  // Start autoplay
   const startAutoplay = () => {
     if (autoplayTimer.current) clearInterval(autoplayTimer.current);
     autoplayTimer.current = setInterval(() => {
@@ -64,25 +41,12 @@ export default function BannerCarousel({ banners = [] }) {
             trackRef.current.style.transform = `translateX(-${next * 100}%)`;
           return next;
         });
-        setProgress(0);
       }
     }, AUTOPLAY_MS);
-
-    // progress updater
-    let elapsed = 0;
-    if (progressTimer.current) clearInterval(progressTimer.current);
-    progressTimer.current = setInterval(() => {
-      if (!isPaused) {
-        elapsed += PROGRESS_TICK_MS;
-        setProgress(Math.min(100, (elapsed / AUTOPLAY_MS) * 100));
-        if (elapsed >= AUTOPLAY_MS) elapsed = 0;
-      }
-    }, PROGRESS_TICK_MS);
   };
 
   const stopAutoplay = () => {
     if (autoplayTimer.current) clearInterval(autoplayTimer.current);
-    if (progressTimer.current) clearInterval(progressTimer.current);
   };
 
   // Client-side lifecycle: keyboard, touch, hover, autoplay
@@ -173,11 +137,6 @@ export default function BannerCarousel({ banners = [] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, index]);
 
-  // keep track of manual index changes to reset progress
-  useEffect(() => {
-    setProgress(0);
-  }, [index]);
-
   // render
   return (
     <div
@@ -253,25 +212,43 @@ export default function BannerCarousel({ banners = [] }) {
         </div>
       </div>
 
-      {/* Left arrow */}
+      {/* Naked left arrow (SVG with bigger hit area) */}
       <button
-        onClick={() => goTo(index - 1)}
+        onClick={() => goTo(indexRef.current - 1)}
         aria-label="Previous slide"
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 text-white/95 hover:text-brand-primary transition rounded-full p-4"
+        style={{ lineHeight: 0 }}
       >
-        <span aria-hidden>◀</span>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M15 18l-6-6 6-6"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
-      {/* Right arrow */}
+      {/* Naked right arrow (SVG with bigger hit area) */}
       <button
-        onClick={() => goTo(index + 1)}
+        onClick={() => goTo(indexRef.current + 1)}
         aria-label="Next slide"
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 text-white/95 hover:text-brand-primary transition rounded-full p-4"
+        style={{ lineHeight: 0 }}
       >
-        <span aria-hidden>▶</span>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M9 6l6 6-6 6"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
-      {/* Dots & progress */}
+      {/* Dots */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
         <div className="flex gap-2">
           {banners.map((_, i) => (
@@ -286,15 +263,6 @@ export default function BannerCarousel({ banners = [] }) {
               }`}
             />
           ))}
-        </div>
-
-        {/* thin progress bar */}
-        <div className="w-36 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
-          <div
-            className="h-full bg-brand-primary transition-all"
-            style={{ width: `${progress}%` }}
-            aria-hidden
-          />
         </div>
       </div>
     </div>
