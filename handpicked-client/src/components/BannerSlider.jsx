@@ -66,7 +66,7 @@ export default function BannerSlider({ banners = [] }) {
     };
   }, [banners, shouldLoad]);
 
-  // Dynamic import of Swiper react + core + CSS when shouldLoad is true
+  // Robust dynamic import + multiple fallbacks for different Swiper package shapes
   useEffect(() => {
     if (!shouldLoad || swiperModules) return;
     let cancelled = false;
@@ -74,27 +74,87 @@ export default function BannerSlider({ banners = [] }) {
 
     (async () => {
       try {
-        // dynamic imports: React components, core modules, and CSS
-        const [
-          reactMod, // { Swiper, SwiperSlide }
-          coreMod, // named exports: Navigation, Pagination, Autoplay (depending on version)
-          // CSS imports: Vite will emit these and load them with the chunk
-          _cssCore,
-          _cssNav,
-          _cssPagination,
-        ] = await Promise.all([
-          import("swiper/react"),
-          import("swiper"),
-          import("swiper/css"),
-          import("swiper/css/navigation"),
-          import("swiper/css/pagination"),
-        ]);
+        // try a few import strategies in order
+        const tryImport = async () => {
+          const attempts = [
+            async () => {
+              // modern: split react + core (V8+)
+              const reactMod = await import("swiper/react");
+              const coreMod = await import("swiper");
+              await import("swiper/css");
+              await import("swiper/css/navigation");
+              await import("swiper/css/pagination");
+              return { reactMod, coreMod };
+            },
+            async () => {
+              // older bundles: try default / named
+              const mod = await import("swiper/bundle");
+              // bundle might already include css; still try to import css to be safe
+              try {
+                await import("swiper/css");
+              } catch (e) {}
+              return { reactMod: mod, coreMod: mod };
+            },
+            async () => {
+              // try loading from window (e.g., CDN preloaded into page)
+              if (
+                typeof window !== "undefined" &&
+                window.Swiper &&
+                window.SwiperReact
+              ) {
+                return {
+                  reactMod: {
+                    Swiper: window.SwiperReact.Swiper,
+                    SwiperSlide: window.SwiperReact.SwiperSlide,
+                  },
+                  coreMod: window.Swiper,
+                };
+              }
+              throw new Error("no window-swiper");
+            },
+          ];
+
+          for (const fn of attempts) {
+            try {
+              const res = await fn();
+              if (res) return res;
+            } catch (e) {
+              // swallow and try next
+              console.warn(
+                "swiper import attempt failed:",
+                e && e.message ? e.message : e
+              );
+            }
+          }
+          throw new Error("all swiper import attempts failed");
+        };
+
+        const { reactMod, coreMod } = await tryImport();
 
         if (cancelled) return;
 
-        const Swiper = reactMod?.Swiper || reactMod?.default;
-        const SwiperSlide = reactMod?.SwiperSlide;
-        const { Navigation, Pagination, Autoplay } = coreMod;
+        // normalize exports
+        const Swiper =
+          reactMod?.Swiper ||
+          reactMod?.default ||
+          (reactMod && (reactMod.default || {}).Swiper);
+        const SwiperSlide =
+          reactMod?.SwiperSlide ||
+          (reactMod && (reactMod.default || {}).SwiperSlide);
+        const Navigation =
+          coreMod?.Navigation ||
+          coreMod?.default?.Navigation ||
+          coreMod?.Navigation;
+        const Pagination =
+          coreMod?.Pagination ||
+          coreMod?.default?.Pagination ||
+          coreMod?.Pagination;
+        const Autoplay =
+          coreMod?.Autoplay || coreMod?.default?.Autoplay || coreMod?.Autoplay;
+
+        if (!Swiper || !SwiperSlide) {
+          throw new Error("Swiper react components not found after import");
+        }
 
         setSwiperModules({
           Swiper,
@@ -103,8 +163,13 @@ export default function BannerSlider({ banners = [] }) {
           Pagination,
           Autoplay,
         });
+        console.debug("BannerSlider: Swiper modules loaded successfully");
       } catch (err) {
-        console.error("Failed to dynamically load Swiper:", err);
+        console.error(
+          "BannerSlider: Failed to dynamically load Swiper (all attempts):",
+          err
+        );
+        // keep UI as static fallback (no throw)
       } finally {
         if (!cancelled) setLoading(false);
       }
