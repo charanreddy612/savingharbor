@@ -23,7 +23,8 @@ export async function GET({ url }) {
     const rows = Array.isArray(json.data)
       ? json.data
       : json.rows || json.items || [];
-    const html = rows.map((r) => renderStoreCardHtml(r)).join("");
+    const itemsHtml = rows.map((r) => renderStoreCardHtml(r)).join("");
+    const html = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">${itemsHtml}</div>`;
     return new Response(JSON.stringify({ html, meta: json.meta || {} }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

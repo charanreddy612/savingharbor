@@ -99,6 +99,23 @@
           // If you prefer to sanitize, include DOMPurify on the page and use:
           // container.innerHTML = DOMPurify.sanitize(json.html);
           container.innerHTML = json.html;
+          // ensure grid wrapper exists (fallback)
+          if (!container.querySelector(".grid")) {
+            const wrapper = document.createElement("div");
+            wrapper.className =
+              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6";
+            const els = Array.from(container.childNodes).filter(
+              (n) => n.nodeType === 1
+            );
+            els.forEach((ch) => wrapper.appendChild(ch));
+            if (wrapper.children.length) {
+              container.innerHTML = "";
+              container.appendChild(wrapper);
+            } else {
+              // nothing meaningful — fallback to full navigation to avoid blank UI
+              window.location.assign(location.pathname + location.search);
+            }
+          }
         } else {
           // no html field — fallback to full navigation
           window.location.assign(href);
@@ -117,6 +134,23 @@
       const json = await fetchJson(target.url);
       if (json.html) {
         container.innerHTML = json.html;
+        // ensure grid wrapper exists (fallback)
+        if (!container.querySelector(".grid")) {
+          const wrapper = document.createElement("div");
+          wrapper.className =
+            "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6";
+          const els = Array.from(container.childNodes).filter(
+            (n) => n.nodeType === 1
+          );
+          els.forEach((ch) => wrapper.appendChild(ch));
+          if (wrapper.children.length) {
+            container.innerHTML = "";
+            container.appendChild(wrapper);
+          } else {
+            // nothing meaningful — fallback to full navigation to avoid blank UI
+            window.location.assign(location.pathname + location.search);
+          }
+        }
         updatePaginationUI(json.meta || {}, paginationWrapper);
         try {
           const u = new URL(href, window.location.href);
