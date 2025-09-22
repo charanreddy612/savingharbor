@@ -5,6 +5,12 @@ export default function BannerCarousel({ banners = [] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const W = [320, 768, 1024, 1600]; // target widths (browser will pick nearest)
+  const makeSrcset = (arr) =>
+    (arr || [])
+      .map((src, i) => `${src} ${W[i] || W[W.length - 1]}w`)
+      .join(", ");
+
   // auto-play
   useEffect(() => {
     if (!emblaApi) return;
@@ -33,26 +39,33 @@ export default function BannerCarousel({ banners = [] }) {
               className="flex-[0_0_100%] relative aspect-[16/5] bg-gray-100"
             >
               <picture>
-                {b.variants?.avif?.length ? (
+                {banner.variants?.avif?.length ? (
                   <source
                     type="image/avif"
-                    srcSet={b.variants.avif.join(", ")}
+                    srcSet={makeSrcset(banner.variants.avif)}
                     sizes="(max-width:640px) 100vw, 1200px"
                   />
                 ) : null}
-                {b.variants?.webp?.length ? (
+
+                {banner.variants?.webp?.length ? (
                   <source
                     type="image/webp"
-                    srcSet={b.variants.webp.join(", ")}
+                    srcSet={makeSrcset(banner.variants.webp)}
                     sizes="(max-width:640px) 100vw, 1200px"
                   />
                 ) : null}
                 <img
-                  src={b.variants?.fallback || b.src}
-                  alt={b.alt || ""}
-                  className="w-full h-full object-cover object-center"
-                  loading="lazy"
+                  src={banner.variants?.fallback || banner.src}
+                  alt={banner.alt || ""}
+                  width="1200" // hint to browser for intrinsic layout
+                  height={Math.round((1200 * 5) / 16)} // 1200 x (5/16) => keeps 16/5 aspect
+                  loading={banner.id === effectiveFirstId ? "eager" : "lazy"}
+                  fetchPriority={
+                    banner.id === effectiveFirstId ? "high" : "auto"
+                  }
                   decoding="async"
+                  className="w-full h-full object-cover object-center"
+                  style={{ aspectRatio: "16/5" }}
                 />
               </picture>
             </div>
