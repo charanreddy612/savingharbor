@@ -3,13 +3,14 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "prebuild": "node scripts/fetch-home.js && npm run export:banners",
+    "prebuild": "node scripts/fetch-home.js && npm run optimize:banners && npm run export:banners",
     "dev": "astro dev",
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "generate-sitemaps": "node scripts/generate-sitemaps.js",
     "optimize:logos": "node scripts/optimize-logos.js",
+    "optimize:banners": "node scripts/optimize-banners.js",
     "export:banners": "node scripts/export-banners.mjs",
     "build": "astro build"
   },
