@@ -12,7 +12,7 @@ import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland
 import TestimonialsList from "../components/TestimonialsList";
 import { SAMPLE_TESTIMONIALS } from "../content/testimonials.sample";
 import banners from "../content/banners.server";
-
+import BannerCarousel from "../components/BannerCarousel.jsx";
 const firstBanner = banners[0]; // LCP hero = first slide
 
 const pageMeta = {
@@ -166,6 +166,7 @@ const avg =
         Save on top brands with codes we test ourselves.
       </p>
     </section>
+    <BannerCarousel client:visible banners={banners} />
 
     <!-- ---------- Banner (production-ready drop-in) ---------- -->
     <link
