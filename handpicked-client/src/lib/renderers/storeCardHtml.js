@@ -142,35 +142,34 @@ export function renderStoreCardHtml(store = {}) {
     )}" alt="${name}" width="96" height="80" loading="lazy" decoding="async" class="max-h-full max-w-full object-contain" />`;
   }
 
-  return `
-    <a
-      href="/stores/${slug}"
-      class="card-base block p-4 h-full hover:shadow-lg hover:-translate-y-0.5 transition-transform duration-150"
-      aria-label="Open ${name}"
-    >
-      <div class="flex flex-col h-full">
-        <!-- Logo -->
-        <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
-          ${logoHtml}
-        </div>
-
-        <!-- Content -->
-        <div class="flex-1 flex flex-col justify-center text-center">
-          <h3 class="font-semibold text-brand-primary text-sm md:text-base truncate">${name}</h3>
-
-          ${
-            active !== null
-              ? `
-            <div class="mt-2 flex justify-center">
-              <span class="pill pill-green">
-                ${active} ${active === 1 ? "Offer" : "Offers"}
-              </span>
-            </div>
-          `
-              : ""
-          }
-        </div>
+  const anchorHtml = `
+  <a
+    href="/stores/${slug}"
+    class="card-base block p-4 h-full hover:shadow-lg hover:-translate-y-0.5 transition-transform duration-150"
+    aria-label="Open ${name}"
+  >
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-center h-16 mb-3 border-b border-gray-100 pb-3">
+        ${logoHtml}
       </div>
-    </a>
-  `;
+      <div class="flex-1 flex flex-col justify-center text-center">
+        <h3 class="font-semibold text-brand-primary text-sm md:text-base truncate">${name}</h3>
+        ${
+          active !== null
+            ? `<div class="mt-2 flex justify-center"><span class="pill pill-green">${active} ${
+                active === 1 ? "Offer" : "Offers"
+              }</span></div>`
+            : ""
+        }
+      </div>
+    </div>
+  </a>
+`;
+
+  // Wrap anchor in same outer wrapper used by stores/index.astro
+  return `
+  <div class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card" style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;">
+    ${anchorHtml}
+  </div>
+`;
 }

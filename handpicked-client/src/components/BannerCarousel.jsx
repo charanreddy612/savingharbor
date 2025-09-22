@@ -212,40 +212,22 @@ export default function BannerCarousel({ banners = [] }) {
         </div>
       </div>
 
-      {/* Naked left arrow (SVG with bigger hit area) */}
+      {/* Left arrow */}
       <button
-        onClick={() => goTo(indexRef.current - 1)}
+        onClick={() => goTo(index - 1)}
         aria-label="Previous slide"
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 text-white/95 hover:text-brand-primary transition rounded-full p-4"
-        style={{ lineHeight: 0 }}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M15 18l-6-6 6-6"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <span aria-hidden>◀</span>
       </button>
 
-      {/* Naked right arrow (SVG with bigger hit area) */}
+      {/* Right arrow */}
       <button
-        onClick={() => goTo(indexRef.current + 1)}
+        onClick={() => goTo(index + 1)}
         aria-label="Next slide"
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 text-white/95 hover:text-brand-primary transition rounded-full p-4"
-        style={{ lineHeight: 0 }}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M9 6l6 6-6 6"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <span aria-hidden>▶</span>
       </button>
 
       {/* Dots */}
