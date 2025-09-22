@@ -430,8 +430,28 @@ const avg =
           else setTimeout(initIfNeeded, 1200);
         }
 
-        // expose trigger for other code (keeps old integration points working)
-        window.__triggerHeroSliderInit = initIfNeeded;
+        // safe: only assign if not already defined (preserves BannerSlider's registration)
+        // preserve existing trigger if present, otherwise set to initIfNeeded.
+        // If existing is present, wrap so both run (existing first).
+        (function () {
+          const prev = window.__triggerHeroSliderInit;
+          if (typeof prev === "function") {
+            window.__triggerHeroSliderInit = function () {
+              try {
+                prev();
+              } catch (e) {
+                console.warn("prev hero trigger failed", e);
+              }
+              try {
+                initIfNeeded();
+              } catch (e) {
+                console.warn("initIfNeeded failed", e);
+              }
+            };
+          } else {
+            window.__triggerHeroSliderInit = initIfNeeded;
+          }
+        })();
       })();
     </script>
 

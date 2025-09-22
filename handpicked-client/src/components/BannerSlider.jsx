@@ -1,38 +1,152 @@
+// src/components/BannerSlider.jsx
 import React, { useEffect, useRef, useState } from "react";
 
 /**
- * Lazy-loading BannerSlider
- * - Pass `banners` as prop: [{ id, alt, variants: { avif: [], webp: [], fallback } }, ...]
- * - No static swiper imports — Swiper JS/CSS is loaded only when needed.
+ * Robust BannerSlider
+ * - Uses dynamic import for swiper/react + swiper
+ * - Falls back to swiper/bundle if needed
+ * - If dynamic imports fail at runtime, injects UMD CDN and enhances static DOM
+ * - Registers window.__triggerHeroSliderInit for the inline hero boot script
+ * - Preserves intersection/save-data guards and lightweight fallback UI
  */
-export default function BannerSlider({ banners = [] }) {
+
+const SIZES = [320, 768, 1600];
+
+export default function BannerSlider({ banners = [], fallbackBanners = [] }) {
   const heroRef = useRef(null);
+  const [internalBanners, setInternalBanners] = useState(banners || []);
   const [shouldLoad, setShouldLoad] = useState(false);
-  const [swiperModules, setSwiperModules] = useState(null); // { Swiper, SwiperSlide, Navigation, Pagination, Autoplay }
+  const [swiperModules, setSwiperModules] = useState(null); // normalized modules or { Swiper, SwiperSlide, Navigation, Pagination, Autoplay }
   const [loading, setLoading] = useState(false);
   const [skippedForSaveData, setSkippedForSaveData] = useState(false);
+  const initedRef = useRef(false);
 
-  // Detect constrained networks / Save-Data preference
   function isNetworkConstrained() {
     try {
       const nav = navigator.connection || {};
       if (nav.saveData) return true;
       if (nav.effectiveType && /2g|slow-2g/.test(nav.effectiveType))
         return true;
-    } catch (e) {
-      /* ignore */
-    }
+    } catch (e) {}
     return false;
   }
 
-  // Observe hero visibility; only set shouldLoad when near viewport or on interaction
+  // --- register global trigger and initial manifest load
+  useEffect(() => {
+    // expose global init trigger
+    window.__triggerHeroSliderInit = function () {
+      window.__heroAutoInitRequested = true;
+      setShouldLoad(true);
+      // ensure manifest loaded if needed
+      if (!internalBanners || internalBanners.length === 0) {
+        loadManifestFallback().catch(() => {});
+      }
+      // attempt enhancement immediately
+      setTimeout(() => {
+        tryEnhanceWithUMD();
+      }, 120);
+    };
+
+    // if no banners passed as prop, attempt to load manifest on mount
+    if (
+      (!banners || banners.length === 0) &&
+      (!internalBanners || internalBanners.length === 0)
+    ) {
+      loadManifestFallback().catch(() => {});
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- load manifest or fallback DOM
+  async function loadManifestFallback() {
+    try {
+      if (
+        window.__bannersFromServer &&
+        Array.isArray(window.__bannersFromServer)
+      ) {
+        setInternalBanners(window.__bannersFromServer);
+        return;
+      }
+      const r = await fetch("/_data/banners.json", { cache: "no-cache" });
+      if (r.ok) {
+        const json = await r.json();
+        const arr = Array.isArray(json)
+          ? json
+          : Object.keys(json).map((k) => {
+              const v = json[k];
+              return {
+                id: v.id ?? k,
+                alt: v.alt || "",
+                variants: v.variants || {
+                  avif: v.avif || [],
+                  webp: v.webp || [],
+                },
+                fallback:
+                  v.fallback ||
+                  (v.variants &&
+                    v.variants.webp &&
+                    v.variants.webp.slice(-1)[0]) ||
+                  v.original ||
+                  "",
+              };
+            });
+        if (arr && arr.length) {
+          setInternalBanners(arr);
+          return;
+        }
+      }
+    } catch (e) {
+      // ignore, fallback to DOM below
+    }
+
+    // DOM fallback: parse #hero-static picture/img
+    try {
+      const heroStatic = document.getElementById("hero-static");
+      if (heroStatic) {
+        const picture = heroStatic.querySelector("picture");
+        const img = picture
+          ? picture.querySelector("img")
+          : heroStatic.querySelector("img");
+        if (img) {
+          const parseSrcset = (ss) =>
+            ss
+              ? ss
+                  .split(",")
+                  .map((s) => s.trim().split(/\s+/)[0])
+                  .filter(Boolean)
+              : [];
+          const avifEl = picture
+            ? picture.querySelector('source[type="image/avif"]')
+            : null;
+          const webpEl = picture
+            ? picture.querySelector('source[type="image/webp"]')
+            : null;
+          const avif = parseSrcset(avifEl ? avifEl.getAttribute("srcset") : "");
+          const webp = parseSrcset(webpEl ? webpEl.getAttribute("srcset") : "");
+          const fallback = img.getAttribute("src") || "";
+          setInternalBanners([
+            {
+              id: "banner-fallback",
+              alt: img.getAttribute("alt") || "",
+              variants: { avif, webp },
+              fallback,
+            },
+          ]);
+          return;
+        }
+      }
+    } catch (e) {}
+    // nothing found -> keep empty
+  }
+
+  // --- lazy load / intersection observer logic
   useEffect(() => {
     if (!heroRef.current || shouldLoad) return;
-    if (!banners || banners.length === 0) return;
+    if (!internalBanners || internalBanners.length === 0) return;
 
     if (isNetworkConstrained()) {
       setSkippedForSaveData(true);
-      // allow user opt-in
       const onInteract = () => {
         setShouldLoad(true);
         setSkippedForSaveData(false);
@@ -64,9 +178,9 @@ export default function BannerSlider({ banners = [] }) {
     return () => {
       if (observer && heroRef.current) observer.unobserve(heroRef.current);
     };
-  }, [banners, shouldLoad]);
+  }, [internalBanners, shouldLoad]);
 
-  // Robust dynamic import + multiple fallbacks for different Swiper package shapes
+  // --- robust dynamic import effect with CDN fallback
   useEffect(() => {
     if (!shouldLoad || swiperModules) return;
     let cancelled = false;
@@ -74,73 +188,109 @@ export default function BannerSlider({ banners = [] }) {
 
     (async () => {
       try {
-        // try a few import strategies in order
-        const tryImport = async () => {
-          const attempts = [
-            async () => {
-              // modern: split react + core (V8+)
-              const reactMod = await import("swiper/react");
-              const coreMod = await import("swiper");
-              await import("swiper/css");
-              await import("swiper/css/navigation");
-              await import("swiper/css/pagination");
-              return { reactMod, coreMod };
-            },
-            async () => {
-              // older bundles: try default / named
-              const mod = await import("swiper/bundle");
-              // bundle might already include css; still try to import css to be safe
-              try {
-                await import("swiper/css");
-              } catch (e) {}
-              return { reactMod: mod, coreMod: mod };
-            },
-            async () => {
-              // try loading from window (e.g., CDN preloaded into page)
-              if (
-                typeof window !== "undefined" &&
-                window.Swiper &&
-                window.SwiperReact
-              ) {
-                return {
-                  reactMod: {
-                    Swiper: window.SwiperReact.Swiper,
-                    SwiperSlide: window.SwiperReact.SwiperSlide,
-                  },
-                  coreMod: window.Swiper,
-                };
-              }
-              throw new Error("no window-swiper");
-            },
-          ];
-
-          for (const fn of attempts) {
-            try {
-              const res = await fn();
-              if (res) return res;
-            } catch (e) {
-              // swallow and try next
-              console.warn(
-                "swiper import attempt failed:",
-                e && e.message ? e.message : e
-              );
-            }
-          }
-          throw new Error("all swiper import attempts failed");
+        const tryImportReactAndCore = async () => {
+          const reactMod = await import("swiper/react");
+          const coreMod = await import("swiper");
+          try {
+            await import("swiper/css");
+            await import("swiper/css/navigation");
+            await import("swiper/css/pagination");
+          } catch (e) {}
+          return { reactMod, coreMod };
         };
 
-        const { reactMod, coreMod } = await tryImport();
+        const tryImportBundle = async () => {
+          const bundleMod = await import("swiper/bundle");
+          try {
+            await import("swiper/css");
+          } catch (e) {}
+          return { reactMod: bundleMod, coreMod: bundleMod };
+        };
+
+        let reactMod = null,
+          coreMod = null;
+        try {
+          const res = await tryImportReactAndCore();
+          reactMod = res.reactMod;
+          coreMod = res.coreMod;
+          console.debug("BannerSlider: imported swiper/react + swiper");
+        } catch (e1) {
+          console.warn(
+            "BannerSlider: import swiper/react failed, trying swiper/bundle...",
+            e1 && e1.message ? e1.message : e1
+          );
+          try {
+            const res2 = await tryImportBundle();
+            reactMod = res2.reactMod;
+            coreMod = res2.coreMod;
+            console.debug("BannerSlider: imported swiper/bundle");
+          } catch (e2) {
+            console.warn(
+              "BannerSlider: import swiper/bundle failed:",
+              e2 && e2.message ? e2.message : e2
+            );
+          }
+        }
+
+        if (!reactMod || !coreMod) {
+          // CDN fallback
+          console.warn(
+            "BannerSlider: dynamic imports failed; injecting UMD CDN as fallback."
+          );
+          if (!document.querySelector('link[href*="swiper-bundle.min.css"]')) {
+            const css = document.createElement("link");
+            css.rel = "stylesheet";
+            css.href = "https://unpkg.com/swiper@11/swiper-bundle.min.css";
+            document.head.appendChild(css);
+          }
+          if (!document.querySelector('script[src*="swiper-bundle.min.js"]')) {
+            await new Promise((resolve, reject) => {
+              const scr = document.createElement("script");
+              scr.src = "https://unpkg.com/swiper@11/swiper-bundle.min.js";
+              scr.async = true;
+              scr.onload = () => resolve(true);
+              scr.onerror = (err) => reject(err);
+              document.head.appendChild(scr);
+            }).catch((e) => {
+              console.error(
+                "BannerSlider: failed to load Swiper UMD from CDN",
+                e
+              );
+            });
+          }
+
+          // wait for window.Swiper
+          const ok = await new Promise((resolve) => {
+            const interval = 80;
+            let elapsed = 0;
+            const id = setInterval(() => {
+              if (window.Swiper) {
+                clearInterval(id);
+                resolve(true);
+              }
+              elapsed += interval;
+              if (elapsed >= 5000) {
+                clearInterval(id);
+                resolve(false);
+              }
+            }, interval);
+          });
+          if (!ok)
+            throw new Error("window.Swiper did not appear after CDN fallback");
+          reactMod = { Swiper: window.Swiper, SwiperSlide: null };
+          coreMod = window.Swiper;
+          console.debug("BannerSlider: window.Swiper available via CDN");
+        }
 
         if (cancelled) return;
 
-        // normalize exports
-        const Swiper =
+        const SwiperComp =
           reactMod?.Swiper ||
           reactMod?.default ||
-          (reactMod && (reactMod.default || {}).Swiper);
-        const SwiperSlide =
+          (reactMod && reactMod.default && reactMod.default.Swiper);
+        const SwiperSlideComp =
           reactMod?.SwiperSlide ||
-          (reactMod && (reactMod.default || {}).SwiperSlide);
+          (reactMod && reactMod.default && reactMod.default.SwiperSlide);
         const Navigation =
           coreMod?.Navigation ||
           coreMod?.default?.Navigation ||
@@ -152,24 +302,20 @@ export default function BannerSlider({ banners = [] }) {
         const Autoplay =
           coreMod?.Autoplay || coreMod?.default?.Autoplay || coreMod?.Autoplay;
 
-        if (!Swiper || !SwiperSlide) {
-          throw new Error("Swiper react components not found after import");
-        }
-
         setSwiperModules({
-          Swiper,
-          SwiperSlide,
-          Navigation,
-          Pagination,
-          Autoplay,
+          Swiper: SwiperComp || window.Swiper,
+          SwiperSlide: SwiperSlideComp || null,
+          Navigation: Navigation || null,
+          Pagination: Pagination || null,
+          Autoplay: Autoplay || null,
         });
-        console.debug("BannerSlider: Swiper modules loaded successfully");
+
+        console.debug("BannerSlider: swiperModules set");
       } catch (err) {
         console.error(
-          "BannerSlider: Failed to dynamically load Swiper (all attempts):",
-          err
+          "BannerSlider: Failed to load Swiper by any method:",
+          err && (err.message || err)
         );
-        // keep UI as static fallback (no throw)
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -180,11 +326,101 @@ export default function BannerSlider({ banners = [] }) {
     };
   }, [shouldLoad, swiperModules]);
 
-  // nothing to render if no banners
-  if (!banners || banners.length === 0) return null;
+  // --- if window.Swiper present but no react modules, enhance the static DOM
+  useEffect(() => {
+    tryEnhanceWithUMD();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swiperModules]);
 
-  // lightweight static fallback while modules are not loaded
-  if (!swiperModules) {
+  function tryEnhanceWithUMD() {
+    // only run client-side and only when UMD Swiper available
+    if (typeof window === "undefined") return;
+    if (!window.Swiper) return;
+    const root = document.querySelector(".hero-static-slides");
+    if (!root) return;
+    if (root.classList.contains("swiper") || root.dataset.swiperInited) return;
+
+    try {
+      const oldWrapper = root.querySelector(".hero-static-wrapper");
+      if (!oldWrapper) return;
+      const swiperWrapper = document.createElement("div");
+      swiperWrapper.className = "swiper-wrapper";
+
+      const slides = Array.from(oldWrapper.children);
+      if (!slides.length) return;
+      slides.forEach((s) => {
+        s.classList.add("swiper-slide");
+        swiperWrapper.appendChild(s);
+      });
+
+      oldWrapper.parentNode.replaceChild(swiperWrapper, oldWrapper);
+      root.classList.add("swiper");
+
+      if (!root.querySelector(".swiper-pagination")) {
+        const pagination = document.createElement("div");
+        pagination.className = "swiper-pagination";
+        root.appendChild(pagination);
+      }
+      if (!root.querySelector(".swiper-button-prev")) {
+        const prev = document.createElement("button");
+        prev.className = "swiper-button-prev";
+        root.appendChild(prev);
+      }
+      if (!root.querySelector(".swiper-button-next")) {
+        const next = document.createElement("button");
+        next.className = "swiper-button-next";
+        root.appendChild(next);
+      }
+
+      setTimeout(() => {
+        try {
+          // prefer window.Swiper (UMD) or the Swiper module
+          const Sw = window.Swiper;
+          if (typeof Sw === "function") {
+            const inst = new Sw(root, {
+              loop: true,
+              pagination: {
+                el: root.querySelector(".swiper-pagination"),
+                clickable: true,
+              },
+              navigation: {
+                nextEl: root.querySelector(".swiper-button-next"),
+                prevEl: root.querySelector(".swiper-button-prev"),
+              },
+              autoplay: { delay: 5000, disableOnInteraction: false },
+              slidesPerView: 1,
+              spaceBetween: 0,
+              a11y: true,
+            });
+            root.dataset.swiperInited = "1";
+            console.debug(
+              "BannerSlider fallback: Swiper instantiated via UMD",
+              inst
+            );
+          }
+        } catch (e) {
+          console.warn(
+            "BannerSlider fallback: failed to instantiate Swiper via UMD",
+            e
+          );
+        }
+      }, 80);
+    } catch (e) {
+      console.warn("BannerSlider fallback enhancement error", e);
+    }
+  }
+
+  // --- nothing to render if no banners at all
+  const effectiveBanners = internalBanners.length
+    ? internalBanners
+    : banners.length
+    ? banners
+    : fallbackBanners || [];
+  if (!effectiveBanners || effectiveBanners.length === 0) return null;
+
+  // --- static fallback UI while swiperModules not ready
+  if (!swiperModules || !swiperModules.Swiper || !swiperModules.SwiperSlide) {
+    const b0 = effectiveBanners[0];
     return (
       <section ref={heroRef} className="homepage-hero my-8 mx-auto max-w-6xl">
         <div
@@ -192,27 +428,27 @@ export default function BannerSlider({ banners = [] }) {
           aria-hidden="true"
         >
           <picture className="w-full h-full">
-            {banners[0]?.variants?.avif?.length ? (
+            {b0?.variants?.avif?.length ? (
               <source
                 type="image/avif"
-                srcSet={banners[0].variants.avif
-                  .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                srcSet={b0.variants.avif
+                  .map((u, i) => `${u} ${SIZES[i] || SIZES[SIZES.length - 1]}w`)
                   .join(", ")}
                 sizes="(max-width:640px) 100vw, 1200px"
               />
             ) : null}
-            {banners[0]?.variants?.webp?.length ? (
+            {b0?.variants?.webp?.length ? (
               <source
                 type="image/webp"
-                srcSet={banners[0].variants.webp
-                  .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                srcSet={b0.variants.webp
+                  .map((u, i) => `${u} ${SIZES[i] || SIZES[SIZES.length - 1]}w`)
                   .join(", ")}
                 sizes="(max-width:640px) 100vw, 1200px"
               />
             ) : null}
             <img
-              src={banners[0]?.variants?.fallback || banners[0]?.src}
-              alt={banners[0]?.alt || ""}
+              src={b0?.variants?.fallback || b0?.src}
+              alt={b0?.alt || ""}
               className="w-full h-full object-cover object-center absolute inset-0"
               loading="eager"
               decoding="async"
@@ -222,7 +458,6 @@ export default function BannerSlider({ banners = [] }) {
             />
           </picture>
 
-          {/* UI states: skipped due to save-data OR currently loading */}
           {skippedForSaveData ? (
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <button
@@ -247,10 +482,9 @@ export default function BannerSlider({ banners = [] }) {
     );
   }
 
-  // When loaded, render the real Swiper slider
+  // --- when we have react Swiper components available, render them
   const { Swiper, SwiperSlide, Navigation, Pagination, Autoplay } =
     swiperModules;
-
   return (
     <section className="homepage-hero my-8 mx-auto max-w-6xl" ref={heroRef}>
       <Swiper
@@ -267,7 +501,7 @@ export default function BannerSlider({ banners = [] }) {
           nextSlideMessage: "Next slide",
         }}
       >
-        {banners.map((banner) => (
+        {effectiveBanners.map((banner) => (
           <SwiperSlide key={banner.id}>
             <div className="relative w-full aspect-[16/5] bg-gray-100">
               <picture>
@@ -275,7 +509,9 @@ export default function BannerSlider({ banners = [] }) {
                   <source
                     type="image/avif"
                     srcSet={banner.variants.avif
-                      .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                      .map(
+                        (u, i) => `${u} ${SIZES[i] || SIZES[SIZES.length - 1]}w`
+                      )
                       .join(", ")}
                     sizes="(max-width:640px) 100vw, 1200px"
                   />
@@ -284,7 +520,9 @@ export default function BannerSlider({ banners = [] }) {
                   <source
                     type="image/webp"
                     srcSet={banner.variants.webp
-                      .map((u, i) => `${u} ${[320, 768, 1600][i]}w`)
+                      .map(
+                        (u, i) => `${u} ${SIZES[i] || SIZES[SIZES.length - 1]}w`
+                      )
                       .join(", ")}
                     sizes="(max-width:640px) 100vw, 1200px"
                   />
