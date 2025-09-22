@@ -1,28 +1,25 @@
 ---
 export const prerender = true;
 
-/* src/pages/index.astro — full frontmatter (DROP-IN, preserves pageMeta + imports) */
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CouponRevealIsland from "../components/islands/CouponRevealIsland.astro";
 import CardStore from "../components/CardStore.astro";
-// removed runtime api import - using build-time/static files instead
 import LandingSubscribeIsland from "../components/islands/LandingSubscribeIsland.jsx";
 import TestimonialsList from "../components/TestimonialsList";
 import { SAMPLE_TESTIMONIALS } from "../content/testimonials.sample";
 import banners from "../content/banners.server";
 import BannerCarousel from "../components/BannerCarousel.jsx";
-const firstBanner = banners[0]; // LCP hero = first slide
+
+const firstBanner = banners[0];
 
 const pageMeta = {
   title: "Saving Harbor | Verified Coupons & Discounts",
   description:
     "Verified coupons, real savings, no expired junk — handpicked by real humans.",
-
-  // auto preload from first banner
   preloadHero: true,
-  heroSrc: firstBanner.variants.avif[2], // largest AVIF (1600w)
+  heroSrc: firstBanner.variants.avif[2],
   heroSrcSetAvif: firstBanner.variants.avif
     .map((src, i) => `${src} ${[320, 768, 1600][i]}w`)
     .join(", "),
@@ -31,25 +28,6 @@ const pageMeta = {
     .join(", "),
 };
 
-type Store = {
-  id: string | number;
-  name: string;
-  slug: string;
-  logo_url?: string | null;
-  stats?: { active_coupons?: number };
-};
-type StoresResponse = { data: Store[]; meta: any };
-
-type Coupon = {
-  id: string | number;
-  title?: string | null;
-  code?: string | null;
-  ends_at?: string | null;
-  merchant_name?: string | null;
-};
-type CouponsResponse = { data: Coupon[]; meta: any };
-
-// server-safe file reads (deterministic at build time)
 import fs from "fs/promises";
 import path from "path";
 
@@ -63,7 +41,6 @@ async function readStaticFile(filename: string) {
   }
 }
 
-// browser-safe fetch fallback (only used if this code runs client-side)
 async function fetchFallback(url: string) {
   try {
     const res = await fetch(url);
@@ -78,13 +55,11 @@ let resp = { data: [], meta: {} },
   cresp = { data: [], meta: {} };
 
 try {
-  // prefer reading from disk (build / prerender)
   const [homeFile, couponsFile] = await Promise.all([
     readStaticFile("home.json"),
     readStaticFile("coupons.json"),
   ]);
 
-  // support combined payloads (home.json containing stores+coupons)
   if (homeFile && (homeFile.stores || homeFile.coupons)) {
     const h = homeFile;
     resp = {
@@ -110,7 +85,6 @@ try {
     };
   }
 
-  // If running client-side and files were empty, attempt fetch fallback
   const likelyEmpty = (arr: any) =>
     !arr || (Array.isArray(arr) && arr.length === 0);
   if (
@@ -137,11 +111,7 @@ try {
 }
 
 const stores = resp?.data || [];
-const coupons = cresp?.data || [];
-const meta = resp?.meta || {};
-const cmeta = cresp?.meta || {};
-
-// average rating calculation (unchanged)
+const coupons = cresp?.data || {};
 const avg =
   SAMPLE_TESTIMONIALS.reduce((s, t) => s + (t.rating || 0), 0) /
     SAMPLE_TESTIMONIALS.length || null;
@@ -166,307 +136,31 @@ const avg =
         Save on top brands with codes we test ourselves.
       </p>
     </section>
-    <BannerCarousel client:visible banners={banners} />
 
-    <!-- ---------- Banner (production-ready drop-in) ---------- -->
-    <link
-      rel="preload"
-      as="image"
-      href={pageMeta.heroSrc}
-      imagesrcset={pageMeta.heroSrcSetAvif}
-      imagesizes="(max-width:640px) 100vw, 1200px"
-      fetchpriority="high"
-    />
-
-    <div
-      id="hero-wrap"
-      class="mt-8 relative mx-auto max-w-6xl rounded-lg overflow-hidden"
-    >
-      <!-- static LCP image (display size matches slider container) -->
-      <div
-        id="hero-static"
-        class="relative w-full aspect-[16/5] bg-gray-100 z-10"
-      >
-        <picture>
-          <source
-            type="image/avif"
-            srcset={pageMeta.heroSrcSetAvif}
-            sizes="(max-width:640px) 100vw, 1200px"
-          />
-          <source
-            type="image/webp"
-            srcset={pageMeta.heroSrcSetWebp}
-            sizes="(max-width:640px) 100vw, 1200px"
-          />
-          <img
-            src={pageMeta.heroSrc}
-            alt={firstBanner.alt}
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-            width="1200"
-            height="375"
-            class="absolute inset-0 w-full h-full object-cover object-center"
-          />
-        </picture>
+    <!-- New Embla Carousel -->
+    <section class="homepage-hero my-8 mx-auto max-w-6xl">
+      <!-- Preload LCP hero (place directly above BannerCarousel / hero markup) -->
+      <link
+        rel="preload"
+        as="image"
+        href={pageMeta.heroSrc}
+        imagesrcset={pageMeta.heroSrcSetAvif}
+        imagesizes="(max-width:640px) 100vw, 1200px"
+        fetchpriority="high"
+      />
+      <div class="mt-8">
+        <BannerCarousel client:visible banners={banners} />
       </div>
-
-      <!-- slider will mount on top; keep as sibling so we don't remove it accidentally -->
-      <div id="hero-slider-mount" class="absolute inset-0 w-full h-full z-20">
-      </div>
-    </div>
-
-    <script type="module" is:inline>
-      (async function () {
-        // ----- configuration (NO CDN urls here) -----
-        const HERO_SELECTOR = "#hero-wrap";
-        const MOUNT_ID = "hero-slider-mount";
-        const CSS_STYLE_ID = "hero-swiper-inline-styles";
-
-        // ----- low-bandwidth / save-data guard -----
-        function isNetworkConstrained() {
-          try {
-            const nav = navigator.connection || {};
-            if (nav.saveData) return true;
-            if (nav.effectiveType && /2g|slow-2g/.test(nav.effectiveType))
-              return true;
-          } catch (e) {}
-          return false;
-        }
-
-        // ----- minimal inline styles for controls (safe, cheap) -----
-        function injectInlineStyles() {
-          if (document.getElementById(CSS_STYLE_ID)) return;
-          const style = document.createElement("style");
-          style.id = CSS_STYLE_ID;
-          style.textContent = `
-        /* touch-friendly pagination hit area — visual dot can be smaller via ::before */
-        .swiper-pagination-bullet { width: 44px; height: 44px; margin: 8px; border-radius: 9999px; display:inline-flex; align-items:center; justify-content:center; }
-        .swiper-pagination-bullet::before { content:""; width:10px; height:10px; border-radius:9999px; background:currentColor; display:block; opacity:.9; }
-        .swiper-button-next, .swiper-button-prev { padding: 8px; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
-        .swiper { --swiper-navigation-size: 44px; }
-        #hero-static { transition: opacity 220ms ease; }
-      `;
-          document.head.appendChild(style);
-        }
-
-        // ----- create mount wrapper lazily (no Swiper init here) -----
-        function ensureMountWrapper() {
-          const heroWrap = document.getElementById("hero-wrap");
-          if (!heroWrap) return null;
-          let mountWrapper = document.getElementById(MOUNT_ID);
-          if (!mountWrapper) {
-            mountWrapper = document.createElement("div");
-            mountWrapper.id = MOUNT_ID;
-            mountWrapper.className = "absolute inset-0 w-full h-full z-20";
-            heroWrap.appendChild(mountWrapper);
-          }
-          const heroStatic = document.getElementById("hero-static");
-          if (heroStatic && heroStatic.contains(mountWrapper)) {
-            heroStatic.parentNode.insertBefore(
-              mountWrapper,
-              heroStatic.nextSibling
-            );
-          }
-          return mountWrapper;
-        }
-
-        // ----- fetch banners (only when needed) -----
-        async function fetchBanners() {
-          try {
-            const r = await fetch("/_data/banners.json");
-            if (r.ok) return await r.json();
-          } catch (e) {
-            console.error("fetch banners failed", e);
-          }
-          return [];
-        }
-
-        // ----- build static slides DOM (no swiper init) -----
-        function buildStaticSlides(mountWrapper, banners) {
-          // build a simple, accessible static carousel shell so CSS and BannerSlider can reuse it
-          const root = document.createElement("div");
-          root.className =
-            "hero-static-slides rounded-lg overflow-hidden shadow-lg border border-gray-100";
-
-          const inner = document.createElement("div");
-          inner.className = "hero-static-wrapper";
-          root.appendChild(inner);
-
-          banners.forEach((b, idx) => {
-            const slide = document.createElement("div");
-            slide.className = "hero-static-slide";
-            slide.setAttribute("role", "group");
-            slide.setAttribute("aria-roledescription", "slide");
-            slide.setAttribute("aria-label", b.alt || `Slide ${idx + 1}`);
-
-            const picture = document.createElement("picture");
-            if (b.variants && b.variants.avif && b.variants.avif.length) {
-              const s = document.createElement("source");
-              s.type = "image/avif";
-              s.srcset = b.variants.avif
-                .map((u, i) => `${u} ${[320, 768, 1600][i] || 1600}w`)
-                .join(", ");
-              s.sizes = "(max-width:640px) 100vw, 1200px";
-              picture.appendChild(s);
-            }
-            if (b.variants && b.variants.webp && b.variants.webp.length) {
-              const s2 = document.createElement("source");
-              s2.type = "image/webp";
-              s2.srcset = b.variants.webp
-                .map((u, i) => `${u} ${[320, 768, 1600][i] || 1600}w`)
-                .join(", ");
-              s2.sizes = "(max-width:640px) 100vw, 1200px";
-              picture.appendChild(s2);
-            }
-            const img = document.createElement("img");
-            img.src = b.variants?.fallback || b.src || "";
-            img.alt = b.alt || "";
-            img.loading = idx === 0 ? "eager" : "lazy";
-            if (idx === 0) img.setAttribute("fetchpriority", "high");
-            img.decoding = "async";
-            img.width = 1600;
-            img.height = 500;
-            img.className =
-              "absolute inset-0 w-full h-full object-cover object-center";
-            img.style.aspectRatio = "1600/500";
-            picture.appendChild(img);
-
-            slide.appendChild(picture);
-            inner.appendChild(slide);
-          });
-
-          mountWrapper.appendChild(root);
-          return root;
-        }
-
-        // ----- initIfNeeded: do NOT import any Swiper CDN/module here -----
-        async function initIfNeeded() {
-          // ensure this runs only once
-          if (window.__heroInitDone) return;
-          window.__heroInitDone = true;
-
-          // Respect save-data and very slow networks: do nothing in that case (BannerSlider can fallback)
-          if (isNetworkConstrained()) {
-            console.log(
-              "Network constrained or Save-Data enabled — skipping hero auto-init."
-            );
-            return;
-          }
-
-          // cheap style injection
-          injectInlineStyles();
-
-          // fetch banners and create static shell (no JS carousel)
-          const banners = await fetchBanners();
-          if (!banners || banners.length === 0) return;
-
-          const mountWrapper = ensureMountWrapper();
-          if (!mountWrapper) return;
-
-          // build a static DOM the React BannerSlider can optionally enhance
-          buildStaticSlides(mountWrapper, banners);
-
-          // Instead of loading Swiper from CDN, ask the React BannerSlider to initialize itself.
-          // BannerSlider exposes window.__triggerHeroSliderInit when it mounts.
-          if (typeof window.__triggerHeroSliderInit === "function") {
-            try {
-              window.__triggerHeroSliderInit();
-            } catch (e) {
-              // ignore - BannerSlider may not be ready yet
-            }
-          }
-
-          // do NOT load or import any swiper script or css here.
-        }
-
-        // ----- triggers: intersection or interaction or idle fallback -----
-        const heroEl = document.querySelector(HERO_SELECTOR);
-
-        const userInteractionHandler = () => {
-          removeInteractionListeners();
-          initIfNeeded();
-        };
-        function addInteractionListeners() {
-          window.addEventListener("scroll", userInteractionHandler, {
-            passive: true,
-            once: true,
-          });
-          window.addEventListener("mousemove", userInteractionHandler, {
-            once: true,
-          });
-          window.addEventListener("touchstart", userInteractionHandler, {
-            once: true,
-          });
-          window.addEventListener("keydown", userInteractionHandler, {
-            once: true,
-          });
-        }
-        function removeInteractionListeners() {
-          window.removeEventListener("scroll", userInteractionHandler);
-          window.removeEventListener("mousemove", userInteractionHandler);
-          window.removeEventListener("touchstart", userInteractionHandler);
-          window.removeEventListener("keydown", userInteractionHandler);
-        }
-
-        if (heroEl && "IntersectionObserver" in window) {
-          const io = new IntersectionObserver(
-            (entries, obs) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                  obs.disconnect();
-                  removeInteractionListeners();
-                  initIfNeeded();
-                }
-              });
-            },
-            { rootMargin: "200px" }
-          );
-          io.observe(heroEl);
-          addInteractionListeners();
-        } else {
-          addInteractionListeners();
-          if ("requestIdleCallback" in window)
-            requestIdleCallback(initIfNeeded, { timeout: 1200 });
-          else setTimeout(initIfNeeded, 1200);
-        }
-
-        // safe: only assign if not already defined (preserves BannerSlider's registration)
-        // preserve existing trigger if present, otherwise set to initIfNeeded.
-        // If existing is present, wrap so both run (existing first).
-        (function () {
-          const prev = window.__triggerHeroSliderInit;
-          if (typeof prev === "function") {
-            window.__triggerHeroSliderInit = function () {
-              try {
-                prev();
-              } catch (e) {
-                console.warn("prev hero trigger failed", e);
-              }
-              try {
-                initIfNeeded();
-              } catch (e) {
-                console.warn("initIfNeeded failed", e);
-              }
-            };
-          } else {
-            window.__triggerHeroSliderInit = initIfNeeded;
-          }
-        })();
-      })();
-    </script>
-
-    <!-- ---------- end banner block ---------- -->
+    </section>
 
     <!-- Stores -->
     <div class="mt-10">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-bold text-brand-secondary">Stores</h2>
-        <a href="/stores" class="btn btn-outline" aria-label="View all stores"
-          >View all →</a
-        >
+        <a href="/stores" class="btn btn-outline" aria-label="View all stores">
+          View all →
+        </a>
       </div>
-
       <section>
         {
           stores.length > 0 ? (
@@ -476,7 +170,6 @@ const avg =
                   class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
                   style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
                 >
-                  {/* Keep CardStore component exactly as-is */}
                   <CardStore store={store} />
                 </div>
               ))}
@@ -495,15 +188,16 @@ const avg =
         <a
           href="/coupons"
           class="btn btn-outline"
-          aria-label="Explore more coupons">Explore more →</a
+          aria-label="Explore more coupons"
         >
+          Explore more →
+        </a>
       </div>
-
       <section>
         {
           coupons.length > 0 ? (
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {coupons.map((c: Coupon) => (
+              {coupons.map((c: any) => (
                 <div
                   class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
                   style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
@@ -532,15 +226,10 @@ const avg =
       totalReviews={SAMPLE_TESTIMONIALS.length}
     />
 
-    <!-- Newsletter / CTA — darken overlay approach -->
+    <!-- Newsletter -->
     <section class="relative mt-16 rounded-xl overflow-hidden">
-      <!-- background brand color (kept as the source of truth) -->
       <div class="absolute inset-0 bg-brand-primary" aria-hidden="true"></div>
-
-      <!-- dark overlay that increases contrast for white text -->
       <div class="absolute inset-0 bg-black/25" aria-hidden="true"></div>
-
-      <!-- content sits above the overlays -->
       <div
         class="relative z-10 p-6 text-center text-white"
         aria-labelledby="newsletter-cta-heading"
@@ -555,6 +244,5 @@ const avg =
       </div>
     </section>
   </main>
-
   <Footer />
 </Base>
