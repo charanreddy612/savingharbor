@@ -2,11 +2,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
 /**
- * Lightweight, SSR-safe BannerCarousel
+ * Styled, SSR-safe BannerCarousel
  * - No external deps
- * - Renders static markup for SSR
- * - Hydrates on client to enable auto-rotate, touch, keyboard
- * - Uses precise srcset / sizes / width/height for crisp images
+ * - Precise srcset / sizes for crisp images
+ * - Autoplay with progress bar, pause on hover/focus
+ * - Touch swipe, keyboard nav, prev/next buttons, dots
  *
  * Props:
  * - banners: [{ id, alt, variants: { avif: [], webp: [], fallback }, src }]
@@ -14,6 +14,8 @@ import React, { useEffect, useRef, useState } from "react";
 
 const WIDTHS = [320, 768, 1024, 1600];
 const SIZES = "(max-width:640px) 100vw, 1200px";
+const AUTOPLAY_MS = 5000; // slide interval
+const PROGRESS_TICK_MS = 80; // progress update tick
 
 function makeSrcset(arr = []) {
   return arr
@@ -24,75 +26,93 @@ function makeSrcset(arr = []) {
 export default function BannerCarousel({ banners = [] }) {
   const containerRef = useRef(null);
   const trackRef = useRef(null);
-  const animRef = useRef(null);
   const touchStartX = useRef(null);
-  const autoscrollId = useRef(null);
+  const autoplayTimer = useRef(null);
+  const progressTimer = useRef(null);
+
   const [index, setIndex] = useState(0);
   const [isPaused, setPaused] = useState(false);
-
+  const [progress, setProgress] = useState(0); // 0..100
   const total = (banners && banners.length) || 0;
   if (!total) return null;
 
-  // client-side effects only
+  // Helper to clamp and wrap index
+  const goTo = (i) => {
+    const wrapped = ((i % total) + total) % total;
+    setIndex(wrapped);
+    if (trackRef.current)
+      trackRef.current.style.transform = `translateX(-${wrapped * 100}%)`;
+    resetProgress();
+  };
+
+  // Reset progress timers
+  const resetProgress = () => {
+    setProgress(0);
+    if (progressTimer.current) clearInterval(progressTimer.current);
+    if (autoplayTimer.current) clearInterval(autoplayTimer.current);
+    startAutoplay();
+  };
+
+  // Start autoplay + progress
+  const startAutoplay = () => {
+    if (autoplayTimer.current) clearInterval(autoplayTimer.current);
+    autoplayTimer.current = setInterval(() => {
+      if (!isPaused) {
+        setIndex((prev) => {
+          const next = (prev + 1) % total;
+          if (trackRef.current)
+            trackRef.current.style.transform = `translateX(-${next * 100}%)`;
+          return next;
+        });
+        setProgress(0);
+      }
+    }, AUTOPLAY_MS);
+
+    // progress updater
+    let elapsed = 0;
+    if (progressTimer.current) clearInterval(progressTimer.current);
+    progressTimer.current = setInterval(() => {
+      if (!isPaused) {
+        elapsed += PROGRESS_TICK_MS;
+        setProgress(Math.min(100, (elapsed / AUTOPLAY_MS) * 100));
+        if (elapsed >= AUTOPLAY_MS) elapsed = 0;
+      }
+    }, PROGRESS_TICK_MS);
+  };
+
+  const stopAutoplay = () => {
+    if (autoplayTimer.current) clearInterval(autoplayTimer.current);
+    if (progressTimer.current) clearInterval(progressTimer.current);
+  };
+
+  // Client-side lifecycle: keyboard, touch, hover, autoplay
   useEffect(() => {
-    // ensure DOM refs present
+    const container = containerRef.current;
     const track = trackRef.current;
-    if (!track) return;
+    if (!container || !track) return;
 
-    // helper: go to index (0..total-1)
-    const go = (i) => {
-      const wrapped = ((i % total) + total) % total;
-      setIndex(wrapped);
-      track.style.transform = `translateX(-${wrapped * 100}%)`;
-      // update aria/current attribute on slides
-      const slides = track.children;
-      for (let s = 0; s < slides.length; s++) {
-        if (s === wrapped) slides[s].setAttribute("aria-current", "true");
-        else slides[s].removeAttribute("aria-current");
-      }
-    };
-
-    // autoplay
-    function startAuto() {
-      if (autoscrollId.current) clearInterval(autoscrollId.current);
-      autoscrollId.current = setInterval(() => {
-        if (!isPaused) go(index + 1);
-      }, 5000);
-    }
-    function stopAuto() {
-      if (autoscrollId.current) {
-        clearInterval(autoscrollId.current);
-        autoscrollId.current = null;
-      }
-    }
-
-    // init transform
+    // Initialize transform + transition
     track.style.transition = "transform 420ms cubic-bezier(.22,.9,.28,1)";
     track.style.willChange = "transform";
     track.style.transform = `translateX(-${index * 100}%)`;
 
-    // start autoplay
-    startAuto();
-
-    // keyboard navigation
+    // Keyboard nav
     const onKey = (e) => {
-      if (e.key === "ArrowLeft") go(index - 1);
-      if (e.key === "ArrowRight") go(index + 1);
+      if (e.key === "ArrowLeft") goTo(index - 1);
+      if (e.key === "ArrowRight") goTo(index + 1);
     };
     window.addEventListener("keydown", onKey);
 
-    // touch handlers (simple swipe)
-    const node = containerRef.current;
+    // Touch / mouse swipe support
     const onTouchStart = (ev) => {
-      stopAuto();
+      stopAutoplay();
       touchStartX.current = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      track.style.transition = "none";
     };
     const onTouchMove = (ev) => {
       if (touchStartX.current == null) return;
       const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
       const delta = x - touchStartX.current;
-      // apply small transform feedback while dragging
-      track.style.transition = "none";
       track.style.transform = `translateX(calc(-${index * 100}% + ${delta}px))`;
     };
     const onTouchEnd = (ev) => {
@@ -104,63 +124,71 @@ export default function BannerCarousel({ banners = [] }) {
       touchStartX.current = null;
       track.style.transition = "transform 420ms cubic-bezier(.22,.9,.28,1)";
       if (Math.abs(delta) > 60) {
-        if (delta > 0) go(index - 1);
-        else go(index + 1);
+        if (delta > 0) goTo(index - 1);
+        else goTo(index + 1);
       } else {
-        go(index);
+        goTo(index);
       }
-      startAuto();
+      startAutoplay();
     };
 
-    node.addEventListener("touchstart", onTouchStart, { passive: true });
-    node.addEventListener("touchmove", onTouchMove, { passive: true });
-    node.addEventListener("touchend", onTouchEnd, { passive: true });
-    node.addEventListener("mousedown", onTouchStart);
-    node.addEventListener("mousemove", onTouchMove);
-    node.addEventListener("mouseup", onTouchEnd);
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
+    container.addEventListener("mousedown", onTouchStart);
+    container.addEventListener("mousemove", onTouchMove);
+    container.addEventListener("mouseup", onTouchEnd);
 
-    // pause on hover/focus
+    // Pause on hover/focus
     const onEnter = () => {
       setPaused(true);
-      stopAuto();
+      stopAutoplay();
     };
     const onLeave = () => {
       setPaused(false);
-      startAuto();
+      startAutoplay();
     };
-    node.addEventListener("mouseenter", onEnter);
-    node.addEventListener("mouseleave", onLeave);
-    node.addEventListener("focusin", onEnter);
-    node.addEventListener("focusout", onLeave);
+    container.addEventListener("mouseenter", onEnter);
+    container.addEventListener("mouseleave", onLeave);
+    container.addEventListener("focusin", onEnter);
+    container.addEventListener("focusout", onLeave);
 
-    // cleanup
+    // Kick off autoplay
+    startAutoplay();
+
     return () => {
-      stopAuto();
+      stopAutoplay();
       window.removeEventListener("keydown", onKey);
-      node.removeEventListener("touchstart", onTouchStart);
-      node.removeEventListener("touchmove", onTouchMove);
-      node.removeEventListener("touchend", onTouchEnd);
-      node.removeEventListener("mousedown", onTouchStart);
-      node.removeEventListener("mousemove", onTouchMove);
-      node.removeEventListener("mouseup", onTouchEnd);
-      node.removeEventListener("mouseenter", onEnter);
-      node.removeEventListener("mouseleave", onLeave);
-      node.removeEventListener("focusin", onEnter);
-      node.removeEventListener("focusout", onLeave);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
+      container.removeEventListener("mousedown", onTouchStart);
+      container.removeEventListener("mousemove", onTouchMove);
+      container.removeEventListener("mouseup", onTouchEnd);
+      container.removeEventListener("mouseenter", onEnter);
+      container.removeEventListener("mouseleave", onLeave);
+      container.removeEventListener("focusin", onEnter);
+      container.removeEventListener("focusout", onLeave);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total, index, isPaused]);
+  }, [total, index]);
 
-  // render static markup (SSR-friendly)
+  // keep track of manual index changes to reset progress
+  useEffect(() => {
+    setProgress(0);
+  }, [index]);
+
+  // render
   return (
     <div
-      className="relative mx-auto max-w-6xl rounded-lg overflow-hidden shadow-lg border border-gray-100"
       ref={containerRef}
+      className="relative mx-auto max-w-6xl rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-gradient-to-b from-white/5 to-black/10"
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured deals"
+      tabIndex={-1}
     >
-      {/* track viewport */}
+      {/* Viewport */}
       <div className="w-full overflow-hidden">
         <div
           ref={trackRef}
@@ -170,14 +198,12 @@ export default function BannerCarousel({ banners = [] }) {
           {banners.map((b, i) => {
             const avifSrcset = makeSrcset(b.variants?.avif || []);
             const webpSrcset = makeSrcset(b.variants?.webp || []);
-            // choose fallback if provided
             const fallback =
               b.variants?.fallback ||
               b.fallback ||
               b.src ||
               (b.variants?.webp && b.variants.webp.slice(-1)[0]) ||
               "";
-            // first slide should be eager & high priority
             const isFirst = i === 0;
             return (
               <div
@@ -187,6 +213,8 @@ export default function BannerCarousel({ banners = [] }) {
                 aria-roledescription="slide"
                 aria-label={b.alt || `Slide ${i + 1}`}
               >
+                {/* gradient overlay for polish */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/8 to-transparent z-10 pointer-events-none" />
                 <picture>
                   {avifSrcset ? (
                     <source
@@ -225,40 +253,49 @@ export default function BannerCarousel({ banners = [] }) {
         </div>
       </div>
 
-      {/* nav controls */}
+      {/* Left arrow */}
       <button
-        onClick={() => {
-          const newIdx = (index - 1 + total) % total;
-          setIndex(newIdx);
-        }}
+        onClick={() => goTo(index - 1)}
         aria-label="Previous slide"
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-800 rounded-full w-11 h-11 flex items-center justify-center shadow"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
       >
-        ◀
-      </button>
-      <button
-        onClick={() => {
-          const newIdx = (index + 1) % total;
-          setIndex(newIdx);
-        }}
-        aria-label="Next slide"
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-800 rounded-full w-11 h-11 flex items-center justify-center shadow"
-      >
-        ▶
+        <span aria-hidden>◀</span>
       </button>
 
-      {/* dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-        {banners.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            aria-label={`Go to slide ${i + 1}`}
-            className={`w-3 h-3 rounded-full transition ${
-              index === i ? "bg-white" : "bg-white/50"
-            }`}
+      {/* Right arrow */}
+      <button
+        onClick={() => goTo(index + 1)}
+        aria-label="Next slide"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-brand-primary hover:text-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-sm transition"
+      >
+        <span aria-hidden>▶</span>
+      </button>
+
+      {/* Dots & progress */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+        <div className="flex gap-2">
+          {banners.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`w-3 h-3 rounded-full transition-transform ${
+                index === i
+                  ? "bg-brand-primary scale-110 shadow-md"
+                  : "bg-white/60 hover:bg-white"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* thin progress bar */}
+        <div className="w-36 h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+          <div
+            className="h-full bg-brand-primary transition-all"
+            style={{ width: `${progress}%` }}
+            aria-hidden
           />
-        ))}
+        </div>
       </div>
     </div>
   );
