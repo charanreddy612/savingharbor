@@ -402,6 +402,103 @@ a {
   font-weight: 600;
   margin: 0.75em 0;
 }
+
+/* ===========================
+   Visual polish overrides (append only)
+   - subtle pale-aqua canvas
+   - crisp white cards with delicate shadows
+   - improved hover/focus lift and input focus
+   =========================== */
+
+:root {
+  /* background & text (use your existing surface token for text) */
+  --color-bg: #f6fbfa;           /* pale aqua: subtle brand echo */
+  --color-text: var(--on-surface);
+
+  /* gentle decorative washes (very faint) */
+  --bg-grad-start: rgba(18,134,111,0.02);
+  --bg-grad-end: rgba(32,118,205,0.01);
+
+  /* card shadows & border */
+  --card-border: rgba(12,18,22,0.04);
+  --card-shadow-sm: 0 1px 2px rgba(12,18,22,0.04);
+  --card-shadow-md: 0 8px 24px rgba(12,18,22,0.06);
+}
+
+/* page canvas */
+html, body { height: 100%; }
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  background-image:
+    radial-gradient(circle at 10% 10%, var(--bg-grad-start) 0%, transparent 20%),
+    radial-gradient(circle at 90% 90%, var(--bg-grad-end) 0%, transparent 25%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* override/normalize card classes (placed last so they win) */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow-sm);
+  border-radius: 12px;
+  padding: 1rem;
+  transition: box-shadow 180ms ease, transform 120ms ease;
+}
+
+/* slightly stronger surface used for prominent panels */
+.card-surface {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow-md);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+/* hover / focus lift for interactive cards */
+.card:hover,
+.card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(12,18,22,0.08);
+}
+
+/* subtle separators for card internals */
+.card hr, .card .row-sep {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(12,18,22,0.03), rgba(12,18,22,0.01));
+  margin: 0.75rem 0;
+}
+
+/* inputs: subtle brand-tinted focus */
+input, textarea, select {
+  background: #fff;
+  border: 1px solid rgba(12,18,22,0.06);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 8px 24px rgba(18,134,111,0.06);
+  border-color: rgba(18,134,111,0.22);
+}
+
+/* tweak hero/heading contrast so they read well on the new canvas */
+.site-hero {
+  color: var(--brand-dark);
+}
+
+/* keep link styles consistent with brand */
+a { color: var(--brand-primary); }
+
+/* small responsive boost */
+@media (min-width: 1024px) {
+  .card { padding: 1.25rem; border-radius: 14px; }
+  .card-surface { padding: 1.5rem; border-radius: 14px; }
+}
+
 /* ==========================
    END: root global.css content
    ========================== */
