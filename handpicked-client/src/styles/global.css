@@ -423,6 +423,12 @@ a {
   --card-border: rgba(12,18,22,0.04);
   --card-shadow-sm: 0 1px 2px rgba(12,18,22,0.04);
   --card-shadow-md: 0 8px 24px rgba(12,18,22,0.06);
+
+  /* small, accessible shade used when brand color appears on pale canvas */
+  --brand-primary-contrast: #11816b; /* derived: ~3% darker than #12866f -> contrast 4.59 on #f6fbfa */
+
+  /* safer tagline color for text on white surfaces (replaces #e4e4e4) */
+  --brand-tagline-safe: #6b7280; /* tailwind gray-500, contrast 4.8 on white */
 }
 
 /* page canvas */
@@ -493,12 +499,49 @@ input:focus, textarea:focus, select:focus {
 /* keep link styles consistent with brand */
 a { color: var(--brand-primary); }
 
+.on-canvas {
+  color: var(--brand-primary-contrast) !important;
+}
+
+/* Example: make footer top-level links use the contrast-safe brand color if placed on the canvas */
+body > .container a.on-canvas, .hero a.on-canvas { color: var(--brand-primary-contrast); }
+
+/* 2) Replace use of the too-light tagline token for readable text */
+.text-tagline {
+  color: var(--brand-tagline-safe) !important;
+}
+
 /* small responsive boost */
 @media (min-width: 1024px) {
   .card { padding: 1.25rem; border-radius: 14px; }
   .card-surface { padding: 1.5rem; border-radius: 14px; }
 }
 
+/* Social icons: brand color on hover + strong keyboard focus (accessible) */
+.social-btn {
+  @apply p-2 rounded transition-colors duration-150 ease-in-out;
+  color: currentColor;
+  background: transparent;
+}
+
+/* hover: brand color + subtle tactile background */
+.social-btn:hover,
+.social-btn:active {
+  color: var(--brand-primary-contrast);
+  background: rgba(18,134,111,0.06);
+}
+
+/* strong focus-visible ring for keyboard users */
+.social-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(18,134,111,0.12);
+  border-radius: 8px;
+}
+
+/* smaller variant for mobile hit-area (keeps same contrast rules) */
+.social-btn.small { @apply p-1; }
+
+.on-canvas-strong { color: var(--brand-primary-contrast) !important; }
 /* ==========================
    END: root global.css content
    ========================== */
