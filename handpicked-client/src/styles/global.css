@@ -542,6 +542,91 @@ body > .container a.on-canvas, .hero a.on-canvas { color: var(--brand-primary-co
 .social-btn.small { @apply p-1; }
 
 .on-canvas-strong { color: var(--brand-primary-contrast) !important; }
+
+/* ========== Accessibility hotfixes (append only) ========== */
+
+/* Make outline buttons readable on white surfaces (high contrast) */
+.btn-outline {
+  @apply inline-flex items-center justify-center px-4 py-2 min-w-[96px] rounded font-semibold transition;
+  border: 1px solid var(--brand-primary);
+  color: var(--brand-primary);
+  background: transparent;
+  text-decoration: none;
+}
+.btn-outline:hover,
+.btn-outline:active {
+  background: var(--brand-primary);
+  color: #fff;
+  border-color: var(--brand-primary);
+}
+.btn-outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(18,134,111,0.12);
+}
+
+/* Keep the special variants (light/dark) if you use them explicitly */
+.btn-outline--dark {
+  @apply border border-white text-white hover:bg-white hover:text-brand-primary;
+}
+.btn-outline--light {
+  @apply border border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white;
+}
+
+/* Footer on white: use readable muted text colors (not the too-light token) */
+footer[role="contentinfo"],
+footer[role="contentinfo"] .footer-link,
+footer[role="contentinfo"] p,
+footer[role="contentinfo"] li,
+footer[role="contentinfo"] a {
+  color: #374151; /* tailwind gray-700 — good contrast on white */
+}
+
+/* footer link subtle hover to brand */
+footer[role="contentinfo"] .footer-link {
+  color: #4b5563; /* gray-600 */
+}
+footer[role="contentinfo"] .footer-link:hover,
+footer[role="contentinfo"] .footer-link:focus {
+  color: var(--brand-primary);
+}
+
+/* Replace too-light tagline token usages for normal text */
+.text-tagline, .tagline, .small-muted {
+  color: var(--brand-tagline-safe, #6b7280) !important; /* gray-500 fallback */
+}
+
+/* Ensure the brand paragraph in footer is readable (was flagged) */
+footer[role="contentinfo"] p {
+  color: #4b5563; /* gray-600 */
+  line-height: 1.6;
+}
+
+/* Ensure links/buttons that appear directly on canvas are contrast-safe */
+.on-canvas, .on-canvas-strong {
+  color: var(--brand-primary-contrast) !important;
+}
+
+/* Ensure social icons have accessible contrast when used on white */
+.social-btn {
+  color: #374151; /* gray-700 */
+  background: transparent;
+}
+.social-btn:hover,
+.social-btn:active {
+  color: var(--brand-primary-contrast);
+  background: rgba(18,134,111,0.06);
+}
+.social-btn:focus-visible {
+  box-shadow: 0 0 0 4px rgba(18,134,111,0.12);
+}
+
+/* final: ensure small uppercase headings in footer maintain contrast */
+footer[role="contentinfo"] .uppercase {
+  color: #374151;
+  font-weight: 600;
+}
+
+
 /* ==========================
    END: root global.css content
    ========================== */
