@@ -230,7 +230,7 @@ export default function BannerCarousel({ banners = [] }) {
         <span aria-hidden>▶</span>
       </button>
 
-      {/* Dots */}
+      {/* Dots — single visible dot, 44x44 hit area, visible focus */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
         <div className="flex gap-2">
           {banners.map((_, i) => {
@@ -242,13 +242,10 @@ export default function BannerCarousel({ banners = [] }) {
                 aria-label={`Go to slide ${i + 1}`}
                 className={
                   `inline-flex items-center justify-center rounded-full transition-transform ` +
-                  `w-11 h-11 p-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ` +
-                  (isActive
-                    ? "focus-visible:ring-brand-primary/20"
-                    : "focus-visible:ring-brand-primary/10")
+                  `w-11 h-11 p-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 bg-transparent`
                 }
               >
-                {/* visual dot kept small so UI doesn't change */}
+                {/* only this span is visible as the dot */}
                 <span
                   aria-hidden="true"
                   className={`block w-3 h-3 rounded-full transition-transform ${
