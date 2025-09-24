@@ -163,57 +163,6 @@ a {
   @apply bg-white border border-gray-100 rounded-md p-4;
 }
 
-/* Make swiper bullets large enough for touch (recommended minimum 44x44) */
-.swiper-pagination-bullet {
-  display: inline-flex;           /* center any inner "dot" */
-  align-items: center;
-  justify-content: center;
-  width: 44px !important;
-  height: 44px !important;
-  margin: 8px !important;         /* spacing between targets */
-  border-radius: 9999px;
-  box-sizing: content-box;
-  cursor: pointer;
-  /* keep visual dot small while hit area is large (if you want a small inner circle) */
-  background-color: transparent;  /* keep control over color in your theme */
-}
-
-/* Optional: draw a visible small dot inside the large hit area */
-.swiper-pagination-bullet::before {
-  content: "";
-  width: 10px;
-  height: 10px;
-  border-radius: 9999px;
-  background-color: currentColor; /* inherits color (text-color) */
-  display: block;
-  opacity: 0.9;
-}
-
-/* Focus & keyboard visibility */
-.swiper-pagination-bullet:focus {
-  outline: 3px solid rgba(0,0,0,0.12);
-  outline-offset: 3px;
-}
-
-/* Make bullets even larger on coarse (touch) devices */
-@media (pointer: coarse) {
-  .swiper-pagination-bullet { width: 48px !important; height: 48px !important; margin: 10px !important; }
-  .swiper-pagination-bullet::before { width: 12px; height: 12px; }
-}
-
-/* Ensure prev/next nav buttons are also touch-friendly */
-.swiper-button-next,
-.swiper-button-prev {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-
 /* Card base: smoother hover */
 .card-base {
   @apply bg-white border border-gray-200 rounded-lg transition-shadow duration-150;
@@ -313,7 +262,7 @@ a {
 
 /* Tailwind utilities (put in your globals or component CSS) */
 .footer-link {
-  @apply inline-block text-gray-300 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary rounded px-1;
+  @apply inline-block text-brand-primary hover:text-brand-navybg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary rounded px-1;
 }
 .social-btn {
   @apply p-2 rounded hover:bg-white/10 hover:text-brand-primary transition focus:outline-none focus:ring-2 focus:ring-brand-primary;
@@ -423,6 +372,15 @@ a {
   --card-border: rgba(12,18,22,0.04);
   --card-shadow-sm: 0 1px 2px rgba(12,18,22,0.04);
   --card-shadow-md: 0 8px 24px rgba(12,18,22,0.06);
+
+  /* small, accessible shade used when brand color appears on pale canvas */
+  --brand-primary-contrast: #11816b; /* derived: ~3% darker than #12866f -> contrast 4.59 on #f6fbfa */
+
+  /* safer tagline color for text on white surfaces (replaces #e4e4e4) */
+  --brand-tagline-safe: #6b7280; /* tailwind gray-500, contrast 4.8 on white */
+
+  /* ensure background token is set (you already set this earlier) */
+  --color-bg: #f6fbfa;
 }
 
 /* page canvas */
@@ -499,6 +457,71 @@ a { color: var(--brand-primary); }
   .card-surface { padding: 1.5rem; border-radius: 14px; }
 }
 
+/* Social icons: brand color on hover + strong keyboard focus (accessible) */
+.social-btn {
+  @apply p-2 rounded transition-colors duration-150 ease-in-out;
+  color: currentColor;
+  background: transparent;
+}
+
+/* hover: brand color + subtle tactile background */
+.social-btn:hover,
+.social-btn:active {
+  color: var(--brand-primary-contrast);
+  background: rgba(18,134,111,0.06);
+}
+
+/* strong focus-visible ring for keyboard users */
+.social-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(18,134,111,0.12);
+  border-radius: 8px;
+}
+
+/* smaller variant for mobile hit-area (keeps same contrast rules) */
+.social-btn.small { @apply p-1; }
+
+.on-canvas-strong { color: var(--brand-primary-contrast) !important; }
+
+/* Minimal: expand tiny slide bullets to WCAG touch target (only affects buttons with aria-label "Go to slide") */
+button[aria-label^="Go to slide"] {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  margin: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+  box-shadow: none !important;
+}
+
+/* keep the small visible dot using ::before so visuals don't change much */
+button[aria-label^="Go to slide"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  display: block;
+  background: currentColor; /* respects existing color classes */
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+
+/* maintain distinct colors if your buttons used bg-white/ bg-brand classes (visual fallback) */
+button[aria-label^="Go to slide"].bg-white::before { background: rgba(255,255,255,0.6); }
+button[aria-label^="Go to slide"].bg-brand-primary::before { background: var(--brand-primary); }
+
+/* visible keyboard focus */
+button[aria-label^="Go to slide"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 6px rgba(18,134,111,0.12);
+  border-radius: 9999px;
+}
 /* ==========================
    END: root global.css content
    ========================== */

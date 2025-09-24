@@ -233,18 +233,33 @@ export default function BannerCarousel({ banners = [] }) {
       {/* Dots */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
         <div className="flex gap-2">
-          {banners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              className={`w-3 h-3 rounded-full transition-transform ${
-                index === i
-                  ? "bg-brand-primary scale-110 shadow-md"
-                  : "bg-white/60 hover:bg-white"
-              }`}
-            />
-          ))}
+          {banners.map((_, i) => {
+            const isActive = index === i;
+            return (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                aria-label={`Go to slide ${i + 1}`}
+                className={
+                  `inline-flex items-center justify-center rounded-full transition-transform ` +
+                  `w-11 h-11 p-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ` +
+                  (isActive
+                    ? "focus-visible:ring-brand-primary/20"
+                    : "focus-visible:ring-brand-primary/10")
+                }
+              >
+                {/* visual dot kept small so UI doesn't change */}
+                <span
+                  aria-hidden="true"
+                  className={`block w-3 h-3 rounded-full transition-transform ${
+                    isActive
+                      ? "bg-brand-primary scale-110 shadow-md"
+                      : "bg-white/60 hover:bg-white"
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
