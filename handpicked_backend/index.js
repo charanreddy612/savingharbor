@@ -19,7 +19,11 @@ app.use(express.json({ limit: process.env.JSON_LIMIT || "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // CORS
-const allowedOrigins = ["https://handpickedclient.vercel.app"];
+const allowedOrigins = [
+  'https://savingharbor.com',
+  'https://www.savingharbor.com'
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -29,8 +33,9 @@ app.use(
       return callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization",'X-Requested-With'],
     credentials: true,
+    optionsSuccessStatus: 204,
   })
 );
 
