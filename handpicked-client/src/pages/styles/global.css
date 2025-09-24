@@ -626,6 +626,66 @@ footer[role="contentinfo"] .uppercase {
   font-weight: 600;
 }
 
+/* ====== Accessibility fixes: outline buttons + overlays ====== */
+
+/* stronger, contrast-safe brand color (used on canvas & outlines) */
+:root {
+  --brand-primary-contrast: #116a60; /* safe darker teal variant */
+}
+
+/* Accessible outline button (default for light surfaces) */
+.btn-outline {
+  @apply inline-flex items-center justify-center px-4 py-2 min-w-[96px] rounded font-semibold transition;
+  border: 1px solid var(--brand-primary-contrast);
+  color: var(--brand-primary-contrast);
+  background: transparent;
+  text-decoration: none;
+}
+.btn-outline:hover,
+.btn-outline:active {
+  background: var(--brand-primary-contrast);
+  color: #fff;
+}
+.btn-outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(17,106,96,0.12);
+}
+
+/* Variant: use when button sits on a dark overlay (invert to white text) */
+.btn-outline--on-dark {
+  border-color: rgba(255,255,255,0.18);
+  color: #fff;
+  background: transparent;
+}
+.btn-outline--on-dark:hover,
+.btn-outline--on-dark:active {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+.btn-outline--on-dark:focus-visible {
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.12);
+}
+
+/* Overlay utilities: use on decorative fills behind hero/cta to ensure readable text */
+.overlay-dark {
+  background: rgba(0,0,0,0.45) !important; /* darkens whatever image beneath */
+}
+.overlay-brand {
+  /* faint brand wash but dark enough for white text */
+  background: linear-gradient(180deg, rgba(18,134,111,0.20), rgba(32,118,205,0.12)) !important;
+}
+
+/* If overlay is decorative and aria-hidden, make it explicitly presentation (helps some tools) */
+[aria-hidden="true"].overlay-dark,
+[aria-hidden="true"].overlay-brand {
+  role: presentation;
+}
+
+/* ensure any text sitting on overlays uses white for contrast */
+.on-overlay, .overlay-text {
+  color: #fff !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+}
 
 /* ==========================
    END: root global.css content
