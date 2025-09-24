@@ -5,31 +5,43 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 
 const pageMeta = {
-  title: "Press — Saving Harbor",
-  description: "Press resources, company facts, logos, and media contacts for Saving Harbor.",
+  title: "Press & Media — Saving Harbor",
+  description: "Download our logo and get in touch with Saving Harbor’s press team.",
 };
 ---
 <Base meta={pageMeta}>
   <Header />
-  <main class="container mx-auto px-4 py-10">
-    <article class="prose max-w-none lg:prose-lg text-on-surface">
-      <h1>Press</h1>
-      <p>Thank you for your interest. Below are quick facts, our brand assets, and a downloadable press kit.</p>
 
-      <h2>Quick facts</h2>
-      <ul>
-        <li>Founded: 2024</li>
-        <li>Headquarters: Remote</li>
-        <li>Mission: Verified coupons, real savings.</li>
-      </ul>
+  <main role="main" aria-labelledby="press-heading" class="container mx-auto px-4 py-12">
+    <header id="press-heading" class="mb-8 text-center">
+      <h1 class="site-hero">Press & Media</h1>
+      <p class="mt-2 text-gray-500">Logos, boilerplate, and media contact — all in one place.</p>
+    </header>
 
-      <h2>Brand assets</h2>
-      <p>Download our press kit (logo, screenshots, company one-pager):</p>
-      <a href="/assets/saving-harbor-press-kit.zip" class="btn btn-outline mt-2 inline-block">Download Press Kit</a>
+    <section class="card card-surface max-w-2xl mx-auto text-center py-10">
+      <h2 class="section-heading mb-4">Media kit</h2>
+      <p class="text-gray-700 mb-6">
+        Saving Harbor helps shoppers find verified coupons and deals with an emphasis on trust and transparency.
+      </p>
+      <div class="flex flex-col gap-3">
+        <a class="btn btn-primary" href="/assets/press/logo.svg" download>Download logo (SVG)</a>
+        <a class="btn btn-outline" href="/assets/press/savingharbor-media-kit.zip" download>Download full kit (ZIP)</a>
+      </div>
+    </section>
 
-      <h2 class="mt-6">Media contact</h2>
-      <p>For interview requests and press inquiries, email <a href="mailto:press@savingharbor.com" class="text-brand-primary hover:underline">press@savingharbor.com</a>.</p>
-    </article>
+    <section class="card card-surface max-w-2xl mx-auto text-center py-10 mt-8">
+      <h2 class="section-heading mb-4">Press contact</h2>
+      <p class="text-gray-700 mb-4">
+        For media inquiries, email us at:
+      </p>
+      <a
+        href="mailto:press@savingharbor.example"
+        class="btn btn-primary"
+      >
+        press@savingharbor.example
+      </a>
+    </section>
   </main>
+
   <Footer />
 </Base>
