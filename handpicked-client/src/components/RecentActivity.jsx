@@ -46,7 +46,7 @@ export default function RecentActivity({ data }) {
                       {new Date(r.published_at).toLocaleDateString()}
                     </time>
                   ) : null} */}
-                  {r.short_desc ? <> — {truncate(r.short_desc, 80)}</> : null}
+                  {r.short_desc ? <>{truncate(r.short_desc, 80)}</> : null}
                 </div>
               </div>
             </li>
