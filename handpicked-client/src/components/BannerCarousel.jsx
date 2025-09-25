@@ -251,7 +251,7 @@ export default function BannerCarousel({ banners = [] }) {
                   className={`block w-3 h-3 rounded-full transition-transform ${
                     isActive
                       ? "bg-brand-primary scale-110 shadow-md"
-                      : "bg-white/60 hover:bg-white"
+                      : "bg-[rgba(255,255,255,0.6)] hover:bg-white"
                   }`}
                 />
               </button>

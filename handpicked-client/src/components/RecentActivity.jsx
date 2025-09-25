@@ -41,11 +41,11 @@ export default function RecentActivity({ data }) {
                   {r.title || (r.type ? `${r.type} offer` : "Offer")}
                 </a>
                 <div className="text-xs text-gray-500 truncate">
-                  {r.published_at ? (
+                  {/* {r.published_at ? (
                     <time dateTime={new Date(r.published_at).toISOString()}>
                       {new Date(r.published_at).toLocaleDateString()}
                     </time>
-                  ) : null}
+                  ) : null} */}
                   {r.short_desc ? <> — {truncate(r.short_desc, 80)}</> : null}
                 </div>
               </div>
