@@ -61,7 +61,6 @@ export function buildPrevNext({
 
   const frontendPath = normalizePathToFrontend(path, "/");
 
-  // backend origin (Render) — set this in Vercel env as BACKEND_URL
   const backendOrigin = (process.env.PUBLIC_API_BASE_URL || "")
     .toString()
     .trim()
@@ -72,7 +71,6 @@ export function buildPrevNext({
     if (targetPage && Number(targetPage) > 1) params.page = Number(targetPage);
     if (limit && Number(limit) !== 20) params.limit = Number(limit);
     const rel = `${frontendPath}${buildQueryString(params)}`;
-    // if BACKEND_URL provided, return absolute backend URL; otherwise return relative frontend path
     return backendOrigin ? `${backendOrigin}${rel}` : rel;
   };
 

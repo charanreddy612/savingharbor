@@ -13,12 +13,6 @@ function normalizeOrigin(raw) {
 
 /**
  * getOrigin(req, opts)
- * - If process.env.PUBLIC_SITE_URL is set, it is used (canonical).
- * - Otherwise, if opts.trustProxy === true, try x-forwarded-proto + x-forwarded-host / Forwarded header.
- * - Otherwise fall back to req.protocol + req.get('host').
- *
- * Note: set PUBLIC_SITE_URL on Render to your frontend's canonical URL:
- *   PUBLIC_SITE_URL=https://handpickedclient.vercel.app
  */
 export async function getOrigin(req, { trustProxy = false } = {}) {
   // 1) canonical override (recommended)

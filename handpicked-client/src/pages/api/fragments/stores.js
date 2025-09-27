@@ -1,10 +1,7 @@
 // src/pages/api/fragments/stores.js
 import { renderStoreCardHtml } from "../../../lib/renderers/storeCardHtml.js";
 
-const BACKEND_BASE = (
-  process.env.PUBLIC_API_BASE_URL ||
-  "https://handpickedclient.onrender.com/public/v1"
-).replace(/\/+$/, "");
+const BACKEND_BASE = process.env.PUBLIC_API_BASE_URL.replace(/\/+$/, "");
 
 export async function GET({ url }) {
   try {

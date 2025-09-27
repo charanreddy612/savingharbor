@@ -11,9 +11,8 @@
   const LIST_WRAPPER_SEL = "#resource-list";
   const PAGINATION_WRAPPER_SEL = ".mt-10";
 
-  const FALLBACK_BACKEND = "https://handpickedclient.onrender.com/public/v1";
   const BACKEND_API_BASE =
-    (window.PUBLIC_API_BASE_URL || "").replace(/\/+$/, "") || FALLBACK_BACKEND;
+    (window.PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
 
   // ---- helpers ----
   function ensureGridWrapper() {

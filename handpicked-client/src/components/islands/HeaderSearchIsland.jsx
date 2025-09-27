@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const DEFAULT_API_BASE = "https://handpickedclient.onrender.com/public/v1";
 const DEBOUNCE_MS = 250;
 const MAX_RESULTS = 6;
 const MIN_QUERY_LEN = 3;
@@ -35,9 +34,7 @@ export default function HeaderSearchIsland() {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  const rawBase =
-    (import.meta.env && import.meta.env.PUBLIC_API_BASE_URL) ||
-    DEFAULT_API_BASE;
+  const rawBase = import.meta.env && import.meta.env.PUBLIC_API_BASE_URL;
   const base = rawBase.replace(/\/+$/, "");
 
   useEffect(() => {

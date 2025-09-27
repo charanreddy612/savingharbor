@@ -4,11 +4,6 @@ import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
 
 /**
  * CouponReveal React island
- * - Re-uses renderCouponCardHtml for exact SSR parity
- * - Injects the HTML and delegates reveal-button clicks
- * - Keeps toasts + clipboard + redirect logic
- *
- * NOTE: This version adds robust direct handlers + debug logs to make reveal flow reliable.
  */
 
 async function fetchWithRetry(url, options, retries = 2) {
@@ -165,7 +160,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
     }
 
     // Attach direct click handlers to any reveal buttons found in the injected HTML.
-    // This is more robust than relying only on delegation when HTML is re-injected.
     const buttons = el.querySelectorAll(".js-reveal-btn[data-offer-id]");
     if (buttons && buttons.length > 0) {
       buttons.forEach((btn) => {
