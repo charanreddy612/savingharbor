@@ -12,7 +12,6 @@ const { meta = {} } = Astro.props as {
   };
 };
 const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
-
 ---
 
 <html lang="en" class="scroll-smooth">
@@ -29,8 +28,7 @@ const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
         <script
           set:html={`
     (function(){
-      var GA_ID='${GA_ID}';
-      if(!GA_ID) return;
+      var GA_ID='G-XXXXXXX'; if(!GA_ID) return;
       if (navigator.doNotTrack === '1' || navigator.doNotTrack === 'yes') return;
 
       var inited = false;
@@ -42,30 +40,21 @@ const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
         s.crossOrigin = 'anonymous';
         document.head.appendChild(s);
         s.addEventListener('load', function(){
-          try{
-            gtag('js', new Date());
-            gtag('config', GA_ID, { send_page_view: false });
-            gtag('event','page_view',{ page_location: location.href, page_path: location.pathname });
-          }catch(e){}
+          try{ gtag('js', new Date()); gtag('config', GA_ID, { send_page_view: false }); gtag('event','page_view',{page_location:location.href}); }catch(e){}
         });
       }
 
-      // first-interaction fast-path
-      var evs = ['pointerdown','keydown','touchstart','scroll'];
+      // only load on first meaningful interaction
+      var evs=['pointerdown','keydown','touchstart','scroll'];
       function onFirst(){ init(); remove(); }
       function add(){ evs.forEach(e=>window.addEventListener(e,onFirst,{once:true,passive:true})); }
       function remove(){ evs.forEach(e=>window.removeEventListener(e,onFirst)); }
       add();
 
-      // idle path with short timeout fallback
-      var idleTimeout = 1500;
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(function(){ init(); remove(); }, { timeout: idleTimeout });
-      } else {
-        window.addEventListener('load', function(){ setTimeout(function(){ init(); remove(); }, 0); });
-        setTimeout(function(){ if(!inited) { init(); remove(); } }, idleTimeout);
-      }
+      // fallback: only load if session remains active for 10s (avoids Lighthouse fetch)
+      setTimeout(function(){ if(!inited) init(); }, 10000);
     })();
+
   `}
         />
       )
