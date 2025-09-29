@@ -237,7 +237,7 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
 
             <!-- FAQs -->
             {store.faqs && store.faqs.length > 0 && (
-              <section>
+              <section id="faqs-section" class="card-base p-6">
                 <FaqAccordion client:load faqs={store.faqs} />
               </section>
             )}
@@ -265,7 +265,8 @@ const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.d
               <RecentActivity client:load data={store.recent_activity} />
             </div>
 
-            <div class="sidebar-box">
+            {/* <div class="sidebar-box"> */}
+            <div class = "card-base p-6">
               <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
               <SubscribeBox client:load source={store.slug} />
             </div>
