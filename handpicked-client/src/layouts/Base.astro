@@ -11,6 +11,8 @@ const { meta = {} } = Astro.props as {
     jsonld?: any;
   };
 };
+const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
+
 ---
 
 <html lang="en" class="scroll-smooth">
@@ -22,5 +24,51 @@ const { meta = {} } = Astro.props as {
 
   <body class="min-h-screen">
     <slot />
+    {
+      GA_ID && (
+        <script
+          set:html={`
+    (function(){
+      var GA_ID='${GA_ID}';
+      if(!GA_ID) return;
+      if (navigator.doNotTrack === '1' || navigator.doNotTrack === 'yes') return;
+
+      var inited = false;
+      function init() {
+        if (inited) return; inited = true;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+        s.crossOrigin = 'anonymous';
+        document.head.appendChild(s);
+        s.addEventListener('load', function(){
+          try{
+            gtag('js', new Date());
+            gtag('config', GA_ID, { send_page_view: false });
+            gtag('event','page_view',{ page_location: location.href, page_path: location.pathname });
+          }catch(e){}
+        });
+      }
+
+      // first-interaction fast-path
+      var evs = ['pointerdown','keydown','touchstart','scroll'];
+      function onFirst(){ init(); remove(); }
+      function add(){ evs.forEach(e=>window.addEventListener(e,onFirst,{once:true,passive:true})); }
+      function remove(){ evs.forEach(e=>window.removeEventListener(e,onFirst)); }
+      add();
+
+      // idle path with short timeout fallback
+      var idleTimeout = 1500;
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(function(){ init(); remove(); }, { timeout: idleTimeout });
+      } else {
+        window.addEventListener('load', function(){ setTimeout(function(){ init(); remove(); }, 0); });
+        setTimeout(function(){ if(!inited) { init(); remove(); } }, idleTimeout);
+      }
+    })();
+  `}
+        />
+      )
+    }
   </body>
 </html>
