@@ -98,7 +98,14 @@ const pageDesc =
 const canonical = meta?.canonical;
 const jsonld = meta?.jsonld;
 const safeSideHtml = store?.about_html ? DOMPurify.sanitize(store.about_html) : null;
-const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.description_html) : null;
+// const safeDescriptionHtml = store?.description_html ? DOMPurify.sanitize(store.description_html) : null;
+const safeDescriptionHtml = store?.description_html
+  ? DOMPurify.sanitize(store.description_html, {
+      ALLOWED_TAGS: ['h1','h2','h3','p','br','strong','b','em','i','u','s','ul','ol','li','a','img','blockquote'],
+      ALLOWED_ATTR: { a: ['href','title','rel','target'], img: ['src','alt','title','width','height'], '*': ['class'] },
+      ALLOW_DATA_ATTR: false
+    })
+  : null;
 ---
 
 <style>
