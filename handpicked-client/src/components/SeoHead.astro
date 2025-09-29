@@ -43,20 +43,36 @@ const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
 ---
 
 <head>
-  {GA_ID && (
-    <>
-      <!-- Load gtag -->
-      <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
-
-      <!-- Init gtag (rendered as literal client-side JS) -->
-      <script set:html={`
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '${GA_ID}');
-      `} />
-    </>
-  )}
+  {
+    GA_ID && (
+      <>
+        <script
+          set:html={`
+      (function() {
+        var GA_ID = '${GA_ID}';
+        function initGtag() {
+          if (window.__gtag_inited) return;
+          window.__gtag_inited = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+          document.head.appendChild(s);
+          var inline = document.createElement('script');
+          inline.innerHTML = "window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '" + GA_ID + "');";
+          document.head.appendChild(inline);
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(initGtag, {timeout: 2000});
+        } else {
+          // fallback: wait small delay so first paint isn't blocked
+          setTimeout(initGtag, 2000);
+        }
+      })();
+    `}
+        />
+      </>
+    )
+  }
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{defaultTitle}</title>
