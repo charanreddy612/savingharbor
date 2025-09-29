@@ -140,7 +140,7 @@ export default function SubscribeBox({ source }) {
           Get updates
         </label>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <input
             id="subscribe-email"
             ref={inputRef}
