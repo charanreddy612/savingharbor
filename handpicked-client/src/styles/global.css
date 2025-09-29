@@ -339,19 +339,6 @@ a {
   background: #f3f4f6; /* neutral gray or brand color */
 }
 
-.ql-editor h1,
-.merchant-description h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0.67em 0;
-}
-.ql-editor h2,
-.merchant-description h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0.75em 0;
-}
-
 /* ===========================
    Visual polish overrides (append only)
    - subtle pale-aqua canvas
@@ -522,6 +509,77 @@ button[aria-label^="Go to slide"]:focus-visible {
   box-shadow: 0 0 0 6px rgba(18,134,111,0.12);
   border-radius: 9999px;
 }
+
+/* Quill minimal styles for enabled formats */
+.ql-editor {
+  line-height: 1.6;
+  font-size: 1rem;
+  color: #111827; /* gray-900 */
+}
+
+.ql-editor h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.2em 0 0.6em;
+}
+.ql-editor h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+.ql-editor h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+}
+
+.ql-editor p {
+  margin: 0 0 0.8em;
+}
+
+.ql-editor a {
+  color: #12866f; /* brand primary */
+  text-decoration: underline;
+}
+
+.ql-editor strong,
+.ql-editor b {
+  font-weight: 700;
+}
+.ql-editor em,
+.ql-editor i {
+  font-style: italic;
+}
+.ql-editor u {
+  text-decoration: underline;
+}
+.ql-editor s {
+  text-decoration: line-through;
+}
+
+/* lists */
+.ql-editor ul {
+  list-style-type: disc;
+  margin: 0.8em 0 0.8em 1.5em;
+  padding: 0;
+}
+.ql-editor ol {
+  list-style-type: decimal;
+  margin: 0.8em 0 0.8em 1.5em;
+  padding: 0;
+}
+.ql-editor li {
+  margin-bottom: 0.3em;
+}
+
+/* images */
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+
 /* ==========================
    END: root global.css content
    ========================== */
