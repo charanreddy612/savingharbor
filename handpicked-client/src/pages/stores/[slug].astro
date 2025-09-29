@@ -285,11 +285,16 @@ const safeDescriptionHtml = store?.description_html
             </div>
 
             {/* <div class="sidebar-box"> */}
-            <div class = "card-base p-6">
+            {/* <div class = "card-base p-6">
               <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
               <SubscribeBox client:load source={store.slug} />
+            </div> */}
+            <div class="sidebar-box">
+              <div class="card-base p-4">
+                <h3 class="text-lg font-semibold text-brand-secondary mb-3">Get updates</h3>
+                <SubscribeBox client:load source={store.slug} />
+              </div>
             </div>
-
             <div class="sidebar-box">
               <WhyTrustUs client:load />
             </div>
