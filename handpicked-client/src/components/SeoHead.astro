@@ -39,9 +39,24 @@ const defaultDesc = hasMonthYearSuffix(rawDesc)
 const canonical = meta.canonical;
 const ogImage = meta.og_image || "/og-default.png";
 const jsonld = meta.jsonld;
+const GA_ID = import.meta.env.PUBLIC_GA_ID || "G-Q01DFD4F4C";
 ---
 
 <head>
+  {GA_ID && (
+    <>
+      <!-- Load gtag -->
+      <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+
+      <!-- Init gtag (rendered as literal client-side JS) -->
+      <script set:html={`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${GA_ID}');
+      `} />
+    </>
+  )}
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{defaultTitle}</title>
