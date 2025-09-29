@@ -1,3 +1,4 @@
+// utils/sanitize.js
 import createDOMPurify from "isomorphic-dompurify";
 import { JSDOM } from "jsdom";
 
@@ -5,27 +6,24 @@ import { JSDOM } from "jsdom";
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
 
-// Allow a safe subset; extend if needed
+// Expanded but still conservative set of allowed tags for editor output
 const ALLOWED_TAGS = [
+  "h1","h2","h3","h4","h5","h6",
   "p",
   "br",
-  "strong",
-  "em",
-  "ul",
-  "ol",
-  "li",
+  "strong","b",
+  "em","i",
+  "u","s",
+  "ul","ol","li",
   "a",
   "blockquote",
-  "h2",
-  "h3",
-  "h4",
-  "code",
-  "pre",
-  "img",
-  "figure",
-  "figcaption",
-  "span",
+  "code","pre",
+  "img","figure","figcaption",
+  "span"
 ];
+
+// Minimal safe attributes (keeps links and images usable)
+// Note: 'class' is included because Quill may output useful classes (keep if you rely on them)
 const ALLOWED_ATTR = [
   "href",
   "title",
@@ -33,8 +31,10 @@ const ALLOWED_ATTR = [
   "rel",
   "src",
   "alt",
+  "width",
+  "height",
   "class",
-  "aria-label",
+  "aria-label"
 ];
 
 export function sanitize(html) {
@@ -42,8 +42,10 @@ export function sanitize(html) {
   return DOMPurify.sanitize(String(html), {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
-    ADD_ATTR: ["loading"], // for images
+    ADD_ATTR: ["loading"], // allow loading="lazy" etc. on images
     FORBID_TAGS: ["script", "style", "iframe", "object", "embed"],
-    FORBID_ATTR: ["onerror", "onclick", "onload"],
+    FORBID_ATTR: ["onerror", "onclick", "onload", "onmouseover", "onfocus", "onblur"]
   });
 }
+
+export default sanitize;
