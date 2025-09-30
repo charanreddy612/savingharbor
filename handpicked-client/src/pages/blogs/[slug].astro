@@ -69,20 +69,23 @@ const pageDesc = meta.description || "Saving Harbor editorial.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 
-const _ALLOWED_TAGS = [
-  "h1","h2","h3","h4","p","br",
-  "strong","b","em","i","u","s",
-  "ul","ol","li",
-  "a","img","blockquote"
-];
-const _ALLOWED_ATTR = {
-  a: ["href","title","rel","target"],
-  img: ["src","srcset","data-src","data-srcset","alt","width","height","loading"],
-  "*": []
+// config to preserve img src (including data: URIs)
+const SANITIZE_CFG = {
+  ALLOWED_TAGS: [
+    "h1","h2","h3","h4","p","br","strong","b","em","i","u","s",
+    "ul","ol","li","a","img","blockquote"
+  ],
+  ALLOWED_ATTR: {
+    a: ["href","title","rel","target"],
+    img: ["src","srcset","alt","title","width","height","loading","decoding","data-src","data-srcset"],
+    "*": ["class","id","style","data-*"]
+  },
+  // allow https, http, data URIs and relative urls
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|data|mailto|tel):|\/)/i
 };
 console.log('DBG RAW_FROM_DB:', post?.content_html?.slice(0,2000));
 const safeBodyHtml = post?.content_html
-  ? DOMPurify.sanitize(post.content_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
+  ? DOMPurify.sanitize(post.content_html || '', SANITIZE_CFG)
   : null;
 console.log('DBG AFTER_SANITIZE:', safeBodyHtml?.slice(0,2000));
 // Generate TOC (server-safe — no DOMParser)
