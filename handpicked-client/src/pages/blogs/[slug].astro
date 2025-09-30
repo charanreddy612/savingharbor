@@ -80,11 +80,11 @@ const _ALLOWED_ATTR = {
   img: ["src","srcset","data-src","data-srcset","alt","width","height","loading"],
   "*": []
 };
-console.log('DBG RAW_FROM_DB:', post?.content_html?.slice(0,300));
+console.log('DBG RAW_FROM_DB:', post?.content_html?.slice(0,2000));
 const safeBodyHtml = post?.content_html
   ? DOMPurify.sanitize(post.content_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
   : null;
-console.log('DBG AFTER_SANITIZE:', safeBodyHtml?.slice(0,300));
+console.log('DBG AFTER_SANITIZE:', safeBodyHtml?.slice(0,2000));
 // Generate TOC (server-safe — no DOMParser)
 let toc: { id: string; text: string }[] = [];
 let safeBodyHtmlWithIds = safeBodyHtml || "";
