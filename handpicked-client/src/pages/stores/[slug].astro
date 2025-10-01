@@ -105,11 +105,11 @@ const _ALLOWED_TAGS = [
   "ul","ol","li",
   "a","img","blockquote"
 ];
-const _ALLOWED_ATTR = {
-  a: ["href","title","rel","target"],
-  img: ["src","alt","title","width","height"],
-  "*": [] // leave empty unless you need classes; see note below
-};
+const _ALLOWED_ATTR = [
+  "href","title","rel","target",
+  "src","alt","width","height",
+  "id", "class", "loading" // add any small attrs you need
+];
 
 const safeSideHtml = store?.about_html
   ? DOMPurify.sanitize(store.about_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
