@@ -69,88 +69,72 @@ const pageDesc = meta.description || "Saving Harbor editorial.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 
-// config to preserve img src (including data: URIs)
-const SANITIZE_CFG = {
-  ALLOWED_TAGS: [
-    "h1","h2","h3","h4","p","br","strong","b","em","i","u","s",
-    "ul","ol","li","a","img","blockquote"
-  ],
-  ALLOWED_ATTR: {
-    a: ["href","title","rel","target"],
-    img: ["src","srcset","alt","title","width","height","loading","decoding","data-src","data-srcset"],
-    "*": ["class","id","style","data-*"]
-  },
-  // allow https, http, data URIs and relative urls
-  ALLOWED_URI_REGEXP: /^(?:(?:https?|data|mailto|tel):|\/)/i
-};
+const _ALLOWED_TAGS = [
+  "h1","h2","h3","h4","p","br",
+  "strong","b","em","i","u","s",
+  "ul","ol","li",
+  "a","img","blockquote"
+];
 
-console.log('DBG RAW_FROM_DB:', post?.content_html?.slice(0,2000));
+const _ALLOWED_ATTR = [
+  "href","title","rel","target",
+  "src","alt","width","height",
+  "id", "class", "loading" // add any small attrs you need
+];
 
-// Sanitize masked HTML
-let safeBodyHtml: string | null =null;
-// Mask data: URIs temporarily so sanitizer won't strip them
-const maskedInput = (post?.content_html || "").replace(/src="data:/g, 'src="__DATA_URI__:');
-
-safeBodyHtml = maskedInput
-  ? (DOMPurify.sanitize(maskedInput, SANITIZE_CFG) as string)
+const safeBodyHtml = post?.content_html
+  ? DOMPurify.sanitize(post.content_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
   : null;
-
-// Restore actual data: URIs after sanitize
-if (safeBodyHtml) {
-  safeBodyHtml = safeBodyHtml.replace(/src="__DATA_URI__:/g, 'src="data:');
-}
-
-console.log('DBG AFTER_SANITIZE:', safeBodyHtml?.slice(0,2000));
 
 // Generate TOC (server-safe — no DOMParser)
 let toc: { id: string; text: string }[] = [];
-let safeBodyHtmlWithIds: string = safeBodyHtml || "";
+let safeBodyHtmlWithIds = safeBodyHtml || "";
 
-// if (safeBodyHtml) {
-//   // Regex to match opening h2/h3 tags and capture optional id + inner text (non-greedy)
-//   // This will find <h2 ...>...<\/h2> and <h3 ...>...<\/h3>
-//   const headingRegex = /<(h[23])([^>]*)>([\s\S]*?)<\/\1>/gi;
+if (safeBodyHtml) {
+  // Regex to match opening h2/h3 tags and capture optional id + inner text (non-greedy)
+  // This will find <h2 ...>...<\/h2> and <h3 ...>...<\/h3>
+  const headingRegex = /<(h[23])([^>]*)>([\s\S]*?)<\/\1>/gi;
 
-//   const idsSeen = new Set<string>();
-//   const slugify = (s: string) =>
-//     String(s || "")
-//       .trim()
-//       .toLowerCase()
-//       .replace(/<[^>]+>/g, "") // strip HTML inside heading
-//       .replace(/[^\w\s-]/g, "") // remove punctuation
-//       .replace(/\s+/g, "-");
+  const idsSeen = new Set<string>();
+  const slugify = (s: string) =>
+    String(s || "")
+      .trim()
+      .toLowerCase()
+      .replace(/<[^>]+>/g, "") // strip HTML inside heading
+      .replace(/[^\w\s-]/g, "") // remove punctuation
+      .replace(/\s+/g, "-");
 
-//   // Build TOC and ensure headings in HTML have ids (inject if missing)
-//   safeBodyHtmlWithIds = safeBodyHtmlWithIds.replace(
-//     headingRegex,
-//     (match, tag, attrs = "", inner) => {
-//       // Try to extract an existing id attr
-//       const idMatch = /id\s*=\s*["']([^"']+)["']/i.exec(attrs);
-//       let id = idMatch ? idMatch[1] : slugify(inner);
+  // Build TOC and ensure headings in HTML have ids (inject if missing)
+  safeBodyHtmlWithIds = safeBodyHtmlWithIds.replace(
+    headingRegex,
+    (match, tag, attrs = "", inner) => {
+      // Try to extract an existing id attr
+      const idMatch = /id\s*=\s*["']([^"']+)["']/i.exec(attrs);
+      let id = idMatch ? idMatch[1] : slugify(inner);
 
-//       // Avoid duplicate ids — append counter if necessary
-//       let base = id;
-//       let n = 1;
-//       while (idsSeen.has(id)) {
-//         id = `${base}-${n++}`;
-//       }
-//       idsSeen.add(id);
+      // Avoid duplicate ids — append counter if necessary
+      let base = id;
+      let n = 1;
+      while (idsSeen.has(id)) {
+        id = `${base}-${n++}`;
+      }
+      idsSeen.add(id);
 
-//       // record TOC entry (use inner text without tags)
-//       const plainText = inner.replace(/<[^>]+>/g, "").trim();
-//       toc.push({ id, text: plainText });
+      // record TOC entry (use inner text without tags)
+      const plainText = inner.replace(/<[^>]+>/g, "").trim();
+      toc.push({ id, text: plainText });
 
-//       // If id existed, keep attrs; otherwise inject id into attrs
-//       if (idMatch) {
-//         return `<${tag}${attrs}>${inner}</${tag}>`;
-//       } else {
-//         // inject id attribute (preserve other attrs spacing)
-//         const attrsNormalized = attrs && attrs.trim() ? " " + attrs.trim() : "";
-//         return `<${tag} id="${id}"${attrsNormalized}>${inner}</${tag}>`;
-//       }
-//     }
-//   );
-// }
+      // If id existed, keep attrs; otherwise inject id into attrs
+      if (idMatch) {
+        return `<${tag}${attrs}>${inner}</${tag}>`;
+      } else {
+        // inject id attribute (preserve other attrs spacing)
+        const attrsNormalized = attrs && attrs.trim() ? " " + attrs.trim() : "";
+        return `<${tag} id="${id}"${attrsNormalized}>${inner}</${tag}>`;
+      }
+    }
+  );
+}
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -199,7 +183,7 @@ let safeBodyHtmlWithIds: string = safeBodyHtml || "";
 
             {safeBodyHtml ? (
               <div class="prose prose-lg prose-gray max-w-none ql-editor">
-                <div set:html={safeBodyHtmlWithIds as any} />
+                <div set:html={safeBodyHtmlWithIds} />
               </div>
             ) : (
               <p class="text-gray-600">This article has no content.</p>
