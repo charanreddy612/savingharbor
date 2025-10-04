@@ -114,170 +114,218 @@ const halloweenJSONLD = {
       </article>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer
     <footer class="mt-12 text-gray-400 text-sm">
       <p>© Saving Harbor — curated Halloween deals</p>
-    </footer>
+    </footer> -->
 
-    <!-- Floating Bat Swarm -->
+    <!-- Floating Bat Swarm (drop-in) -->
     <div
       aria-hidden="true"
       id="bat-swarm"
       class="fixed top-0 left-0 w-full h-full pointer-events-none"
+      style="z-index:9999"
     >
     </div>
 
     <script>
-      const batImages = [
-        "/assets/bat1.png",
-        "/assets/bat2.png",
-        "/assets/bat4.png",
-        "/assets/bat5.png",
-     ];
-      const batContainer = document.getElementById("bat-swarm");
+      (function () {
+        const batImages = [
+          "/assets/bat1.png",
+          "/assets/bat2.png",
+          "/assets/bat3.png",
+          "/assets/bat4.png",
+          "/assets/bat5.png",
+        ];
+        const batContainer = document.getElementById("bat-swarm");
 
-      for (let i = 0; i < 20; i++) {
-        const bat = document.createElement("img");
-        bat.src = batImages[Math.floor(Math.random() * batImages.length)];
-        bat.className = "absolute animate-bat-fly";
-        const top = Math.random() * 80 + 10;
-        const size = Math.random() * 16 + 12;
-        const opacity = Math.random() * 0.3 + 0.2;
-        const duration = Math.random() * 8 + 8;
+        function createInlineSVGBat() {
+          return (
+            "data:image/svg+xml;utf8," +
+            encodeURIComponent(
+              `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><path fill="#000" d="M0 32c20-10 30-20 48-10 18 10 30 10 48 0 18-10 28 0 32 10v22H0z"/></svg>`
+            )
+          );
+        }
 
-        bat.style.top = top + "%";
-        bat.style.left = "-" + Math.random() * 20 + "%";
-        bat.style.width = size + "px";
-        bat.style.opacity = opacity.toString();
-        bat.style.animationDuration = duration + "s";
-        bat.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
-        batContainer?.appendChild(bat);
-      }
+        // verify at least one image exists, else fallback
+        async function findAvailable(srcs: string[]) {
+          for (const s of srcs) {
+            try {
+              const res = await fetch(s, { method: "HEAD" });
+              if (res.ok) return srcs; // if HEAD works, assume assets folder correct
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          return [createInlineSVGBat()];
+        }
+
+        window.addEventListener("load", async () => {
+          const sources = await findAvailable(batImages);
+          const SWARM_COUNT = 18;
+          for (let i = 0; i < SWARM_COUNT; i++) {
+            const bat = document.createElement("img");
+            bat.src = sources[i % sources.length];
+            bat.alt = "bat";
+            bat.className = "absolute animate-bat-fly";
+            const top = Math.random() * 80 + 5; // 5% - 85%
+            const leftOffset = Math.random() * 30 + 1; // start off-left
+            const size = Math.round(Math.random() * 48 + 24); // 24px - 72px
+            const opacity = (Math.random() * 0.45 + 0.25).toFixed(2);
+            const duration = (Math.random() * 10 + 8).toFixed(2);
+            const delay = (Math.random() * -duration).toFixed(2);
+
+            bat.style.top = top + "%";
+            bat.style.left = "-" + leftOffset + "%";
+            bat.style.width = size + "px";
+            bat.style.opacity = opacity;
+            bat.style.animationDuration = duration + "s";
+            bat.style.animationDelay = delay + "s";
+            bat.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+            bat.style.setProperty(
+              "--start-rotation",
+              Math.random() * 40 - 20 + "deg"
+            );
+            bat.style.setProperty(
+              "--mid-rotation",
+              Math.random() * 40 - 20 + "deg"
+            );
+            bat.style.setProperty(
+              "--end-rotation",
+              Math.random() * 40 - 20 + "deg"
+            );
+
+            batContainer?.appendChild(bat);
+          }
+        });
+      })();
     </script>
 
-    <script
-      type="application/ld+json"
-      set:html={JSON.stringify(halloweenJSONLD)}
-    />
-  </main>
+    <style></style>
 
-  <Footer />
-</Base>
+    <style>
+      /* Background */
+      body,
+      main {
+        background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
+      }
 
-<style>
-  /* Background */
-  body,
-  main {
-    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
-  }
+      /* Flicker animation */
+      @keyframes flicker {
+        0%,
+        19%,
+        21%,
+        23%,
+        25%,
+        54%,
+        56%,
+        100% {
+          opacity: 1;
+        }
+        20%,
+        22%,
+        24%,
+        55% {
+          opacity: 0.7;
+        }
+      }
+      .animate-flicker {
+        animation: flicker 3s linear infinite;
+      }
 
-  /* Flicker animation */
-  @keyframes flicker {
-    0%,
-    19%,
-    21%,
-    23%,
-    25%,
-    54%,
-    56%,
-    100% {
-      opacity: 1;
-    }
-    20%,
-    22%,
-    24%,
-    55% {
-      opacity: 0.7;
-    }
-  }
-  .animate-flicker {
-    animation: flicker 3s linear infinite;
-  }
+      #bat-swarm {
+        z-index: 9999;
+        pointer-events: none;
+      }
+      @keyframes bat-fly {
+        0% {
+          transform: translateX(0) translateY(0)
+            rotate(var(--start-rotation, 0deg));
+        }
+        50% {
+          transform: translateX(120vw) translateY(-8vh)
+            rotate(var(--mid-rotation, 0deg));
+        }
+        100% {
+          transform: translateX(220vw) translateY(0)
+            rotate(var(--end-rotation, 0deg));
+        }
+      }
+      .animate-bat-fly {
+        animation-name: bat-fly;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+        will-change: transform, opacity;
+        display: block;
+      }
 
-  /* Bat fly animation */
-  @keyframes bat-fly {
-    0% {
-      transform: translateX(0) translateY(0) rotate(var(--start-rotation, 0deg));
-    }
-    50% {
-      transform: translateX(120vw) translateY(-8vh)
-        rotate(var(--mid-rotation, 0deg));
-    }
-    100% {
-      transform: translateX(220vw) translateY(0)
-        rotate(var(--end-rotation, 0deg));
-    }
-  }
-  .animate-bat-fly {
-    animation-name: bat-fly;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-  }
+      /* Glow animation for hero & buttons */
+      @keyframes glow {
+        0% {
+          box-shadow: 0 0 4px #ff8c00;
+        }
+        100% {
+          box-shadow: 0 0 14px #ff8c00;
+        }
+      }
+      .glow {
+        animation: glow 2s infinite alternate;
+      }
 
-  /* Glow animation for hero & buttons */
-  @keyframes glow {
-    0% {
-      box-shadow: 0 0 4px #ff8c00;
-    }
-    100% {
-      box-shadow: 0 0 14px #ff8c00;
-    }
-  }
-  .glow {
-    animation: glow 2s infinite alternate;
-  }
+      /* Hero Styles */
+      .halloween-hero-img {
+        border-radius: 0.5rem;
+        box-shadow: 0 0 12px #ff8c0033;
+        transition: box-shadow 0.3s ease;
+      }
+      .halloween-hero-img:hover {
+        box-shadow: 0 0 18px #ff8c0066;
+      }
+      .halloween-hero-heading {
+        font-weight: 800;
+        color: #ff8c00;
+        text-shadow: 2px 2px 6px #662200;
+      }
+      .halloween-hero-subtext {
+        color: #ffe0a0;
+        line-height: 1.5;
+      }
 
-  /* Hero Styles */
-  .halloween-hero-img {
-    border-radius: 0.5rem;
-    box-shadow: 0 0 12px #ff8c0033;
-    transition: box-shadow 0.3s ease;
-  }
-  .halloween-hero-img:hover {
-    box-shadow: 0 0 18px #ff8c0066;
-  }
-  .halloween-hero-heading {
-    font-weight: 800;
-    color: #ff8c00;
-    text-shadow: 2px 2px 6px #662200;
-  }
-  .halloween-hero-subtext {
-    color: #ffe0a0;
-    line-height: 1.5;
-  }
+      /* CTA Buttons */
+      .halloween-btn {
+        background-color: #ff8c00;
+        color: black;
+        font-weight: 700;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        text-transform: uppercase;
+        box-shadow: 0 0 6px #ff8c00;
+        transition: all 0.2s ease;
+      }
+      .halloween-btn:hover {
+        background-color: #ffa500;
+        box-shadow: 0 0 12px #ff8c00;
+      }
 
-  /* CTA Buttons */
-  .halloween-btn {
-    background-color: #ff8c00;
-    color: black;
-    font-weight: 700;
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.5rem;
-    text-transform: uppercase;
-    box-shadow: 0 0 6px #ff8c00;
-    transition: all 0.2s ease;
-  }
-  .halloween-btn:hover {
-    background-color: #ffa500;
-    box-shadow: 0 0 12px #ff8c00;
-  }
-
-  /* Category Cards */
-  .halloween-card-heading {
-    font-weight: 600;
-    font-size: 1.125rem;
-    color: #fff;
-    margin-bottom: 0.25rem;
-  }
-  .halloween-card-text {
-    color: #ffd580;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-  }
-  .halloween-card-link {
-    color: #ff8c00;
-    text-decoration: none;
-    font-size: 0.875rem;
-  }
-  .halloween-card-link: hover;
-</style>
+      /* Category Cards */
+      .halloween-card-heading {
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: #fff;
+        margin-bottom: 0.25rem;
+      }
+      .halloween-card-text {
+        color: #ffd580;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+      }
+      .halloween-card-link {
+        color: #ff8c00;
+        text-decoration: none;
+        font-size: 0.875rem;
+      }
+      .halloween-card-link: hover;
+    </style>
+  </main></Base
+>
