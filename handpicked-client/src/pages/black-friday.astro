@@ -1,0 +1,215 @@
+---
+// File: /src/pages/black-friday.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const pageMeta = {
+  title: "Black Friday 2025 — Doorbusters & Verified Coupons | Saving Harbor",
+  description:
+    "Black Friday 2025 — doorbusters, early-bird deals and verified coupons across electronics, home, fashion and more.",
+};
+
+const bfJSONLD = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  url: "https://savingharbor.com/black-friday",
+  headline: "Black Friday Deals — Saving Harbor",
+  description:
+    "Black Friday doorbusters, top store deals and coupon collections for 2025.",
+  publisher: {
+    "@type": "Organization",
+    name: "Saving Harbor",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://savingharbor.com/logo.webp",
+    },
+  },
+};
+---
+
+<Base meta={pageMeta}>
+  <Header />
+
+  <main id="content" role="main" class="container mx-auto px-4 py-10">
+    <header class="mb-8 relative flex flex-col md:flex-row items-center gap-6">
+      <img
+        src="/assets/black-friday-hero.webp"
+        alt="Black Friday deals"
+        width="1600"
+        height="1000"
+        loading="lazy"
+        decoding="async"
+        class="bf-hero-img animate-glow w-full md:w-1/2"
+      />
+      <div class="md:flex-1">
+        <span
+          class="inline-block px-3 py-1 rounded-full bg-yellow-600 text-black font-bold text-sm mb-2"
+        >
+          Black Friday 2025
+        </span>
+        <h1 class="bf-hero-heading text-3xl md:text-4xl mb-3">
+          Black Friday Doorbusters & Verified Coupons
+        </h1>
+        <p class="bf-hero-subtext mb-4">
+          Early access lists, verified coupon codes and curated store highlights
+          — plan your biggest savings.
+        </p>
+        <a
+          href="/coupons?q=black+friday"
+          class="bf-btn inline-block"
+          aria-label="Browse Black Friday coupons"
+        >
+          Browse Black Friday Coupons
+        </a>
+      </div>
+    </header>
+
+    <section
+      aria-labelledby="bf-categories"
+      class="grid gap-6 sm:grid-cols-2 md:grid-cols-4"
+    >
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="bf-card-heading">Electronics</h2>
+        <p class="bf-card-text">
+          TVs, laptops, phones — curated doorbusters and verified coupon stacks.
+        </p>
+        <a href="/stores?cat=electronics" class="bf-card-link">
+          Shop Electronics →
+        </a>
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="bf-card-heading">Home & Kitchen</h2>
+        <p class="bf-card-text">Appliances and bundles with deep discounts.</p>
+        <a href="/stores?cat=home" class="bf-card-link">See Home Deals →</a>
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="bf-card-heading">Fashion</h2>
+        <p class="bf-card-text">Doorbusters on brands and coupon stacks.</p>
+        <a href="/stores?cat=fashion" class="bf-card-link">Browse Fashion →</a>
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="bf-card-heading">Early Access</h2>
+        <p class="bf-card-text">
+          Insider lists and pre-sale coupons to beat the rush.
+        </p>
+        <a href="/coupons?q=early+access+black+friday" class="bf-card-link">
+          Get Early Access →
+        </a>
+      </article>
+    </section>
+
+    <section aria-labelledby="bf-trust" class="mt-10">
+      <h2 id="bf-trust" class="text-xl font-semibold mb-2 text-gray-100">
+        How We Verify Deals
+      </h2>
+      <p class="bf-hero-subtext text-sm">
+        We confirm coupon validity, list expiries and only surface deals with
+        clear redemption steps. Server-rendered lists ensure instant paint.
+      </p>
+    </section>
+
+    <footer class="mt-10 text-gray-400 text-sm">
+      <p>© Saving Harbor — curated Black Friday deals</p>
+    </footer>
+
+    <script type="application/ld+json" set:html={JSON.stringify(bfJSONLD)} />
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  /* Glow animation for hero image and buttons */
+  .animate-glow {
+    box-shadow: 0 0 6px #ffd700;
+    animation: glow 2s infinite alternate;
+  }
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 4px #ffd700;
+    }
+    100% {
+      box-shadow: 0 0 14px #ffd700;
+    }
+  }
+
+  /* Hero Heading */
+  .bf-hero-heading {
+    font-weight: 800;
+    color: #ffd700; /* neon gold */
+    text-shadow:
+      0 0 6px #ffd700,
+      0 0 12px #ff4500;
+  }
+
+  /* Hero Subheading / Paragraph */
+  .bf-hero-subtext {
+    color: #e0e0e0;
+    line-height: 1.5;
+  }
+
+  /* CTA Buttons */
+  .bf-btn {
+    background-color: #ffd700;
+    color: black;
+    font-weight: 700;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 6px #ffd700;
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .bf-btn:hover {
+    background-color: #ffc200;
+    box-shadow: 0 0 12px #ffd700;
+  }
+
+  /* Category Card Headings */
+  .bf-card-heading {
+    font-weight: 600;
+    font-size: 1.125rem; /* 18px */
+    margin-bottom: 0.25rem;
+    color: #ffffff;
+  }
+
+  /* Category Card Text */
+  .bf-card-text {
+    color: #b0b0b0;
+    font-size: 0.875rem; /* 14px */
+    margin-bottom: 0.5rem;
+  }
+
+  /* Category Card Links */
+  .bf-card-link {
+    color: #ffd700;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .bf-card-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Subtle hero image glow effect */
+  .bf-hero-img {
+    border-radius: 0.5rem;
+    box-shadow: 0 0 12px #ffd70033; /* subtle glow around hero */
+    transition: box-shadow 0.3s ease;
+  }
+  .bf-hero-img:hover {
+    box-shadow: 0 0 18px #ffd70066;
+  }
+</style>

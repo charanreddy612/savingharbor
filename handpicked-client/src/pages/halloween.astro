@@ -1,0 +1,253 @@
+---
+// File: /src/pages/halloween.astro
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const pageMeta = {
+  title: "Halloween 2025 — Spooky Deals & Coupons | Saving Harbor",
+  description:
+    "Scary-good Halloween 2025 deals, costumes, decor and candy — curated coupons and verified offers.",
+};
+
+const halloweenJSONLD = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  url: "https://savingharbor.com/halloween",
+  headline: "Halloween Deals — Saving Harbor",
+  description:
+    "Scary-good Halloween 2025 deals, costumes, decor and candy — curated coupons and verified offers.",
+  publisher: {
+    "@type": "Organization",
+    name: "Saving Harbor",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://savingharbor.com/logo.webp",
+    },
+  },
+};
+---
+
+<Base meta={pageMeta}>
+  <Header />
+  <main id="content" role="main" class="container mx-auto px-4 py-10">
+    <header class="mb-8 relative flex flex-col md:flex-row items-center gap-6">
+      <img
+        src="/assets/halloween-hero.webp"
+        alt="Halloween pumpkins and deals"
+        width="1280"
+        height="880"
+        loading="lazy"
+        decoding="async"
+        class="halloween-hero-img animate-flicker w-full md:w-1/2"
+      />
+      <div class="md:flex-1">
+        <span
+          class="inline-block px-3 py-1 rounded-full bg-orange-700 text-orange-100 font-bold text-sm mb-2"
+        >
+          Halloween 2025
+        </span>
+        <h1 class="halloween-hero-heading text-3xl md:text-4xl mb-3">
+          Spooky-good Halloween Deals & Coupons
+        </h1>
+        <p class="halloween-hero-subtext mb-4">
+          Costumes, décor, candy & party supplies — curated, verified and timed
+          for maximum savings.
+        </p>
+        <a
+          href="/coupons?q=halloween"
+          class="halloween-btn inline-block"
+          aria-label="Browse Halloween coupons"
+        >
+          Browse Halloween Coupons
+        </a>
+      </div>
+    </header>
+
+    <section
+      aria-labelledby="top-categories"
+      class="grid gap-6 sm:grid-cols-2 md:grid-cols-4"
+    >
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="halloween-card-heading">Costumes</h2>
+        <p class="halloween-card-text">
+          Kids, adults & pets — deep discounts and code stacks.
+        </p>
+        <a href="/stores?cat=costumes" class="halloween-card-link">
+          Shop Costumes →
+        </a>
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="halloween-card-heading">Decor & Props</h2>
+        <p class="halloween-card-text">
+          Animate your home with props & lighting deals.
+        </p>
+        <a href="/stores?cat=decor" class="halloween-card-link">View Decor →</a>
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="halloween-card-heading">Candy & Treats</h2>
+        <p class="halloween-card-text">Bulk candy & delivery coupons.</p>
+        <a href="/stores?cat=candy" class="halloween-card-link"
+          >See Candy Offers →</a
+        >
+      </article>
+
+      <article
+        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
+        <h2 class="halloween-card-heading">Last-minute Deals</h2>
+        <p class="halloween-card-text">Express shipping & same-week offers.</p>
+        <a href="/coupons?q=last+minute+halloween" class="halloween-card-link">
+          Hurry — limited time →
+        </a>
+      </article>
+    </section>
+
+    <footer class="mt-10 text-gray-400 text-sm">
+      <p>© Saving Harbor — curated Halloween deals</p>
+    </footer>
+
+    <!-- Floating bats / spooky animation (pure CSS) -->
+    <div
+      aria-hidden="true"
+      class="fixed top-10 left-10 pointer-events-none opacity-20 animate-bat-fly"
+    >
+      <div class="w-24 h-10 bg-black rounded-full shadow-lg"></div>
+    </div>
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(halloweenJSONLD)}
+    />
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  /* Flicker Animation for spooky elements */
+  @keyframes flicker {
+    0%,
+    19%,
+    21%,
+    23%,
+    25%,
+    54%,
+    56%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    22%,
+    24%,
+    55% {
+      opacity: 0.7;
+    }
+  }
+  .animate-flicker {
+    animation: flicker 3s linear infinite;
+  }
+
+  /* Bat flying animation */
+  @keyframes bat-fly {
+    0% {
+      transform: translateX(-20vw) translateY(0) rotate(-10deg);
+    }
+    50% {
+      transform: translateX(40vw) translateY(-6vh) rotate(8deg);
+    }
+    100% {
+      transform: translateX(100vw) translateY(0) rotate(-10deg);
+    }
+  }
+  .animate-bat-fly {
+    animation: bat-fly 9s linear infinite;
+  }
+
+  /* Glow Animation for hero and CTA buttons */
+  .glow {
+    box-shadow: 0 0 6px #ff8c00;
+    animation: glow 2s infinite alternate;
+  }
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 4px #ff8c00;
+    }
+    100% {
+      box-shadow: 0 0 14px #ff8c00;
+    }
+  }
+
+  /* Hero Heading */
+  .halloween-hero-heading {
+    font-weight: 800;
+    color: #ff8c00; /* Pumpkin orange */
+    text-shadow: 2px 2px 6px #662200; /* spooky subtle shadow */
+  }
+
+  /* Hero Subheading / Paragraph */
+  .halloween-hero-subtext {
+    color: #ffe0a0;
+    line-height: 1.5;
+  }
+
+  /* CTA Buttons */
+  .halloween-btn {
+    background-color: #ff8c00;
+    color: black;
+    font-weight: 700;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 6px #ff8c00;
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .halloween-btn:hover {
+    background-color: #ffa500;
+    box-shadow: 0 0 12px #ff8c00;
+  }
+
+  /* Category Card Headings */
+  .halloween-card-heading {
+    font-weight: 600;
+    font-size: 1.125rem; /* 18px */
+    margin-bottom: 0.25rem;
+    color: #ffffff;
+  }
+
+  /* Category Card Text */
+  .halloween-card-text {
+    color: #ffd580;
+    font-size: 0.875rem; /* 14px */
+    margin-bottom: 0.5rem;
+  }
+
+  /* Category Card Links */
+  .halloween-card-link {
+    color: #ff8c00;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .halloween-card-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Hero Image */
+  .halloween-hero-img {
+    border-radius: 0.5rem;
+    box-shadow: 0 0 12px #ff8c0033; /* subtle glow around hero */
+    transition: box-shadow 0.3s ease;
+  }
+  .halloween-hero-img:hover {
+    box-shadow: 0 0 18px #ff8c0066;
+  }
+</style>
