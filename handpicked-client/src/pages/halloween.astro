@@ -119,27 +119,41 @@ const halloweenJSONLD = {
       <p>© Saving Harbor — curated Halloween deals</p>
     </footer>
 
-    <!-- Floating Bats -->
+    <!-- Floating Bat Swarm -->
     <div
       aria-hidden="true"
+      id="bat-swarm"
       class="fixed top-0 left-0 w-full h-full pointer-events-none"
     >
-      <img
-        src="/assets/bat1.png"
-        class="absolute animate-bat-fly opacity-30 w-16"
-        style="top:20%; left:-5%;"
-      />
-      <img
-        src="/assets/bat2.png"
-        class="absolute animate-bat-fly opacity-25 w-12"
-        style="top:35%; left:-10%;"
-      />
-      <img
-        src="/assets/bat3.png"
-        class="absolute animate-bat-fly opacity-20 w-20"
-        style="top:50%; left:-15%;"
-      />
     </div>
+
+    <script>
+      const batImages = [
+        "/assets/bat1.png",
+        "/assets/bat2.png",
+        "/assets/bat4.png",
+        "/assets/bat5.png",
+     ];
+      const batContainer = document.getElementById("bat-swarm");
+
+      for (let i = 0; i < 20; i++) {
+        const bat = document.createElement("img");
+        bat.src = batImages[Math.floor(Math.random() * batImages.length)];
+        bat.className = "absolute animate-bat-fly";
+        const top = Math.random() * 80 + 10;
+        const size = Math.random() * 16 + 12;
+        const opacity = Math.random() * 0.3 + 0.2;
+        const duration = Math.random() * 8 + 8;
+
+        bat.style.top = top + "%";
+        bat.style.left = "-" + Math.random() * 20 + "%";
+        bat.style.width = size + "px";
+        bat.style.opacity = opacity.toString();
+        bat.style.animationDuration = duration + "s";
+        bat.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
+        batContainer?.appendChild(bat);
+      }
+    </script>
 
     <script
       type="application/ld+json"
@@ -151,6 +165,12 @@ const halloweenJSONLD = {
 </Base>
 
 <style>
+  /* Background */
+  body,
+  main {
+    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
+  }
+
   /* Flicker animation */
   @keyframes flicker {
     0%,
@@ -177,17 +197,21 @@ const halloweenJSONLD = {
   /* Bat fly animation */
   @keyframes bat-fly {
     0% {
-      transform: translateX(-20vw) translateY(0) rotate(-10deg);
+      transform: translateX(0) translateY(0) rotate(var(--start-rotation, 0deg));
     }
     50% {
-      transform: translateX(120vw) translateY(-8vh) rotate(10deg);
+      transform: translateX(120vw) translateY(-8vh)
+        rotate(var(--mid-rotation, 0deg));
     }
     100% {
-      transform: translateX(220vw) translateY(0) rotate(-10deg);
+      transform: translateX(220vw) translateY(0)
+        rotate(var(--end-rotation, 0deg));
     }
   }
   .animate-bat-fly {
-    animation: bat-fly 12s linear infinite;
+    animation-name: bat-fly;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
   }
 
   /* Glow animation for hero & buttons */
@@ -212,7 +236,6 @@ const halloweenJSONLD = {
   .halloween-hero-img:hover {
     box-shadow: 0 0 18px #ff8c0066;
   }
-
   .halloween-hero-heading {
     font-weight: 800;
     color: #ff8c00;
@@ -256,13 +279,5 @@ const halloweenJSONLD = {
     text-decoration: none;
     font-size: 0.875rem;
   }
-  .halloween-card-link:hover {
-    text-decoration: underline;
-  }
-
-  /* Background */
-  body,
-  main {
-    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
-  }
+  .halloween-card-link: hover;
 </style>
