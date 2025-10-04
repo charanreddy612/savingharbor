@@ -30,20 +30,22 @@ const halloweenJSONLD = {
 
 <Base meta={pageMeta}>
   <Header />
-  <main id="content" role="main" class="container mx-auto px-4 py-10">
-    <header class="mb-8 relative flex flex-col md:flex-row items-center gap-6">
+
+  <main id="content" role="main" class="container mx-auto px-4 py-10 relative">
+    <!-- Hero Section -->
+    <header class="mb-12 relative flex flex-col md:flex-row items-center gap-6">
       <img
-        src="/assets/halloween-hero.webp"
+        src="/images/halloween-hero.webp"
         alt="Halloween pumpkins and deals"
         width="1280"
         height="880"
         loading="lazy"
         decoding="async"
-        class="halloween-hero-img animate-flicker w-full md:w-1/2"
+        class="halloween-hero-img animate-flicker w-full md:w-1/2 rounded-lg shadow-lg"
       />
       <div class="md:flex-1">
         <span
-          class="inline-block px-3 py-1 rounded-full bg-orange-700 text-orange-100 font-bold text-sm mb-2"
+          class="inline-block px-3 py-1 rounded-full bg-orange-800 text-orange-100 font-bold text-sm mb-2"
         >
           Halloween 2025
         </span>
@@ -56,7 +58,7 @@ const halloweenJSONLD = {
         </p>
         <a
           href="/coupons?q=halloween"
-          class="halloween-btn inline-block"
+          class="halloween-btn inline-block glow"
           aria-label="Browse Halloween coupons"
         >
           Browse Halloween Coupons
@@ -64,24 +66,25 @@ const halloweenJSONLD = {
       </div>
     </header>
 
+    <!-- Categories Section -->
     <section
       aria-labelledby="top-categories"
       class="grid gap-6 sm:grid-cols-2 md:grid-cols-4"
     >
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="halloween-card-heading">Costumes</h2>
         <p class="halloween-card-text">
           Kids, adults & pets — deep discounts and code stacks.
         </p>
-        <a href="/stores?cat=costumes" class="halloween-card-link">
-          Shop Costumes →
-        </a>
+        <a href="/stores?cat=costumes" class="halloween-card-link"
+          >Shop Costumes →</a
+        >
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="halloween-card-heading">Decor & Props</h2>
         <p class="halloween-card-text">
@@ -91,7 +94,7 @@ const halloweenJSONLD = {
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="halloween-card-heading">Candy & Treats</h2>
         <p class="halloween-card-text">Bulk candy & delivery coupons.</p>
@@ -101,7 +104,7 @@ const halloweenJSONLD = {
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="halloween-card-heading">Last-minute Deals</h2>
         <p class="halloween-card-text">Express shipping & same-week offers.</p>
@@ -111,16 +114,31 @@ const halloweenJSONLD = {
       </article>
     </section>
 
-    <footer class="mt-10 text-gray-400 text-sm">
+    <!-- Footer -->
+    <footer class="mt-12 text-gray-400 text-sm">
       <p>© Saving Harbor — curated Halloween deals</p>
     </footer>
 
-    <!-- Floating bats / spooky animation (pure CSS) -->
+    <!-- Floating Bats -->
     <div
       aria-hidden="true"
-      class="fixed top-10 left-10 pointer-events-none opacity-20 animate-bat-fly"
+      class="fixed top-0 left-0 w-full h-full pointer-events-none"
     >
-      <div class="w-24 h-10 bg-black rounded-full shadow-lg"></div>
+      <img
+        src="/images/bat1.png"
+        class="absolute animate-bat-fly opacity-30 w-16"
+        style="top:20%; left:-5%;"
+      />
+      <img
+        src="/images/bat2.png"
+        class="absolute animate-bat-fly opacity-25 w-12"
+        style="top:35%; left:-10%;"
+      />
+      <img
+        src="/images/bat3.png"
+        class="absolute animate-bat-fly opacity-20 w-20"
+        style="top:50%; left:-15%;"
+      />
     </div>
 
     <script
@@ -128,11 +146,12 @@ const halloweenJSONLD = {
       set:html={JSON.stringify(halloweenJSONLD)}
     />
   </main>
+
   <Footer />
 </Base>
 
 <style>
-  /* Flicker Animation for spooky elements */
+  /* Flicker animation */
   @keyframes flicker {
     0%,
     19%,
@@ -155,27 +174,23 @@ const halloweenJSONLD = {
     animation: flicker 3s linear infinite;
   }
 
-  /* Bat flying animation */
+  /* Bat fly animation */
   @keyframes bat-fly {
     0% {
       transform: translateX(-20vw) translateY(0) rotate(-10deg);
     }
     50% {
-      transform: translateX(40vw) translateY(-6vh) rotate(8deg);
+      transform: translateX(120vw) translateY(-8vh) rotate(10deg);
     }
     100% {
-      transform: translateX(100vw) translateY(0) rotate(-10deg);
+      transform: translateX(220vw) translateY(0) rotate(-10deg);
     }
   }
   .animate-bat-fly {
-    animation: bat-fly 9s linear infinite;
+    animation: bat-fly 12s linear infinite;
   }
 
-  /* Glow Animation for hero and CTA buttons */
-  .glow {
-    box-shadow: 0 0 6px #ff8c00;
-    animation: glow 2s infinite alternate;
-  }
+  /* Glow animation for hero & buttons */
   @keyframes glow {
     0% {
       box-shadow: 0 0 4px #ff8c00;
@@ -184,15 +199,25 @@ const halloweenJSONLD = {
       box-shadow: 0 0 14px #ff8c00;
     }
   }
-
-  /* Hero Heading */
-  .halloween-hero-heading {
-    font-weight: 800;
-    color: #ff8c00; /* Pumpkin orange */
-    text-shadow: 2px 2px 6px #662200; /* spooky subtle shadow */
+  .glow {
+    animation: glow 2s infinite alternate;
   }
 
-  /* Hero Subheading / Paragraph */
+  /* Hero Styles */
+  .halloween-hero-img {
+    border-radius: 0.5rem;
+    box-shadow: 0 0 12px #ff8c0033;
+    transition: box-shadow 0.3s ease;
+  }
+  .halloween-hero-img:hover {
+    box-shadow: 0 0 18px #ff8c0066;
+  }
+
+  .halloween-hero-heading {
+    font-weight: 800;
+    color: #ff8c00;
+    text-shadow: 2px 2px 6px #662200;
+  }
   .halloween-hero-subtext {
     color: #ffe0a0;
     line-height: 1.5;
@@ -207,47 +232,37 @@ const halloweenJSONLD = {
     border-radius: 0.5rem;
     text-transform: uppercase;
     box-shadow: 0 0 6px #ff8c00;
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease;
+    transition: all 0.2s ease;
   }
   .halloween-btn:hover {
     background-color: #ffa500;
     box-shadow: 0 0 12px #ff8c00;
   }
 
-  /* Category Card Headings */
+  /* Category Cards */
   .halloween-card-heading {
     font-weight: 600;
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
+    color: #fff;
     margin-bottom: 0.25rem;
-    color: #ffffff;
   }
-
-  /* Category Card Text */
   .halloween-card-text {
     color: #ffd580;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     margin-bottom: 0.5rem;
   }
-
-  /* Category Card Links */
   .halloween-card-link {
     color: #ff8c00;
-    font-size: 0.875rem;
     text-decoration: none;
+    font-size: 0.875rem;
   }
   .halloween-card-link:hover {
     text-decoration: underline;
   }
 
-  /* Hero Image */
-  .halloween-hero-img {
-    border-radius: 0.5rem;
-    box-shadow: 0 0 12px #ff8c0033; /* subtle glow around hero */
-    transition: box-shadow 0.3s ease;
-  }
-  .halloween-hero-img:hover {
-    box-shadow: 0 0 18px #ff8c0066;
+  /* Background */
+  body,
+  main {
+    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
   }
 </style>
