@@ -31,20 +31,21 @@ const bfJSONLD = {
 <Base meta={pageMeta}>
   <Header />
 
-  <main id="content" role="main" class="container mx-auto px-4 py-10">
-    <header class="mb-8 relative flex flex-col md:flex-row items-center gap-6">
+  <main id="content" role="main" class="container mx-auto px-4 py-10 relative">
+    <!-- Hero Section -->
+    <header class="mb-12 relative flex flex-col md:flex-row items-center gap-6">
       <img
-        src="/assets/black-friday-hero.webp"
+        src="/images/black-friday-hero.webp"
         alt="Black Friday deals"
         width="1600"
         height="1000"
         loading="lazy"
         decoding="async"
-        class="bf-hero-img animate-glow w-full md:w-1/2"
+        class="bf-hero-img animate-glow w-full md:w-1/2 rounded-lg shadow-lg"
       />
       <div class="md:flex-1">
         <span
-          class="inline-block px-3 py-1 rounded-full bg-yellow-600 text-black font-bold text-sm mb-2"
+          class="inline-block px-3 py-1 rounded-full bg-yellow-700 text-black font-bold text-sm mb-2"
         >
           Black Friday 2025
         </span>
@@ -57,7 +58,7 @@ const bfJSONLD = {
         </p>
         <a
           href="/coupons?q=black+friday"
-          class="bf-btn inline-block"
+          class="bf-btn inline-block glow"
           aria-label="Browse Black Friday coupons"
         >
           Browse Black Friday Coupons
@@ -65,24 +66,25 @@ const bfJSONLD = {
       </div>
     </header>
 
+    <!-- Categories Section -->
     <section
       aria-labelledby="bf-categories"
       class="grid gap-6 sm:grid-cols-2 md:grid-cols-4"
     >
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="bf-card-heading">Electronics</h2>
         <p class="bf-card-text">
           TVs, laptops, phones — curated doorbusters and verified coupon stacks.
         </p>
-        <a href="/stores?cat=electronics" class="bf-card-link">
-          Shop Electronics →
-        </a>
+        <a href="/stores?cat=electronics" class="bf-card-link"
+          >Shop Electronics →</a
+        >
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="bf-card-heading">Home & Kitchen</h2>
         <p class="bf-card-text">Appliances and bundles with deep discounts.</p>
@@ -90,7 +92,7 @@ const bfJSONLD = {
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="bf-card-heading">Fashion</h2>
         <p class="bf-card-text">Doorbusters on brands and coupon stacks.</p>
@@ -98,23 +100,24 @@ const bfJSONLD = {
       </article>
 
       <article
-        class="bg-gray-800 rounded-lg p-4 shadow hover:shadow-lg transition"
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
       >
         <h2 class="bf-card-heading">Early Access</h2>
         <p class="bf-card-text">
           Insider lists and pre-sale coupons to beat the rush.
         </p>
-        <a href="/coupons?q=early+access+black+friday" class="bf-card-link">
-          Get Early Access →
-        </a>
+        <a href="/coupons?q=early+access+black+friday" class="bf-card-link"
+          >Get Early Access →</a
+        >
       </article>
     </section>
 
+    <!-- How we verify deals -->
     <section aria-labelledby="bf-trust" class="mt-10">
       <h2 id="bf-trust" class="text-xl font-semibold mb-2 text-gray-100">
         How We Verify Deals
       </h2>
-      <p class="bf-hero-subtext text-sm">
+      <p class="text-gray-400 text-sm">
         We confirm coupon validity, list expiries and only surface deals with
         clear redemption steps. Server-rendered lists ensure instant paint.
       </p>
@@ -132,10 +135,6 @@ const bfJSONLD = {
 
 <style>
   /* Glow animation for hero image and buttons */
-  .animate-glow {
-    box-shadow: 0 0 6px #ffd700;
-    animation: glow 2s infinite alternate;
-  }
   @keyframes glow {
     0% {
       box-shadow: 0 0 4px #ffd700;
@@ -144,23 +143,34 @@ const bfJSONLD = {
       box-shadow: 0 0 14px #ffd700;
     }
   }
+  .animate-glow,
+  .glow {
+    animation: glow 2s infinite alternate;
+  }
 
-  /* Hero Heading */
+  /* Hero styles */
+  .bf-hero-img {
+    border-radius: 0.5rem;
+    box-shadow: 0 0 12px #ffd70033;
+    transition: box-shadow 0.3s ease;
+  }
+  .bf-hero-img:hover {
+    box-shadow: 0 0 18px #ffd70066;
+  }
+
   .bf-hero-heading {
     font-weight: 800;
-    color: #ffd700; /* neon gold */
+    color: #ffd700;
     text-shadow:
       0 0 6px #ffd700,
       0 0 12px #ff4500;
   }
-
-  /* Hero Subheading / Paragraph */
   .bf-hero-subtext {
     color: #e0e0e0;
     line-height: 1.5;
   }
 
-  /* CTA Buttons */
+  /* CTA buttons */
   .bf-btn {
     background-color: #ffd700;
     color: black;
@@ -169,47 +179,37 @@ const bfJSONLD = {
     border-radius: 0.5rem;
     text-transform: uppercase;
     box-shadow: 0 0 6px #ffd700;
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease;
+    transition: all 0.2s ease;
   }
   .bf-btn:hover {
     background-color: #ffc200;
     box-shadow: 0 0 12px #ffd700;
   }
 
-  /* Category Card Headings */
+  /* Category Cards */
   .bf-card-heading {
     font-weight: 600;
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
     margin-bottom: 0.25rem;
-    color: #ffffff;
+    color: #fff;
   }
-
-  /* Category Card Text */
   .bf-card-text {
     color: #b0b0b0;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     margin-bottom: 0.5rem;
   }
-
-  /* Category Card Links */
   .bf-card-link {
     color: #ffd700;
-    font-size: 0.875rem;
     text-decoration: none;
+    font-size: 0.875rem;
   }
   .bf-card-link:hover {
     text-decoration: underline;
   }
 
-  /* Subtle hero image glow effect */
-  .bf-hero-img {
-    border-radius: 0.5rem;
-    box-shadow: 0 0 12px #ffd70033; /* subtle glow around hero */
-    transition: box-shadow 0.3s ease;
-  }
-  .bf-hero-img:hover {
-    box-shadow: 0 0 18px #ffd70066;
+  /* Background gradient */
+  body,
+  main {
+    background: linear-gradient(180deg, #111 0%, #222 100%);
   }
 </style>
