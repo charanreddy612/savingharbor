@@ -251,7 +251,7 @@ const bfFaqs = [
     </section>
 
     <!-- FAQ Accordion -->
-    <section class="mt-10">
+    <section aria-labelledby="bf-trust" class="mt-10">
       <h2 class="text-2xl font-bold mb-4 text-gray-100">FAQs</h2>
       <FAQAccordion client:idle faqs={bfFaqs} idPrefix="bf-faq" />
     </section>
@@ -301,8 +301,9 @@ const bfFaqs = [
 
   /* Hero Subheading / Paragraph */
   .bf-hero-subtext {
-    color: #e0e0e0;
+    color: #ffffff;
     line-height: 1.5;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.45);
   }
 
   /* CTA Buttons */
@@ -356,5 +357,9 @@ const bfFaqs = [
   }
   .bf-hero-img:hover {
     box-shadow: 0 0 18px #ffd70066;
+  }
+  #bf-trust {
+    color: #ffffff !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
   }
 </style>
