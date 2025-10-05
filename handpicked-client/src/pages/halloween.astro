@@ -1,4 +1,5 @@
 ---
+import { useState, useEffect } from "react";
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -11,13 +12,26 @@ const pageMeta = {
     "Unlock the best Halloween coupons and promo codes for 2025—grab exclusive deals on costumes, party supplies, decorations, and treats from top stores! Save big on this year's spookiest shopping essentials. Get instant access to limited-time Halloween sales, verified discount codes, and special spooky offers to make your celebration unforgettable. Update daily for hottest deals.",
 };
 
-const shortDescription =
-  "Halloween 2025 is creeping closer, and it’s the perfect time to grab spooky savings! Whether you’re hunting for the best costume deals, eerie decorations, or party supplies, we’ve gathered the top verified Halloween coupons and promo codes to make your celebration affordable and unforgettable. Browse this guide for exclusive offers, trending items, and real-time updates from your favorite brands — all curated by SavingHarbor.";
+const seoJSONLD = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  url: "https://savingharbor.com/halloween",
+  headline: "Halloween Coupons 2025 — Saving Harbor",
+  description: pageMeta.description,
+  publisher: {
+    "@type": "Organization",
+    name: "Saving Harbor",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://savingharbor.com/logo.webp",
+    },
+  },
+};
 
-const conclusion =
-  "Halloween only comes once a year — make the most of it! Keep checking back at SavingHarbor for fresh codes and flash offers as new discounts drop daily through October 31st. From costumes to candy, every little saving makes your Halloween extra sweet.";
+const shortDescription = `Halloween 2025 is creeping closer, and it’s the perfect time to grab spooky savings! Whether you’re hunting for the best costume deals, eerie decorations, or party supplies, we’ve gathered the top verified Halloween coupons and promo codes to make your celebration affordable and unforgettable. Browse this guide for exclusive offers, trending items, and real-time updates from your favorite brands — all curated by SavingHarbor.`;
 
-// Example FAQ list (replaceable with server-provided data if needed)
+const conclusionText = `Halloween only comes once a year — make the most of it! Keep checking back at SavingHarbor for fresh codes and flash offers as new discounts drop daily through October 31st. From costumes to candy, every little saving makes your Halloween extra sweet.`;
+
 const faqs = [
   {
     question: "What are the best Halloween coupons available right now?",
@@ -30,23 +44,109 @@ const faqs = [
     answer:
       "Top stores like Spirit Halloween, Amazon, Walmart, and Target feature exclusive promo codes for Halloween shopping this year.",
   },
-  // ... add all 20 FAQs here
+  {
+    question: "When should I start shopping for Halloween deals?",
+    answer:
+      "The ideal time is September and early October, when the biggest selection and early-bird discounts are offered by retailers.",
+  },
+  {
+    question: "Are online Halloween offers better than in-store deals?",
+    answer:
+      "Yes, many online retailers provide deeper discounts, flash sales, and digital-only coupon codes unavailable in physical stores.",
+  },
+  {
+    question: "How do I apply a Halloween coupon code at checkout?",
+    answer:
+      "Enter the coupon or promo code in the checkout field on the retailer’s site to see instant discount applied to your total.",
+  },
+  {
+    question:
+      "What are the most popular items people buy with Halloween coupons?",
+    answer:
+      "Costumes, candy, decorations, themed party supplies, and makeup kits are top sellers using Halloween codes in 2025.",
+  },
+  {
+    question:
+      "Are there any bundle discounts or buy-one-get-one offers for Halloween?",
+    answer:
+      "Many brands offer bundle deals on costumes + decor or family packs; look for multi-item promos and “buy more, save more” discounts.",
+  },
+  {
+    question: "How long do Halloween offers and coupons last?",
+    answer:
+      "Most deals start early October and end on October 31st, but flash sales and clearance coupons may extend into early November.",
+  },
+  {
+    question: "Which Halloween costumes are trending for 2025?",
+    answer:
+      "K-pop Demon Hunters, Phillies Karen, Deadpool & Wolverine, and animal onesies are among the top Google search costume trends this year.",
+  },
+  {
+    question: "Are there coupons for Halloween makeup and accessories?",
+    answer:
+      "Yes, look for dedicated coupons and exclusive deals for makeup kits, masks, wigs, and DIY face-painting supplies.",
+  },
+  {
+    question: "Is free shipping available for Halloween orders?",
+    answer:
+      "Many retailers offer free shipping on orders above a threshold (e.g., $50 or $75) during special Halloween events.",
+  },
+  {
+    question: "How do early bird Halloween specials work?",
+    answer:
+      "Retailers reward customers shopping before October 1st with greater discounts or extra perks such as free gifts or bonus coupons.",
+  },
+  {
+    question: "Where can I find last-minute Halloween deals?",
+    answer:
+      "Check coupon sites and SavingHarbor daily for flash sales and same-day offers on costumes and supplies.",
+  },
+  {
+    question: "Are there Halloween deals for pet costumes?",
+    answer:
+      "Yes, pet costumes are trending and get their own special discounts at retailers like Chewy, PetSmart, and Amazon.",
+  },
+  {
+    question: "Can I stack coupon codes for bigger Halloween savings?",
+    answer:
+      "Most stores allow one coupon per order, but check for stackable or bundle-special deals for extra savings.",
+  },
+  {
+    question: "What are the best Halloween party supplies and their discounts?",
+    answer:
+      "Shop for discounted plates, napkins, banners, inflatables, lighting, and glow-in-the-dark tableware with seasonal deals.",
+  },
+  {
+    question: "Why do Halloween prices drop after October 31st?",
+    answer:
+      "Clearance sales kick in post-Halloween to move leftover stock; look for markdowns on costumes and decorations.",
+  },
+  {
+    question: "Is SavingHarbor the best place for Halloween coupon updates?",
+    answer:
+      "Yes! SavingHarbor curates verified, merchant-negotiated Halloween deals daily, helping shoppers uncover hidden and exclusive offers.",
+  },
+  {
+    question:
+      "Are there sustainable or eco-friendly Halloween deals this year?",
+    answer:
+      "2025 sees a growth in deals on recycled decor, organic candy, and reusable costumes, especially from eco-friendly brands.",
+  },
+  {
+    question: "How does SavingHarbor get exclusive Halloween coupons?",
+    answer:
+      "SavingHarbor actively negotiates with merchants, partnering for the latest codes and updating offers hourly for shoppers’ convenience.",
+  },
 ];
 
-// Fetch seasonal stores
-let stores = [];
-try {
-  const res = await fetch(`${Astro.site}/api/stores?season=halloween`);
-  if (res.ok) stores = await res.json();
-} catch (e) {
-  stores = [];
-}
+// Reactive stores state
+let stores: any[] = [];
 ---
 
 <Base meta={pageMeta}>
   <Header />
 
-  <main id="content" role="main" class="container mx-auto px-4 py-10 relative">
+  <main id="content" class="container mx-auto px-4 py-10 relative">
     <!-- Hero Section -->
     <header class="mb-12 relative flex flex-col md:flex-row items-center gap-6">
       <img
@@ -79,40 +179,41 @@ try {
     </header>
 
     <!-- Stores Section -->
-    <section aria-labelledby="halloween-stores" class="mt-8">
-      <h2 class="text-2xl font-bold text-orange-400 mb-4">Halloween Stores</h2>
-      {
-        stores.length > 0 ? (
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {stores.map((store: any) => (
-              <div
-                class="rounded-md bg-gray-900/5 p-3 transition-shadow hover:shadow-store-card"
-                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
-              >
-                <CardStore store={store} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p class="text-gray-500">No stores found for Halloween.</p>
-        )
-      }
+    <section class="mt-10">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-brand-secondary">Stores</h2>
+      </div>
+      <div
+        id="halloween-stores"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
+      >
+        {
+          stores.length === 0 && (
+            <p class="text-gray-500">Loading Halloween stores...</p>
+          )
+        }
+        {
+          stores.map((store) => (
+            <div
+              class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+              style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+            >
+              <CardStore store={store} />
+            </div>
+          ))
+        }
+      </div>
     </section>
 
-    <!-- Conclusion -->
-    <section class="mt-10 prose text-orange-100">
-      <p>{conclusion}</p>
+    <!-- Short Description / Conclusion -->
+    <section class="mt-10 space-y-6 text-gray-100">
+      <p>{shortDescription}</p>
+      <p>{conclusionText}</p>
     </section>
 
     <!-- FAQ Accordion -->
-    <section class="mt-12">
-      <h2 class="text-2xl font-bold mb-4">Halloween — FAQs</h2>
-      <FAQAccordion
-        client:idle
-        faqs={faqs}
-        defaultOpen={null}
-        idPrefix="halloween-faq"
-      />
+    <section class="mt-10">
+      <FAQAccordion faqs={faqs} />
     </section>
 
     <!-- Floating Bat Swarm -->
@@ -124,126 +225,74 @@ try {
     >
     </div>
 
-    <script>
-      (function () {
-        const batImages = [
-          "/assets/bat1.png",
-          "/assets/bat2.png",
-          "/assets/bat3.png",
-          "/assets/bat4.png",
-          "/assets/bat5.png",
-        ];
-        const batContainer = document.getElementById("bat-swarm");
-
-        function createInlineSVGBat() {
-          return (
-            "data:image/svg+xml;utf8," +
-            encodeURIComponent(
-              `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><path fill="#000" d="M0 32c20-10 30-20 48-10 18 10 30 10 48 0 18-10 28 0 32 10v22H0z"/></svg>`
-            )
-          );
+    <script type="module">
+      // Fetch Halloween stores dynamically
+      async function fetchHalloweenStores() {
+        try {
+          const res = await fetch("/api/stores?season=halloween");
+          if (!res.ok) throw new Error("Failed to fetch stores");
+          const data = await res.json();
+          stores = data.data || [];
+        } catch (err) {
+          console.error(err);
         }
+      }
+      fetchHalloweenStores();
 
-        async function findAvailable(srcs: string []) {
-          for (const s of srcs) {
-            try {
-              const res = await fetch(s, { method: "HEAD" });
-              if (res.ok) return srcs;
-            } catch {}
-          }
-          return [createInlineSVGBat()];
+      // Bat swarm animation
+      const batImages = [
+        "/assets/bat1.png",
+        "/assets/bat2.png",
+        "/assets/bat3.png",
+        "/assets/bat4.png",
+        "/assets/bat5.png",
+      ];
+      const batContainer = document.getElementById("bat-swarm");
+
+      function createInlineSVGBat() {
+        return (
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64"><path fill="#000" d="M0 32c20-10 30-20 48-10 18 10 30 10 48 0 18-10 28 0 32 10v22H0z"/></svg>`
+          )
+        );
+      }
+
+      async function findAvailable(srcs) {
+        for (const s of srcs) {
+          try {
+            const res = await fetch(s, { method: "HEAD" });
+            if (res.ok) return srcs;
+          } catch {}
         }
+        return [createInlineSVGBat()];
+      }
 
-        window.addEventListener("load", async () => {
-          const sources = await findAvailable(batImages);
-          const SWARM_COUNT = 18;
-          for (let i = 0; i < SWARM_COUNT; i++) {
-            const bat = document.createElement("img");
-            bat.src = sources[i % sources.length];
-            bat.alt = "bat";
-            bat.className = "absolute animate-bat-fly";
-            const top = Math.random() * 80 + 5;
-            const leftOffset = Math.random() * 30 + 1;
-            const size = Math.round(Math.random() * 48 + 24);
-            const opacity = (Math.random() * 0.45 + 0.25).toFixed(2);
-            const duration = (Math.random() * 10 + 8).toFixed(2);
-            const delay = (Math.random() * -duration).toFixed(2);
-
-            bat.style.top = top + "%";
-            bat.style.left = "-" + leftOffset + "%";
-            bat.style.width = size + "px";
-            bat.style.opacity = opacity;
-            bat.style.animationDuration = duration + "s";
-            bat.style.animationDelay = delay + "s";
-            bat.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
-            bat.style.setProperty(
-              "--start-rotation",
-              Math.random() * 40 - 20 + "deg"
-            );
-            bat.style.setProperty(
-              "--mid-rotation",
-              Math.random() * 40 - 20 + "deg"
-            );
-            bat.style.setProperty(
-              "--end-rotation",
-              Math.random() * 40 - 20 + "deg"
-            );
-
-            batContainer?.appendChild(bat);
-          }
-        });
-      })();
+      window.addEventListener("load", async () => {
+        const sources = await findAvailable(batImages);
+        const SWARM_COUNT = 18;
+        for (let i = 0; i < SWARM_COUNT; i++) {
+          const bat = document.createElement("img");
+          bat.src = sources[i % sources.length];
+          bat.alt = "bat";
+          bat.className = "absolute animate-bat-fly";
+          const top = Math.random() * 80 + 5;
+          const leftOffset = Math.random() * 30 + 1;
+          const size = Math.round(Math.random() * 48 + 24);
+          const opacity = (Math.random() * 0.45 + 0.25).toFixed(2);
+          const duration = (Math.random() * 10 + 8).toFixed(2);
+          const delay = (Math.random() * -duration).toFixed(2);
+          bat.style.top = top + "%";
+          bat.style.left = "-" + leftOffset + "%";
+          bat.style.width = size + "px";
+          bat.style.opacity = opacity;
+          bat.style.animationDuration = duration + "s";
+          bat.style.animationDelay = delay + "s";
+          batContainer.appendChild(bat);
+        }
+      });
     </script>
   </main>
 
   <Footer />
 </Base>
-
-<style>
-  /* Keep all original Halloween CSS unchanged */
-  body,
-  main {
-    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
-  }
-  @keyframes flicker {
-    0%,
-    19%,
-    21%,
-    23%,
-    25%,
-    54%,
-    56%,
-    100% {
-      opacity: 1;
-    }
-    20%,
-    22%,
-    24%,
-    55% {
-      opacity: 0.7;
-    }
-  }
-  .animate-flicker {
-    animation: flicker 3s linear infinite;
-  }
-  #bat-swarm {
-    z-index: 9999;
-    pointer-events: none;
-  }
-  @keyframes bat-fly {
-    0% {
-      transform: translateX(0) translateY(0) rotate(var(--start-rotation, 0deg));
-    }
-    50% {
-      transform: translateX(120vw) translateY(-8vh)
-        rotate(var(--mid-rotation, 0deg));
-    }
-    100% {
-      transform: translateX(220vw) translateY(0)
-        rotate(var(--end-rotation, 0deg));
-    }
-  }
-  .animate-bat-fly {
-    animation: bat-fly linear infinite;
-  }
-</style>
