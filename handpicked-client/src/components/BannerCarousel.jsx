@@ -11,7 +11,18 @@ function makeSrcset(arr = []) {
     .join(", ");
 }
 
-export default function BannerCarousel({ banners = [] }) {
+/**
+ * @typedef {Object} Banner
+ * @property {number} id
+ * @property {string} alt
+ * @property {{ webp: string[]; avif: string[]; fallback: string }} variants
+ */
+
+/**
+ * @param {{ banners: Banner[] }} props
+ */
+
+export default function BannerCarousel({ banners }) {
   const containerRef = useRef(null);
   const trackRef = useRef(null);
   const touchStartX = useRef(null);
