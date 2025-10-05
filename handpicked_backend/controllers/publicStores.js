@@ -38,6 +38,11 @@ export async function list(req, res) {
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
+    //Season filter
+    const seasonSlug = req.query.season
+      ? String(req.query.season).trim().toLowerCase()
+      : null;
+
     const params = {
       q: q.trim(),
       categorySlug,
@@ -47,6 +52,7 @@ export async function list(req, res) {
       limit,
       origin,
       path,
+      seasonSlug, // include seasonSlug
     };
 
     const cacheKey = makeListCacheKey("stores", {
@@ -57,6 +63,7 @@ export async function list(req, res) {
       sort: params.sort || "",
       locale: params.locale || "",
       type: params.type || "",
+      season: params.seasonSlug || "", // include seasonSlug in cache key
     });
 
     const result = await withCache(
@@ -76,6 +83,7 @@ export async function list(req, res) {
             category: params.categorySlug || undefined,
             sort: params.sort,
             locale: params.locale || undefined,
+            season: params.seasonSlug || undefined, // include season in nav links
           },
         });
 
@@ -107,6 +115,7 @@ export async function list(req, res) {
           q: params.q,
           categorySlug: params.categorySlug,
           sort: params.sort,
+          seasonSlug: params.seasonSlug, // include seasonSlug
         });
 
         return {

@@ -10,6 +10,7 @@ import { sanitize } from "../utils/sanitize.js";
 export async function list({
   q = "",
   categorySlug = null,
+  seasonSlug = null, // NEW
   sort = "newest",
   page = 1,
   limit = 20,
@@ -38,6 +39,23 @@ export async function list({
     }
   }
 
+  // Resolve season filter if provided
+  let seasonStoreIds = null;
+  if (seasonSlug) {
+    try {
+      const { data: seasonStores, error: sErr } = await supabase
+        .from("stores_season")
+        .select("store_id")
+        .eq("season_slug", seasonSlug);
+      if (sErr) throw sErr;
+      seasonStoreIds = seasonStores.map((s) => s.store_id);
+      if (!seasonStoreIds.length) return { rows: [], total: 0 }; // no stores
+    } catch (err) {
+      console.warn("Stores.list: season lookup failed", err);
+      seasonStoreIds = null;
+    }
+  }
+
   // HOMEPAGE mode — lightweight select
   if (mode === "homepage") {
     try {
@@ -50,6 +68,7 @@ export async function list({
       if (q) query = query.ilike("name", `%${q}%`);
       if (categoryName)
         query = query.contains("category_names", [categoryName]);
+      if (seasonStoreIds) query = query.in("id", seasonStoreIds);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -81,6 +100,7 @@ export async function list({
         if (q) cQuery = cQuery.ilike("name", `%${q}%`);
         if (categoryName)
           cQuery = cQuery.contains("category_names", [categoryName]);
+        if (seasonStoreIds) cQuery = cQuery.in("id", seasonStoreIds);
 
         const { count, error: cErr } = await cQuery;
         if (cErr) throw cErr;
@@ -100,6 +120,7 @@ export async function list({
 
     if (q) query = query.ilike("name", `%${q}%`);
     if (categoryName) query = query.contains("category_names", [categoryName]);
+    if (seasonStoreIds) query = query.in("id", seasonStoreIds);
 
     const { data, error } = await query;
     if (error) throw error;
