@@ -45,18 +45,111 @@ const shortDescription = `Halloween 2025 is creeping closer, and it’s the perf
 
 const conclusion = `Halloween only comes once a year — make the most of it! Keep checking back at SavingHarbor for fresh codes and flash offers as new discounts drop daily through October 31st. From costumes to candy, every little saving makes your Halloween extra sweet.`;
 
-const faqs = [
+const halloweenFaqs = [
   {
     question: "What are the best Halloween coupons available right now?",
     answer:
       "Find verified 2025 Halloween coupons for costumes, decor, treats, and party supplies, updated daily for maximum savings.",
   },
   {
-    question: "Which stores are offering exclusive Halloween promo codes in 2025?",
+    question:
+      "Which stores are offering exclusive Halloween promo codes in 2025?",
     answer:
       "Top stores like Spirit Halloween, Amazon, Walmart, and Target feature exclusive promo codes for Halloween shopping this year.",
   },
-  // ... include all remaining FAQs here
+  {
+    question: "When should I start shopping for Halloween deals?",
+    answer:
+      "The ideal time is September and early October, when the biggest selection and early-bird discounts are offered by retailers.",
+  },
+  {
+    question: "Are online Halloween offers better than in-store deals?",
+    answer:
+      "Yes, many online retailers provide deeper discounts, flash sales, and digital-only coupon codes unavailable in physical stores.",
+  },
+  {
+    question: "How do I apply a Halloween coupon code at checkout?",
+    answer:
+      "Enter the coupon or promo code in the checkout field on the retailer’s site to see instant discount applied to your total.",
+  },
+  {
+    question:
+      "What are the most popular items people buy with Halloween coupons?",
+    answer:
+      "Costumes, candy, decorations, themed party supplies, and makeup kits are top sellers using Halloween codes in 2025.",
+  },
+  {
+    question:
+      "Are there any bundle discounts or buy-one-get-one offers for Halloween?",
+    answer:
+      "Many brands offer bundle deals on costumes + decor or family packs; look for multi-item promos and “buy more, save more” discounts.",
+  },
+  {
+    question: "How long do Halloween offers and coupons last?",
+    answer:
+      "Most deals start early October and end on October 31st, but flash sales and clearance coupons may extend into early November.",
+  },
+  {
+    question: "Which Halloween costumes are trending for 2025?",
+    answer:
+      "K-pop Demon Hunters, Phillies Karen, Deadpool & Wolverine, and animal onesies are among the top Google search costume trends this year.",
+  },
+  {
+    question: "Are there coupons for Halloween makeup and accessories?",
+    answer:
+      "Yes, look for dedicated coupons and exclusive deals for makeup kits, masks, wigs, and DIY face-painting supplies.",
+  },
+  {
+    question: "Is free shipping available for Halloween orders?",
+    answer:
+      "Many retailers offer free shipping on orders above a threshold (e.g., $50 or $75) during special Halloween events.",
+  },
+  {
+    question: "How do early bird Halloween specials work?",
+    answer:
+      "Retailers reward customers shopping before October 1st with greater discounts or extra perks such as free gifts or bonus coupons.",
+  },
+  {
+    question: "Where can I find last-minute Halloween deals?",
+    answer:
+      "Check coupon sites and SavingHarbor daily for flash sales and same-day offers on costumes and supplies.",
+  },
+  {
+    question: "Are there Halloween deals for pet costumes?",
+    answer:
+      "Yes, pet costumes are trending and get their own special discounts at retailers like Chewy, PetSmart, and Amazon.",
+  },
+  {
+    question: "Can I stack coupon codes for bigger Halloween savings?",
+    answer:
+      "Most stores allow one coupon per order, but check for stackable or bundle-special deals for extra savings.",
+  },
+  {
+    question: "What are the best Halloween party supplies and their discounts?",
+    answer:
+      "Shop for discounted plates, napkins, banners, inflatables, lighting, and glow-in-the-dark tableware with seasonal deals.",
+  },
+  {
+    question: "Why do Halloween prices drop after October 31st?",
+    answer:
+      "Clearance sales kick in post-Halloween to move leftover stock; look for markdowns on costumes and decorations.",
+  },
+  {
+    question: "Is SavingHarbor the best place for Halloween coupon updates?",
+    answer:
+      "Yes! SavingHarbor curates verified, merchant-negotiated Halloween deals daily, helping shoppers uncover hidden and exclusive offers.",
+  },
+  {
+    question:
+      "Are there sustainable or eco-friendly Halloween deals this year?",
+    answer:
+      "2025 sees a growth in deals on recycled decor, organic candy, and reusable costumes, especially from eco-friendly brands.",
+  },
+  {
+    question: "How does SavingHarbor get exclusive Halloween coupons?",
+    answer:
+      "SavingHarbor actively negotiates with merchants, partnering for the latest codes and updating offers hourly for shoppers’ convenience.",
+  },
 ];
 ---
 
@@ -100,26 +193,38 @@ const faqs = [
       aria-labelledby="top-categories"
       class="grid gap-6 sm:grid-cols-2 md:grid-cols-4"
     >
-      <article class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition">
+      <article
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
         <h2 class="halloween-card-heading">Costumes</h2>
         <p class="halloween-card-text">
           Kids, adults & pets — deep discounts and code stacks.
         </p>
-        <a href="/stores?cat=costumes" class="halloween-card-link">Shop Costumes →</a>
+        <a href="/stores?cat=costumes" class="halloween-card-link"
+          >Shop Costumes →</a
+        >
       </article>
-      <article class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition">
+      <article
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
         <h2 class="halloween-card-heading">Decor & Props</h2>
         <p class="halloween-card-text">
           Animate your home with props & lighting deals.
         </p>
         <a href="/stores?cat=decor" class="halloween-card-link">View Decor →</a>
       </article>
-      <article class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition">
+      <article
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
         <h2 class="halloween-card-heading">Candy & Treats</h2>
         <p class="halloween-card-text">Bulk candy & delivery coupons.</p>
-        <a href="/stores?cat=candy" class="halloween-card-link">See Candy Offers →</a>
+        <a href="/stores?cat=candy" class="halloween-card-link"
+          >See Candy Offers →</a
+        >
       </article>
-      <article class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition">
+      <article
+        class="bg-gray-900 rounded-lg p-4 shadow hover:shadow-lg transition"
+      >
         <h2 class="halloween-card-heading">Last-minute Deals</h2>
         <p class="halloween-card-text">Express shipping & same-week offers.</p>
         <a href="/coupons?q=last+minute+halloween" class="halloween-card-link">
@@ -130,17 +235,19 @@ const faqs = [
 
     <!-- Stores Grid -->
     <section class="mt-10">
-      {stores.length > 0 ? (
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {stores.map((store) => (
-            <div class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card">
-              <CardStore store={store} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p class="text-gray-500">No stores found.</p>
-      )}
+      {
+        stores.length > 0 ? (
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {stores.map((store) => (
+              <div class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card">
+                <CardStore store={store} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="text-gray-500">No stores found.</p>
+        )
+      }
     </section>
 
     <!-- Conclusion -->
@@ -150,7 +257,7 @@ const faqs = [
 
     <!-- FAQs -->
     <section class="mt-10">
-      <FAQAccordion faqs={faqs} />
+      <FAQAccordion faqs={halloweenFaqs} />
     </section>
 
     <!-- Floating Bat Swarm -->
@@ -159,7 +266,8 @@ const faqs = [
       id="bat-swarm"
       class="fixed top-0 left-0 w-full h-full pointer-events-none"
       style="z-index:9999"
-    ></div>
+    >
+    </div>
 
     <script>
       (function () {
@@ -181,7 +289,7 @@ const faqs = [
           );
         }
 
-        async function findAvailable(srcs : string []) {
+        async function findAvailable(srcs: string[]) {
           for (const s of srcs) {
             try {
               const res = await fetch(s, { method: "HEAD" });
@@ -229,14 +337,57 @@ const faqs = [
     background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
   }
 
-  @keyframes flicker { 0%,19%,21%,23%,25%,54%,56%,100%{opacity:.99}20%,24%,55%{opacity:.4} }
-  .halloween-hero-img { animation: flicker 2s infinite; border-radius: 0.5rem; }
-  .halloween-hero-heading { color: #ff8c00; }
-  .halloween-hero-subtext { color: #f0f0f0; }
-  .halloween-btn { background: #ff8c00; color: #fff; padding: 0.5rem 1rem; border-radius: 0.375rem; text-decoration: none; font-weight: bold; }
-  .halloween-btn.glow { box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00; transition: box-shadow 0.3s ease-in-out; }
-  .halloween-card-heading { color: #ff8c00; font-weight: bold; }
-  .halloween-card-text { color: #f0f0f0; }
-  .halloween-card-link { color: #ff8c00; text-decoration: underline; }
+  @keyframes flicker {
+    0%,
+    19%,
+    21%,
+    23%,
+    25%,
+    54%,
+    56%,
+    100% {
+      opacity: 0.99;
+    }
+    20%,
+    24%,
+    55% {
+      opacity: 0.4;
+    }
+  }
+  .halloween-hero-img {
+    animation: flicker 2s infinite;
+    border-radius: 0.5rem;
+  }
+  .halloween-hero-heading {
+    color: #ff8c00;
+  }
+  .halloween-hero-subtext {
+    color: #f0f0f0;
+  }
+  .halloween-btn {
+    background: #ff8c00;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .halloween-btn.glow {
+    box-shadow:
+      0 0 10px #ff8c00,
+      0 0 20px #ff8c00;
+    transition: box-shadow 0.3s ease-in-out;
+  }
+  .halloween-card-heading {
+    color: #ff8c00;
+    font-weight: bold;
+  }
+  .halloween-card-text {
+    color: #f0f0f0;
+  }
+  .halloween-card-link {
+    color: #ff8c00;
+    text-decoration: underline;
+  }
   /* ...bat animation keyframes and other original styling kept exactly */
 </style>
