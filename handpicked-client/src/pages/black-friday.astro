@@ -3,20 +3,21 @@
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import FAQAccordion from "../components/FAQAccordion.jsx";
 
 const pageMeta = {
-  title: "Black Friday 2025 — Doorbusters & Verified Coupons | Saving Harbor",
+  title:
+    "Black Friday Cyber Monday 2025 Deals | Best Promo Codes & Exclusive Discounts",
   description:
-    "Black Friday 2025 — doorbusters, early-bird deals and verified coupons across electronics, home, fashion and more.",
+    "Discover the biggest Black Friday and Cyber Monday 2025 deals right here! Unlock the best promo codes and exclusive discounts on electronics, fashion, gaming gear, software, and more. Stay updated on the latest offers, guaranteed savings, and insider tips to shop smarter this holiday season.",
 };
 
 const bfJSONLD = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   url: "https://savingharbor.com/black-friday",
-  headline: "Black Friday Deals — Saving Harbor",
-  description:
-    "Black Friday doorbusters, top store deals and coupon collections for 2025.",
+  headline: "Black Friday & Cyber Monday 2025 — Saving Harbor",
+  description: pageMeta.description,
   publisher: {
     "@type": "Organization",
     name: "Saving Harbor",
@@ -26,6 +27,125 @@ const bfJSONLD = {
     },
   },
 };
+
+const introduction = `The wait is over — Black Friday and Cyber Monday 2025 are here, marking the most anticipated shopping week of the year. From high-tech gadgets to trending fashion, from home essentials to digital tools, this is the season when brands slash prices and shoppers grab once-a-year deals.
+
+Whether you’re upgrading your laptop, restocking your wardrobe, or getting an early start on holiday gifts, SavingHarbor brings you a curated collection of verified coupons, limited-time promo codes, and exclusive Cyber Week offers — all in one place. Our team tracks every drop, refreshes codes daily, and highlights the biggest brand-name discounts so you never miss a bargain.
+
+Get ready for a full week of unbeatable savings starting November 24th and running through December 1st. Black Friday sets the tone with deep in-store and online markdowns, and Cyber Monday follows with massive digital-exclusive offers. This is your time to save smarter, shop faster, and make every click count.`;
+
+const conclusion = `Black Friday and Cyber Monday 2025 aren’t just about discounts — they’re about making smart, timely decisions that stretch every dollar. With new deals appearing every hour, shoppers have endless opportunities to score unbeatable prices on everything from electronics and fashion to home goods and digital essentials.
+
+At SavingHarbor, we simplify the hunt for real, working coupons so you can enjoy the thrill of saving without the stress of searching. Check back daily through Cyber Week 2025 for the latest verified offers, exclusive codes, and storewide flash sales. Shop confidently, spend wisely, and celebrate the joy of saving big this holiday season.`;
+
+const bfFaqs = [
+  {
+    question: "When is Black Friday and Cyber Monday 2025 this year?",
+    answer:
+      "Black Friday 2025 falls on Friday, November 29th, and Cyber Monday follows on December 2nd. These dates mark the biggest shopping days of the year with incredible savings across multiple categories. Bookmark SavingHarbor’s Black Friday page to get instant alerts on exclusive deals starting early November.",
+  },
+  {
+    question: "What time do Black Friday and Cyber Monday deals start?",
+    answer:
+      "Deals typically begin at midnight on the respective days, but many merchants launch early bird sales beginning in late October or early November. To never miss early deals, subscribe to SavingHarbor’s newsletter and gain priority access to verified coupons.",
+  },
+  {
+    question: "Are Black Friday deals better than Cyber Monday offers?",
+    answer:
+      "Generally, Black Friday features the deepest discounts on big-ticket items like electronics and appliances, while Cyber Monday specializes in online-exclusive tech and software deals. For a comprehensive list of the best of both sales, visit our continuously updated SavingHarbor deal hub.",
+  },
+  {
+    question: "Which product categories have the best Black Friday discounts?",
+    answer:
+      "Electronics, fashion, home goods, toys, and beauty products consistently offer the most significant markdowns during Black Friday. Our experts track these categories daily to bring you the top deals you can trust on SavingHarbor.",
+  },
+  {
+    question: "How can I find exclusive Black Friday coupon codes in 2025?",
+    answer:
+      "Exclusive coupon codes are often hidden in newsletter sign-ups, social media pages, or merchant apps. SavingHarbor partners directly with top retailers to bring you these exclusive promo codes, verified and updated in real-time for maximum savings.",
+  },
+  {
+    question: "Is Cyber Monday only for online deals?",
+    answer:
+      "While Cyber Monday originated as an online shopping event, more retailers now extend their Cyber Monday discounts to physical stores. Stay tuned to SavingHarbor for clear online vs in-store deal distinctions.",
+  },
+  {
+    question: "Can I stack multiple promo codes during Black Friday sales?",
+    answer:
+      "Promo stacking depends on the merchant. Some allow combining store-wide coupons with brand-specific offers, while others restrict to one code per purchase. SavingHarbor highlights stackable deals specifically to help maximize your savings.",
+  },
+  {
+    question: "What are the best tips to prepare for Black Friday shopping?",
+    answer:
+      "Start by researching early and creating a wishlist. Sign up for retailer emails, download apps, and compare prices across stores. Use SavingHarbor to access verified coupons and insider tips to avoid fraudulent deals.",
+  },
+  {
+    question:
+      "Will there be early Black Friday deals before the official date?",
+    answer:
+      "Yes, most retailers in 2025 begin “early Black Friday” sales weeks ahead of the official Friday. Bookmark SavingHarbor’s early deals section to stay ahead of the crowd.",
+  },
+  {
+    question: "Are there Black Friday deals on electronics and laptops?",
+    answer:
+      "Electronics and laptops are major highlights of Black Friday 2025. Expect discounts up to 50% or more on leading brands. Our updated SavingHarbor electronics guide helps you pinpoint the best laptop deals.",
+  },
+  {
+    question: "How long do Black Friday and Cyber Monday sales last?",
+    answer:
+      "Sales often span several days—Black Friday week, Cyber Monday, and sometimes the entire November-December holiday shopping period. SavingHarbor keeps you informed throughout the sale cycle with daily deal updates.",
+  },
+  {
+    question:
+      "Do retailers offer free shipping during Black Friday and Cyber Monday?",
+    answer:
+      "Most major retailers offer free shipping with minimum purchase thresholds during this period. Look for free shipping promos on SavingHarbor’s site before finalizing your order.",
+  },
+  {
+    question:
+      "What are the most popular brands participating in Black Friday this year?",
+    answer:
+      "Brands like Apple, Samsung, Nike, Microsoft, and Amazon are expected to lead 2025 Black Friday sales. SavingHarbor negotiates exclusive coupons from these and many other brands, delivered fresh for you.",
+  },
+  {
+    question: "How do I avoid fake or expired discount codes?",
+    answer:
+      "Always use trusted sources like SavingHarbor that verify coupons before listing. Never click suspicious or unverified third-party links. Our real-time updates eliminate guesswork.",
+  },
+  {
+    question: "Can I return Black Friday purchases after the holiday season?",
+    answer:
+      "Most retailers extend return policies for Black Friday items until January, but always check specific store policies. SavingHarbor advises on return-friendly deals for hassle-free shopping.",
+  },
+  {
+    question: "Are there special deals for small businesses on Cyber Monday?",
+    answer:
+      "Yes, many platforms and software providers offer SMB-focused discounts during Cyber Monday to support business growth. SavingHarbor features these business-centric deals prominently each year.",
+  },
+  {
+    question: "How much can I realistically save during Black Friday sales?",
+    answer:
+      "Savings vary but typical discounts range from 20% to 70% depending on category and retailer. With insider coupons from SavingHarbor, shoppers often exceed these savings.",
+  },
+  {
+    question:
+      "Which payment methods offer the best cashback or rewards during Black Friday?",
+    answer:
+      "Many credit cards and payment services feature increased cashback or reward points during holiday sales. Pair SavingHarbor coupons with cashback portals for double savings.",
+  },
+  {
+    question:
+      "Are there eco-friendly or sustainable shopping options during Black Friday?",
+    answer:
+      "Yes, awareness is rising for sustainable products on discount, including organic apparel, reusable goods, and energy-efficient appliances. SavingHarbor highlights green deals in a dedicated section.",
+  },
+  {
+    question:
+      "How does SavingHarbor curate and verify Black Friday and Cyber Monday deals?",
+    answer:
+      "Our team continuously liaises with merchants for direct coupon partnerships. Each deal is tested and timestamped to guarantee validity. We update listings multiple times daily to keep you current and confident.",
+  },
+];
 ---
 
 <Base meta={pageMeta}>
@@ -64,6 +184,11 @@ const bfJSONLD = {
         </a>
       </div>
     </header>
+
+    <!-- Introduction -->
+    <section class="mb-8">
+      <p class="bf-hero-subtext">{introduction}</p>
+    </section>
 
     <section
       aria-labelledby="bf-categories"
@@ -120,9 +245,16 @@ const bfJSONLD = {
       </p>
     </section>
 
-    <!-- <footer class="mt-10 text-gray-400 text-sm">
-      <p>© Saving Harbor — curated Black Friday deals</p>
-    </footer> -->
+    <!-- Conclusion -->
+    <section class="mt-8">
+      <p class="bf-hero-subtext">{conclusion}</p>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section class="mt-10">
+      <h2 class="text-2xl font-bold mb-4 text-gray-100">FAQs</h2>
+      <FAQAccordion client:idle faqs={bfFaqs} idPrefix="bf-faq" />
+    </section>
 
     <script type="application/ld+json" set:html={JSON.stringify(bfJSONLD)} />
   </main>
@@ -145,11 +277,24 @@ const bfJSONLD = {
     }
   }
 
-  /* Hero Heading */
+  /* Hero Heading — keep glow but add dark outline for legibility */
   .bf-hero-heading {
     font-weight: 800;
     color: #ffd700; /* neon gold */
+    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.95); /* crisp dark border for WebKit/Blink */
+    text-stroke: 1px rgba(0, 0, 0, 0.95); /* non-standard fallback */
     text-shadow:
+      0 0 6px #ffd700,
+      0 0 12px #ff4500;
+  }
+
+  /* Fallback outline using layered shadows for browsers without text-stroke */
+  .bf-hero-heading.fallback-outline {
+    text-shadow:
+      -1px -1px 0 rgba(0, 0, 0, 0.95),
+      1px -1px 0 rgba(0, 0, 0, 0.95),
+      -1px 1px 0 rgba(0, 0, 0, 0.95),
+      1px 1px 0 rgba(0, 0, 0, 0.95),
       0 0 6px #ffd700,
       0 0 12px #ff4500;
   }
