@@ -114,8 +114,8 @@ const halloweenJSONLD = {
       </article>
     </section>
 
-    <!-- Footer
-    <footer class="mt-12 text-gray-400 text-sm">
+    Footer
+    <!-- <footer class="mt-12 text-gray-400 text-sm">
       <p>© Saving Harbor — curated Halloween deals</p>
     </footer> -->
 
@@ -201,131 +201,131 @@ const halloweenJSONLD = {
         });
       })();
     </script>
+  </main>
+  <Footer />
+</Base>
 
-    <style></style>
+<style></style>
 
-    <style>
-      /* Background */
-      body,
-      main {
-        background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
-      }
+<style>
+  /* Background */
+  body,
+  main {
+    background: linear-gradient(180deg, #1a1a1a 0%, #2e1a1a 100%);
+  }
 
-      /* Flicker animation */
-      @keyframes flicker {
-        0%,
-        19%,
-        21%,
-        23%,
-        25%,
-        54%,
-        56%,
-        100% {
-          opacity: 1;
-        }
-        20%,
-        22%,
-        24%,
-        55% {
-          opacity: 0.7;
-        }
-      }
-      .animate-flicker {
-        animation: flicker 3s linear infinite;
-      }
+  /* Flicker animation */
+  @keyframes flicker {
+    0%,
+    19%,
+    21%,
+    23%,
+    25%,
+    54%,
+    56%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    22%,
+    24%,
+    55% {
+      opacity: 0.7;
+    }
+  }
+  .animate-flicker {
+    animation: flicker 3s linear infinite;
+  }
 
-      #bat-swarm {
-        z-index: 9999;
-        pointer-events: none;
-      }
-      @keyframes bat-fly {
-        0% {
-          transform: translateX(0) translateY(0)
-            rotate(var(--start-rotation, 0deg));
-        }
-        50% {
-          transform: translateX(120vw) translateY(-8vh)
-            rotate(var(--mid-rotation, 0deg));
-        }
-        100% {
-          transform: translateX(220vw) translateY(0)
-            rotate(var(--end-rotation, 0deg));
-        }
-      }
-      .animate-bat-fly {
-        animation-name: bat-fly;
-        animation-timing-function: linear;
-        animation-iteration-count: infinite;
-        will-change: transform, opacity;
-        display: block;
-      }
+  #bat-swarm {
+    z-index: 9999;
+    pointer-events: none;
+  }
+  @keyframes bat-fly {
+    0% {
+      transform: translateX(0) translateY(0) rotate(var(--start-rotation, 0deg));
+    }
+    50% {
+      transform: translateX(120vw) translateY(-8vh)
+        rotate(var(--mid-rotation, 0deg));
+    }
+    100% {
+      transform: translateX(220vw) translateY(0)
+        rotate(var(--end-rotation, 0deg));
+    }
+  }
+  .animate-bat-fly {
+    animation-name: bat-fly;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+    display: block;
+  }
 
-      /* Glow animation for hero & buttons */
-      @keyframes glow {
-        0% {
-          box-shadow: 0 0 4px #ff8c00;
-        }
-        100% {
-          box-shadow: 0 0 14px #ff8c00;
-        }
-      }
-      .glow {
-        animation: glow 2s infinite alternate;
-      }
+  /* Glow animation for hero & buttons */
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 4px #ff8c00;
+    }
+    100% {
+      box-shadow: 0 0 14px #ff8c00;
+    }
+  }
+  .glow {
+    animation: glow 2s infinite alternate;
+  }
 
-      /* Hero Styles */
-      .halloween-hero-img {
-        border-radius: 0.5rem;
-        box-shadow: 0 0 12px #ff8c0033;
-        transition: box-shadow 0.3s ease;
-      }
-      .halloween-hero-img:hover {
-        box-shadow: 0 0 18px #ff8c0066;
-      }
-      .halloween-hero-heading {
-        font-weight: 800;
-        color: #ff8c00;
-        text-shadow: 2px 2px 6px #662200;
-      }
-      .halloween-hero-subtext {
-        color: #ffe0a0;
-        line-height: 1.5;
-      }
+  /* Hero Styles */
+  .halloween-hero-img {
+    border-radius: 0.5rem;
+    box-shadow: 0 0 12px #ff8c0033;
+    transition: box-shadow 0.3s ease;
+  }
+  .halloween-hero-img:hover {
+    box-shadow: 0 0 18px #ff8c0066;
+  }
+  .halloween-hero-heading {
+    font-weight: 800;
+    color: #ff8c00;
+    text-shadow: 2px 2px 6px #662200;
+  }
+  .halloween-hero-subtext {
+    color: #ffe0a0;
+    line-height: 1.5;
+  }
 
-      /* CTA Buttons */
-      .halloween-btn {
-        background-color: #ff8c00;
-        color: black;
-        font-weight: 700;
-        padding: 0.75rem 1.25rem;
-        border-radius: 0.5rem;
-        text-transform: uppercase;
-        box-shadow: 0 0 6px #ff8c00;
-        transition: all 0.2s ease;
-      }
-      .halloween-btn:hover {
-        background-color: #ffa500;
-        box-shadow: 0 0 12px #ff8c00;
-      }
+  /* CTA Buttons */
+  .halloween-btn {
+    background-color: #ff8c00;
+    color: black;
+    font-weight: 700;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 6px #ff8c00;
+    transition: all 0.2s ease;
+  }
+  .halloween-btn:hover {
+    background-color: #ffa500;
+    box-shadow: 0 0 12px #ff8c00;
+  }
 
-      /* Category Cards */
-      .halloween-card-heading {
-        font-weight: 600;
-        font-size: 1.125rem;
-        color: #fff;
-        margin-bottom: 0.25rem;
-      }
-      .halloween-card-text {
-        color: #ffd580;
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
-      }
-      .halloween-card-link {
-        color: #ff8c00;
-        text-decoration: none;
-        font-size: 0.875rem;
-      }
-      .halloween-card-link: hover;
-    </style>
-  </main></Base
->
+  /* Category Cards */
+  .halloween-card-heading {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: #fff;
+    margin-bottom: 0.25rem;
+  }
+  .halloween-card-text {
+    color: #ffd580;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  .halloween-card-link {
+    color: #ff8c00;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .halloween-card-link: hover;
+</style>
