@@ -13,8 +13,8 @@ Disallow: /user/profile/
 Disallow: /login/
 Disallow: /register/
 
-# Prevent indexing of search results or filter pages
-Disallow: /*?*
+# Prevent indexing of only search/filter API calls
+Disallow: /public/v1/
 
 # Sitemap reference
 Sitemap: https://savingharbor.com/sitemap-index.xml
