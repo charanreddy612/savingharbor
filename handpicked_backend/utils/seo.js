@@ -27,7 +27,7 @@ export async function buildCanonical({
     if (!/^https?:\/\//i.test(o)) o = `https://${o}`;
     return o;
   };
-  const originNorm = normalizeOrigin(resolvedOrigin);
+  const originNorm = normalizeOrigin(resolvedOrigin || "https://www.savingharbor.com");
 
   // Helper to attach search params to a URL object OR to a relative path string
   const addSearchParamsTo = (baseUrlObject, basePathString) => {

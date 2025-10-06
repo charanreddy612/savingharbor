@@ -57,7 +57,7 @@ async function fetchBlog_supabase() {
     throw new Error(`Supabase fetchBlog error: ${error.message}`);
   }
   return (data || []).map(r => ({
-    url: `/blog/${r.slug}`,
+    url: `/blogs/${r.slug}`,
     lastmod: r.updated_at ? new Date(r.updated_at).toISOString().slice(0,10) : undefined,
     changefreq: 'monthly',
     priority: 0.6
