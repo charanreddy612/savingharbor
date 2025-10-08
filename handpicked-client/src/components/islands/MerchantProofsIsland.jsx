@@ -1,6 +1,5 @@
 // src/components/islands/MerchantProofsIsland.jsx
 import { useState, useEffect } from "react";
-import { api } from "../../lib/api";
 
 export default function MerchantProofsIsland({ proofs: initialProofs}) {
   const [lightboxIndex, setLightboxIndex] = useState(null);
