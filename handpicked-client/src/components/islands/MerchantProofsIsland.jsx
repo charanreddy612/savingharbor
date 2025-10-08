@@ -2,26 +2,10 @@
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 
-export default function MerchantProofsIsland({ merchantId }) {
-  const [proofs, setProofs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export default function MerchantProofsIsland({ proofs: initialProofs}) {
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
-  useEffect(() => {
-    async function fetchProofs() {
-      try {
-        const res = await api.get(`/stores/${merchantId}/prooofs`);
-        setProofs(res.data || []);
-      } catch (err) {
-        console.error(err);
-        setError("Could not load proof images.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProofs();
-  }, [merchantId]);
+  const proofs = initialProofs || [];
 
   const openLightbox = (idx) => setLightboxIndex(idx);
   const closeLightbox = () => setLightboxIndex(null);
@@ -32,10 +16,7 @@ export default function MerchantProofsIsland({ merchantId }) {
   return (
     <section className="mt-8">
       <h2 className="section-heading">Proof Images</h2>
-
-      {loading && <p className="text-gray-500 mt-2">Loading proofs...</p>}
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {!loading && proofs.length === 0 && (
+      {proofs.length === 0 && (
         <p className="text-gray-500 mt-2">No proofs uploaded yet.</p>
       )}
 

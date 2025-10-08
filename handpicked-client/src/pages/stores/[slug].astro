@@ -119,6 +119,16 @@ const safeSideHtml = store?.about_html
 const safeDescriptionHtml = store?.description_html
   ? DOMPurify.sanitize(store.description_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
   : null;
+
+  // server-side fetch
+let proofs = [];
+try {
+  let res : any;
+  res = await api.get(`/stores/${store?.id}/prooofs`);
+  proofs = res.data || [];
+} catch (e) {
+  console.error("Error fetching proofs:", e);
+}
 ---
 
 <style>
@@ -243,7 +253,7 @@ const safeDescriptionHtml = store?.description_html
               </div>
             </section>
             <!-- Merchant proofs -->
-            <MerchantProofsIsland client:load merchantId={store.id} />
+            <MerchantProofsIsland client:visible proofs={proofs} />
             <!-- About Store -->
             <section id="about-section" class="card-base p-6">
               <h2 class="section-heading">About this store</h2>
