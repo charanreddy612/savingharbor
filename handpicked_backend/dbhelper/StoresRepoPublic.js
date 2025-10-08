@@ -302,7 +302,7 @@ export async function fetchProofsByMerchantId(merchantId) {
       .from("merchant_proofs")
       .select("id, image_url, filename, created_at")
       .eq("merchant_id", merchantId)
-      .order("created_at", { asccending: false });
+      .order("created_at", { ascending: false });
     if (error) {
       console.error("Supabase fetchProofsByMerchantId error:", error);
       return { proofs: [] };

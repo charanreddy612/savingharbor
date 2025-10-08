@@ -124,8 +124,8 @@ const safeDescriptionHtml = store?.description_html
 let proofs = [];
 try {
   let res : any;
-  res = await api.get(`/stores/${store?.id}/prooofs`);
-  proofs = res.data || [];
+  res = await api.get(`/stores/${store?.id}/proofs`);
+  proofs = res.data?.proofs || [];
 } catch (e) {
   console.error("Error fetching proofs:", e);
 }
