@@ -300,9 +300,9 @@ export async function fetchProofsByMerchantId(merchantId) {
   try {
     const { data, error } = await supabase
       .from("merchant_proofs")
-      .select("id, image_url, filename, updated_at")
+      .select("id, image_url, filename, created_at")
       .eq("merchant_id", merchantId)
-      .order("updated_at", { asccending: false });
+      .order("created_at", { asccending: false });
     if (error) {
       console.error("Supabase fetchProofsByMerchantId error:", error);
       return { proofs: [] };
