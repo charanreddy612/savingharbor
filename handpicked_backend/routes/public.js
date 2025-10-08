@@ -17,6 +17,7 @@ publicRouter.get("/categories", publicCategories.list);
 // Stores
 publicRouter.get("/stores", publicStores.list);
 publicRouter.get("/stores/:slug", publicStores.detail);
+publicRouter.get("/stores/:id/proofs", publicStores.getMerchantProofs);
 
 // Coupons
 publicRouter.get("/coupons", publicCoupons.list);

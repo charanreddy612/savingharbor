@@ -580,6 +580,15 @@ button[aria-label^="Go to slide"]:focus-visible {
   margin: 1em auto;
 }
 
+/* fadein animation for dynamic proofs */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
 /* ==========================
    END: root global.css content
    ========================== */

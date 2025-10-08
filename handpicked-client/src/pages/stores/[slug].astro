@@ -12,6 +12,7 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardStore from "../../components/CardStore.astro";
 import Pagination from "../../components/Pagination.astro";
 
+import MerchantProofsIsland from "../../components/islands/MerchantProofsIsland.jsx";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
 import SubscribeBox from "../../components/SubscribeBox.jsx";
 import FaqAccordion from "../../components/FAQAccordion.jsx";
@@ -241,7 +242,8 @@ const safeDescriptionHtml = store?.description_html
                 />
               </div>
             </section>
-
+            <!-- Merchant proofs -->
+            <MerchantProofsIsland client:load merchantId={store.id} />
             <!-- About Store -->
             <section id="about-section" class="card-base p-6">
               <h2 class="section-heading">About this store</h2>

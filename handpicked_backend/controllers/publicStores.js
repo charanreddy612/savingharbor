@@ -589,3 +589,20 @@ function normalizeFaqsFromColumn(raw) {
 
   return faqs;
 }
+
+/**
+ * GET /public/v1/stores/:id/proofs
+ */
+export async function getMerchantProofs(req, res) {
+  const merchantId = parseInt(req.params.id, 10);
+  if (!merchantId) 
+    return res.status(400).json({ error: "Invalid merchant ID" });
+
+  try {
+    const proofs = await StoresRepo.fetchProofsByMerchantId(merchantId);
+    return res.json(proofs);
+  } catch (err) {
+    console.error("Error fetching merchant proofs:", err);
+    return res.status(500).json({ error: "Failed to fetch proofs" });
+  }
+}

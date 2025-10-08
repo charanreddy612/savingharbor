@@ -295,3 +295,21 @@ export async function listSlugs() {
     return { slugs: [] };
   }
 }
+
+export async function fetchProofsByMerchantId(merchantId) {
+  try {
+    const { data, error } = await supabase
+      .from("merchant_proofs")
+      .select("id, image_url, filename, updated_at")
+      .eq("merchant_Id", merchantId)
+      .order("updated_at", { asccending: false });
+    if (error) {
+      console.error("Supabase fetchProofsByMerchantId error:", error);
+      return { proofs: [] };
+    }
+    return { proofs: data || [] };
+  } catch (e) {
+    console.error("Unexpected error in fetchProofsByMerchantId:", e);
+    return { proofs: [] };
+  }
+}
