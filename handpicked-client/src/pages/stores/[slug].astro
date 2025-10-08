@@ -126,7 +126,7 @@ try {
   let res : any;
   res = await api.get(`/stores/${store?.id}/proofs`);
   console.log("proofs received ::: ", res);
-  proofs = res.data?.proofs || [];
+  proofs = res.proofs || [];
 } catch (e) {
   console.error("Error fetching proofs:", e);
 }
