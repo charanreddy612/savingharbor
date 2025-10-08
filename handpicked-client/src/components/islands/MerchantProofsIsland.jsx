@@ -146,9 +146,17 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
         {proofsArr.length > VISIBLE_COUNT && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-8 lg:w-10"
+            className="pointer-events-none absolute inset-y-0 right-0 w-6 lg:w-8 flex items-center"
+            style={{ pointerEvents: "none" }}
           >
-            <div className="h-full bg-gradient-to-l from-white/0 to-white/80 dark:from-black/0 dark:to-black/60" />
+            <div
+              className="h-10 w-full rounded-l-lg"
+              style={{
+                background:
+                  "linear-gradient(to left, rgba(255,255,255,0.55), rgba(255,255,255,0))",
+                backdropFilter: "blur(2px)",
+              }}
+            />
           </div>
         )}
       </div>
