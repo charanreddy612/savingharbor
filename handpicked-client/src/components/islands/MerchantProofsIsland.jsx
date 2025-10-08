@@ -141,24 +141,6 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
             </button>
           ))}
         </div>
-
-        {/* If there are more images than visible, show a subtle hint overlay on the rightmost edge (non-intrusive) */}
-        {proofsArr.length > VISIBLE_COUNT && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-6 lg:w-8 flex items-center"
-            style={{ pointerEvents: "none" }}
-          >
-            <div
-              className="h-10 w-full rounded-l-lg"
-              style={{
-                background:
-                  "linear-gradient(to left, rgba(255,255,255,0.55), rgba(255,255,255,0))",
-                backdropFilter: "blur(2px)",
-              }}
-            />
-          </div>
-        )}
       </div>
 
       {/* Lightbox */}
