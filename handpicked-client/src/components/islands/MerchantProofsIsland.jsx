@@ -1,48 +1,22 @@
 // src/components/islands/MerchantProofsIsland.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-/**
- * Props:
- *  - proofs: Array<{ id, image_url, filename, created_at }>
- *
- * Behaviour:
- *  - Render first 4 thumbnails immediately.
- *  - When the proofs section scrolls into view, reveal remaining images.
- *  - Clicking any thumbnail opens lightbox covering all proofs (prev/next).
- *  - Keyboard: Esc to close, ArrowLeft/ArrowRight to navigate.
- */
 export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
   const proofsArr = Array.isArray(initialProofs) ? initialProofs : [];
-  const [showAll, setShowAll] = useState(false);
+  const [startIndex, setStartIndex] = useState(0); // index of first visible thumbnail
   const [lightboxIndex, setLightboxIndex] = useState(null);
-  const containerRef = useRef(null);
 
   const VISIBLE_COUNT = 4;
-  const visibleProofs = showAll ? proofsArr : proofsArr.slice(0, VISIBLE_COUNT);
+  const maxStart = Math.max(0, proofsArr.length - VISIBLE_COUNT);
+  const visibleProofs = proofsArr.slice(startIndex, startIndex + VISIBLE_COUNT);
 
   useEffect(() => {
-    if (!containerRef.current || showAll || proofsArr.length <= VISIBLE_COUNT)
-      return;
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setShowAll(true);
-            obs.disconnect();
-          }
-        });
-      },
-      { root: null, rootMargin: "0px", threshold: 0.15 }
-    );
-
-    obs.observe(containerRef.current);
-    return () => obs.disconnect();
-  }, [showAll, proofsArr]);
+    // Reset start index if proofs change (e.g., navigation to different store)
+    setStartIndex(0);
+  }, [proofsArr.length]);
 
   useEffect(() => {
     if (lightboxIndex === null) return;
-
     const handleKey = (e) => {
       if (e.key === "Escape") setLightboxIndex(null);
       if (e.key === "ArrowLeft")
@@ -56,33 +30,48 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
 
   if (proofsArr.length === 0) return null;
 
-  const openLightbox = (idx) => setLightboxIndex(idx);
+  const canPrev = startIndex > 0;
+  const canNext = startIndex < maxStart;
+
+  const goPrev = (e) => {
+    e?.stopPropagation();
+    if (!canPrev) return;
+    setStartIndex((s) => Math.max(0, s - 1));
+  };
+  const goNext = (e) => {
+    e?.stopPropagation();
+    if (!canNext) return;
+    setStartIndex((s) => Math.min(maxStart, s + 1));
+  };
+
+  const openLightbox = (visibleIdx) => {
+    // map visible index to global index
+    setLightboxIndex(startIndex + visibleIdx);
+  };
   const closeLightbox = () => setLightboxIndex(null);
-  const prev = (e) => {
+  const lbPrev = (e) => {
     e?.stopPropagation();
     setLightboxIndex((i) => (i - 1 + proofsArr.length) % proofsArr.length);
   };
-  const next = (e) => {
+  const lbNext = (e) => {
     e?.stopPropagation();
     setLightboxIndex((i) => (i + 1) % proofsArr.length);
   };
+
   return (
-    <section
-      className="mt-8"
-      ref={containerRef}
-      aria-labelledby="merchant-proofs-heading"
-    >
+    <section className="mt-8" aria-labelledby="merchant-proofs-heading">
       <h2 id="merchant-proofs-heading" className="section-heading">
         Proof Images
       </h2>
 
       <div className="relative mt-4">
+        {/* Grid of visible thumbnails */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {visibleProofs.map((p, idx) => (
             <button
               key={p.id}
-              onClick={() => openLightbox(showAll ? idx : idx)} // idx maps to position within visibleProofs; lightbox uses global index below
-              className="block border rounded-lg overflow-hidden hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none"
+              onClick={() => openLightbox(idx)}
+              className="relative block border rounded-lg overflow-hidden hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none"
               aria-label={`Open proof ${p.filename}`}
             >
               <img
@@ -95,36 +84,76 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
               <div className="text-xs text-gray-500 mt-1 px-1 truncate">
                 {p.filename}
               </div>
+
+              {/* Right-arrow overlay on the rightmost visible thumbnail when more images exist */}
+              {idx === visibleProofs.length - 1 &&
+                startIndex + idx < proofsArr.length - 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goNext(e);
+                    }}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 bg-black bg-opacity-60 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-opacity-80 focus:outline-none"
+                    aria-label="Next proofs"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        d="M9 18l6-6-6-6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+
+              {/* Left-arrow overlay on the leftmost visible thumbnail when not at start
+                  (shown on first visible item if startIndex > 0) */}
+              {idx === 0 && startIndex > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goPrev(e);
+                  }}
+                  className="absolute top-1/2 left-2 -translate-y-1/2 bg-black bg-opacity-60 text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-opacity-80 focus:outline-none"
+                  aria-label="Previous proofs"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      d="M15 18l-6-6 6-6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
             </button>
           ))}
-
-          {/* If we showed only a slice, render a placeholder button linking to open lightbox at the 5th item when user clicks it */}
-          {!showAll && proofsArr.length > VISIBLE_COUNT && (
-            <div className="col-span-full sm:col-span-full mt-0">
-              {/* gradient hint over the grid's bottom-right area */}
-              <div className="mt-2 text-right">
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="px-3 py-1 text-sm rounded bg-white/90 border text-gray-700 hover:bg-white focus:outline-none"
-                >
-                  Show more
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* subtle gradient hint when more items exist and not yet revealed */}
-        {!showAll && proofsArr.length > VISIBLE_COUNT && (
+        {/* If there are more images than visible, show a subtle hint overlay on the rightmost edge (non-intrusive) */}
+        {proofsArr.length > VISIBLE_COUNT && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/80 to-transparent lg:rounded-b"
-            style={{ marginTop: "8px" }}
-          />
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 lg:w-10"
+          >
+            <div className="h-full bg-gradient-to-l from-white/0 to-white/80 dark:from-black/0 dark:to-black/60" />
+          </div>
         )}
       </div>
 
-      {/* Lightbox (covers all proofs) */}
+      {/* Lightbox */}
       {lightboxIndex !== null && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
@@ -135,7 +164,7 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              prev(e);
+              lbPrev(e);
             }}
             className="absolute left-4 text-white text-4xl font-semibold opacity-80 hover:opacity-100 transition-opacity"
             aria-label="Previous image"
@@ -153,7 +182,7 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              next(e);
+              lbNext(e);
             }}
             className="absolute right-4 text-white text-4xl font-semibold opacity-80 hover:opacity-100 transition-opacity"
             aria-label="Next image"
@@ -167,12 +196,11 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
               closeLightbox();
             }}
             className="absolute top-4 right-4 text-white text-2xl font-bold opacity-80 hover:opacity-100 transition-opacity"
-            aria-label="Close lightbox"
+            aria-label="Close"
           >
             ×
           </button>
 
-          {/* filename + position */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/90 bg-black/40 px-3 py-1 rounded">
             {proofsArr[lightboxIndex].filename} — {lightboxIndex + 1}/
             {proofsArr.length}
