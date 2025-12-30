@@ -22,18 +22,21 @@ export default function FaqAccordion({
   idPrefix = "faq",
 }) {
   const list = Array.isArray(faqs) ? faqs : [];
-  // single-open index (default mode)
-  const [openIndex, setOpenIndex] = useState(
-    typeof defaultOpen === "number" &&
-      defaultOpen >= 0 &&
-      defaultOpen < list.length
-      ? defaultOpen
-      : null
-  );
+  // // single-open index (default mode)
+  // const [openIndex, setOpenIndex] = useState(
+  //   typeof defaultOpen === "number" &&
+  //     defaultOpen >= 0 &&
+  //     defaultOpen < list.length
+  //     ? defaultOpen
+  //     : null
+  // );
+  const [openIndex] = useState(null);
   // multi-open set for "Expand all" mode (store array of indexes)
-  const [openSet, setOpenSet] = useState([]);
+  const [openSet, setOpenSet] = useState(
+    Array.isArray(faqs) ? faqs.map((_, i) => i) : []
+  );
   // whether user activated expand-all (multi mode)
-  const [multiMode, setMultiMode] = useState(false);
+  const [multiMode, setMultiMode] = useState(true);
 
   // refs for headers and panels
   const headersRef = useRef([]);
