@@ -50,5 +50,11 @@
       "destination": "/terms",
       "permanent": true
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/generate-sitemaps",
+      "schedule": "0 2 * * *"
+    }
   ]
 }
