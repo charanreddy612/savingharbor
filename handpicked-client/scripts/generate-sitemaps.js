@@ -30,19 +30,37 @@ if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 // ---------------- Fetchers (Supabase) ----------------
 // merchants table: id, slug, updated_at, active
 async function fetchStores_supabase() {
-  const { data, error } = await supabase
-    .from("merchants")
-    .select("slug, updated_at")
-    .eq("active", true);
+  const pageSize = 1000;
+  let page = 0;
+  let all = [];
 
-  if (error) {
-    throw new Error(`Supabase fetchStores error: ${error.message}`);
+  while (true) {
+    const { data, error } = await supabase
+      .from("merchants")
+      .select("slug, updated_at")
+      .eq("active", true)
+      .order("id", { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) {
+      throw new Error(`Supabase fetchStores error: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) break;
+
+    all.push(...data);
+    if (data.length < pageSize) break;
+
+    page++;
   }
-  return (data || []).map(r => ({
+
+  return all.map((r) => ({
     url: `/stores/${r.slug}`,
-    lastmod: r.updated_at ? new Date(r.updated_at).toISOString().slice(0,10) : undefined,
-    changefreq: 'weekly',
-    priority: 0.7
+    lastmod: r.updated_at
+      ? new Date(r.updated_at).toISOString().slice(0, 10)
+      : undefined,
+    changefreq: "weekly",
+    priority: 0.7,
   }));
 }
 
@@ -56,11 +74,13 @@ async function fetchBlog_supabase() {
   if (error) {
     throw new Error(`Supabase fetchBlog error: ${error.message}`);
   }
-  return (data || []).map(r => ({
+  return (data || []).map((r) => ({
     url: `/blogs/${r.slug}`,
-    lastmod: r.updated_at ? new Date(r.updated_at).toISOString().slice(0,10) : undefined,
-    changefreq: 'monthly',
-    priority: 0.6
+    lastmod: r.updated_at
+      ? new Date(r.updated_at).toISOString().slice(0, 10)
+      : undefined,
+    changefreq: "monthly",
+    priority: 0.6,
   }));
 }
 
@@ -105,11 +125,16 @@ function chunk(arr, size) {
       // Static pages
       { url: "/about", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/contact", lastmod: today, changefreq: "yearly", priority: 0.5 },
-      { url: "/careers", lastmod: today, changefreq: "yearly", priority: 0.5,},
+      { url: "/careers", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/press", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/privacy", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/terms", lastmod: today, changefreq: "yearly", priority: 0.5 },
-      { url: "/how-it-works", lastmod: today, changefreq: "yearly", priority: 0.5,},
+      {
+        url: "/how-it-works",
+        lastmod: today,
+        changefreq: "yearly",
+        priority: 0.5,
+      },
       { url: "/faq", lastmod: today, changefreq: "yearly", priority: 0.5 },
     ];
     await writeGzippedSitemap("sitemap-pages.xml.gz", pages);
