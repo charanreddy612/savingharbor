@@ -61,7 +61,7 @@ export async function list({
       let query = supabase
         .from("merchants")
         .select("id, slug, name, logo_url, active_coupons_count")
-        .eq("home", true) //
+        .eq("tag_home", true) //
         .order("created_at", { ascending: false })
         .range(0, safeLimit - 1);
 
@@ -106,7 +106,7 @@ export async function list({
     // Alphabetical filtering
     if (letter && letter !== "All") {
       if (letter === "0-9") {
-        query = query.regex("name", "^[0-9]");
+        query = query.gte("name", "0").lt("name", ":");
       } else {
         query = query.ilike("name", `${letter}%`);
       }
