@@ -24,110 +24,76 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 /**
  * GET /public/v1/stores
  */
+/**
+ * GET /public/v1/stores
+ * Cursor-based pagination
+ */
 export async function list(req, res) {
   try {
-    const page = valPage(req.query.page);
-    const limit = valLimit(req.query.limit);
+    const limit = valLimit(req.query.limit); // page param removed
     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
     const locale = valLocale(req.query.locale) || deriveLocale(req);
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const categorySlug = String(req.query.category || "").trim();
+    const letter = String(req.query.letter || "All").trim();
+    const cursor = String(req.query.cursor || null);
 
-    // origin/path may be sync or async
-    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
-    const path = await Promise.resolve(getPath(req));
-
-    //Season filter
     const seasonSlug = req.query.season
       ? String(req.query.season).trim().toLowerCase()
       : null;
+
+    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+    const path = await Promise.resolve(getPath(req));
 
     const params = {
       q: q.trim(),
       categorySlug,
       sort,
       locale,
-      page,
       limit,
       origin,
       path,
-      seasonSlug, // include seasonSlug
+      seasonSlug,
+      letter,
+      cursor, // cursor for keyset pagination
     };
 
     const cacheKey = makeListCacheKey("stores", {
-      page,
       limit,
       q: params.q || "",
       category: params.categorySlug || "",
       sort: params.sort || "",
       locale: params.locale || "",
-      type: params.type || "",
-      season: params.seasonSlug || "", // include seasonSlug in cache key
+      season: params.seasonSlug || "",
+      letter: params.letter || "",
+      cursor: params.cursor || "",
     });
 
     const result = await withCache(
       req,
       async () => {
-        const { rows, total } = await StoresRepo.list(params);
-
-        // Build prev/next navigation using resolved origin/path
-        const nav = buildPrevNext({
-          origin: params.origin,
-          path: params.path,
-          page,
-          limit,
-          total,
-          extraParams: {
-            q: params.q || undefined,
-            category: params.categorySlug || undefined,
-            sort: params.sort,
-            locale: params.locale || undefined,
-            season: params.seasonSlug || undefined, // include season in nav links
-          },
-        });
-
-        // If frontend configured PUBLIC_API_BASE_URL, rewrite prev/next to backend base
-        const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
-          .toString()
-          .trim()
-          .replace(/\/+$/, "");
-        if (backendBase) {
-          const rewrite = (raw) => {
-            if (!raw) return null;
-            try {
-              const u = new URL(raw, "http://example.invalid");
-              return `${backendBase}${u.pathname}${u.search}`;
-            } catch (err) {
-              return raw;
-            }
-          };
-          nav.prev = nav.prev ? rewrite(nav.prev) : null;
-          nav.next = nav.next ? rewrite(nav.next) : null;
-        }
+        // Call repo for cursor-based listing
+        const { rows, total, nextCursor } = await StoresRepo.list(params);
 
         // Build canonical (may be async)
         const canonical = await buildCanonical({
           origin: params.origin,
           path: params.path,
-          page,
           limit,
           q: params.q,
           categorySlug: params.categorySlug,
           sort: params.sort,
-          seasonSlug: params.seasonSlug, // include seasonSlug
+          seasonSlug: params.seasonSlug,
         });
 
         return {
           data: rows,
           meta: {
-            page,
             limit,
             total,
             canonical,
-            prev: nav.prev,
-            next: nav.next,
-            total_pages: nav.totalPages,
+            nextCursor, // cursor for frontend infinite scroll
           },
         };
       },
@@ -140,6 +106,123 @@ export async function list(req, res) {
     return fail(res, "Failed to list stores", e);
   }
 }
+
+// export async function list(req, res) {
+//   try {
+//     const page = valPage(req.query.page);
+//     const limit = valLimit(req.query.limit);
+//     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
+//     const locale = valLocale(req.query.locale) || deriveLocale(req);
+//     const qRaw = String(req.query.q || "");
+//     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
+//     const categorySlug = String(req.query.category || "").trim();
+
+//     // origin/path may be sync or async
+//     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+//     const path = await Promise.resolve(getPath(req));
+
+//     //Season filter
+//     const seasonSlug = req.query.season
+//       ? String(req.query.season).trim().toLowerCase()
+//       : null;
+
+//     const params = {
+//       q: q.trim(),
+//       categorySlug,
+//       sort,
+//       locale,
+//       page,
+//       limit,
+//       origin,
+//       path,
+//       seasonSlug, // include seasonSlug
+//     };
+
+//     const cacheKey = makeListCacheKey("stores", {
+//       page,
+//       limit,
+//       q: params.q || "",
+//       category: params.categorySlug || "",
+//       sort: params.sort || "",
+//       locale: params.locale || "",
+//       type: params.type || "",
+//       season: params.seasonSlug || "", // include seasonSlug in cache key
+//     });
+
+//     const result = await withCache(
+//       req,
+//       async () => {
+//         const { rows, total } = await StoresRepo.list(params);
+
+//         // Build prev/next navigation using resolved origin/path
+//         const nav = buildPrevNext({
+//           origin: params.origin,
+//           path: params.path,
+//           page,
+//           limit,
+//           total,
+//           extraParams: {
+//             q: params.q || undefined,
+//             category: params.categorySlug || undefined,
+//             sort: params.sort,
+//             locale: params.locale || undefined,
+//             season: params.seasonSlug || undefined, // include season in nav links
+//           },
+//         });
+
+//         // If frontend configured PUBLIC_API_BASE_URL, rewrite prev/next to backend base
+//         const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
+//           .toString()
+//           .trim()
+//           .replace(/\/+$/, "");
+//         if (backendBase) {
+//           const rewrite = (raw) => {
+//             if (!raw) return null;
+//             try {
+//               const u = new URL(raw, "http://example.invalid");
+//               return `${backendBase}${u.pathname}${u.search}`;
+//             } catch (err) {
+//               return raw;
+//             }
+//           };
+//           nav.prev = nav.prev ? rewrite(nav.prev) : null;
+//           nav.next = nav.next ? rewrite(nav.next) : null;
+//         }
+
+//         // Build canonical (may be async)
+//         const canonical = await buildCanonical({
+//           origin: params.origin,
+//           path: params.path,
+//           page,
+//           limit,
+//           q: params.q,
+//           categorySlug: params.categorySlug,
+//           sort: params.sort,
+//           seasonSlug: params.seasonSlug, // include seasonSlug
+//         });
+
+//         return {
+//           data: rows,
+//           meta: {
+//             page,
+//             limit,
+//             total,
+//             canonical,
+//             prev: nav.prev,
+//             next: nav.next,
+//             total_pages: nav.totalPages,
+//           },
+//         };
+//       },
+//       { ttlSeconds: 60, keyExtra: cacheKey }
+//     );
+
+//     return ok(res, result);
+//   } catch (e) {
+//     console.error("Stores list controller error:", e);
+//     return fail(res, "Failed to list stores", e);
+//   }
+// }
 
 /** Store Detail — enriched for frontend needs
  *
@@ -595,7 +678,7 @@ function normalizeFaqsFromColumn(raw) {
  */
 export async function getMerchantProofs(req, res) {
   const merchantId = parseInt(req.params.id, 10);
-  if (!merchantId) 
+  if (!merchantId)
     return res.status(400).json({ error: "Invalid merchant ID" });
 
   try {
