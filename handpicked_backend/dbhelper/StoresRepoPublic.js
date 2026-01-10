@@ -4,11 +4,6 @@ import { sanitize } from "../utils/sanitize.js";
 
 /**
  * list(params)
- * - params: { q, categorySlug, sort, page, limit, skipCount=false, mode="default" }
- * - returns: { rows: Array, total: number }
- */
-/**
- * list(params)
  * - params: { q, categorySlug, seasonSlug, sort, letter, cursor, limit, skipCount=false, mode="default" }
  * - returns: { rows: Array, total: number, nextCursor: string|null }
  */
