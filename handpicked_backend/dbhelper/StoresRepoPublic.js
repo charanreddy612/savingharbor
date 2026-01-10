@@ -106,7 +106,7 @@ export async function list({
     // Alphabetical filtering
     if (letter && letter !== "All") {
       if (letter === "0-9") {
-        query = query.gte("name", "0").lt("name", ":");
+        query = query.gte("name", "0").lt("name", "9\uffff");
       } else {
         query = query.ilike("name", `${letter}%`);
       }
