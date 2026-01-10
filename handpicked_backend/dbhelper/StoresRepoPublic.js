@@ -7,19 +7,23 @@ import { sanitize } from "../utils/sanitize.js";
  * - params: { q, categorySlug, sort, page, limit, skipCount=false, mode="default" }
  * - returns: { rows: Array, total: number }
  */
+/**
+ * list(params)
+ * - params: { q, categorySlug, seasonSlug, sort, letter, cursor, limit, skipCount=false, mode="default" }
+ * - returns: { rows: Array, total: number, nextCursor: string|null }
+ */
 export async function list({
   q = "",
   categorySlug = null,
+  seasonSlug = null, // optional
   sort = "newest",
-  page = 1,
-  limit = 20,
+  letter = "All", // NEW: letter filter
+  cursor = null, // NEW: keyset pagination cursor (base64 "name:id")
+  limit = 100,
   skipCount = false,
   mode = "default",
 } = {}) {
-  const safePage = Number(page) >= 1 ? Number(page) : 1;
   const safeLimit = Number(limit) >= 1 ? Number(limit) : 20;
-  const from = (safePage - 1) * safeLimit;
-  const to = from + safeLimit - 1;
 
   // Resolve category name if filter present
   let categoryName = null;
@@ -38,18 +42,38 @@ export async function list({
     }
   }
 
-  // HOMEPAGE mode — lightweight select
+  // Resolve season filter if provided
+  let seasonStoreIds = null;
+  if (seasonSlug) {
+    try {
+      const { data: seasonStores, error: sErr } = await supabase
+        .from("stores_season")
+        .select("store_id")
+        .eq("season_slug", seasonSlug);
+      if (sErr) throw sErr;
+      seasonStoreIds = seasonStores.map((s) => s.store_id);
+      if (!seasonStoreIds.length)
+        return { rows: [], total: 0, nextCursor: null }; // no stores
+    } catch (err) {
+      console.warn("Stores.list: season lookup failed", err);
+      seasonStoreIds = null;
+    }
+  }
+
+  // HOMEPAGE mode — fallback to existing behavior
   if (mode === "homepage") {
     try {
       let query = supabase
         .from("merchants")
         .select("id, slug, name, logo_url, active_coupons_count")
+        .eq("home", true) //
         .order("created_at", { ascending: false })
-        .range(from, to);
+        .range(0, safeLimit - 1);
 
       if (q) query = query.ilike("name", `%${q}%`);
       if (categoryName)
         query = query.contains("category_names", [categoryName]);
+      if (seasonStoreIds) query = query.in("id", seasonStoreIds);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -62,49 +86,58 @@ export async function list({
         stats: { active_coupons: r.active_coupons_count || 0 },
       }));
 
-      return { rows, total: rows.length };
+      return { rows, total: rows.length, nextCursor: null };
     } catch (e) {
       console.error("Stores.list(homepage) error:", e);
-      return { rows: [], total: 0 };
+      return { rows: [], total: 0, nextCursor: null };
     }
   }
 
-  // DEFAULT mode — full listing for /stores page
+  // DEFAULT mode — alphabetical + keyset pagination
   try {
-    // Count only if required
-    let total = null;
-    if (!skipCount) {
-      try {
-        let cQuery = supabase
-          .from("merchants")
-          .select("id", { count: "exact", head: true });
-        if (q) cQuery = cQuery.ilike("name", `%${q}%`);
-        if (categoryName)
-          cQuery = cQuery.contains("category_names", [categoryName]);
+    // Build base query
+    let query = supabase
+      .from("merchants")
+      .select("id, slug, name, logo_url, active_coupons_count")
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(safeLimit + 1);
 
-        const { count, error: cErr } = await cQuery;
-        if (cErr) throw cErr;
-        total = count || 0;
-      } catch (countErr) {
-        console.warn("Stores.list: count query failed:", countErr);
-        total = 0;
+    // Apply filters
+    if (q) query = query.ilike("name", `%${q}%`);
+    if (categoryName) query = query.contains("category_names", [categoryName]);
+    if (seasonStoreIds) query = query.in("id", seasonStoreIds);
+
+    // Alphabetical filtering
+    if (letter && letter !== "All") {
+      if (letter === "0-9") {
+        query = query.regex("name", "^[0-9]");
+      } else {
+        query = query.ilike("name", `${letter}%`);
       }
     }
 
-    // Main query
-    let query = supabase
-      .from("merchants")
-      .select("id, slug, name, logo_url, created_at, active_coupons_count")
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (q) query = query.ilike("name", `%${q}%`);
-    if (categoryName) query = query.contains("category_names", [categoryName]);
+    // Keyset pagination
+    if (cursor) {
+      try {
+        const [name, id] = Buffer.from(cursor, "base64")
+          .toString("utf8")
+          .split(":");
+        if (name && id) {
+          query = query.or(`name.gt.${name},and(name.eq.${name},id.gt.${id})`);
+        }
+      } catch (e) {
+        console.warn("Stores.list: invalid cursor:", cursor);
+      }
+    }
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const rows = (data || []).map((r) => ({
+    const hasMore = data.length > safeLimit;
+    const pageRows = data.slice(0, safeLimit);
+
+    const rows = pageRows.map((r) => ({
       id: r.id,
       slug: r.slug,
       name: r.name,
@@ -112,12 +145,176 @@ export async function list({
       stats: { active_coupons: r.active_coupons_count || 0 },
     }));
 
-    return { rows, total: total || rows.length };
+    // Compute next cursor
+    let nextCursor = null;
+    if (hasMore) {
+      const last = pageRows[pageRows.length - 1];
+      nextCursor = Buffer.from(`${last.name}:${last.id}`).toString("base64");
+    }
+
+    // Total count only if requested
+    let total = null;
+    if (!skipCount) {
+      try {
+        let countQuery = supabase
+          .from("merchants")
+          .select("id", { count: "exact", head: true });
+        if (q) countQuery = countQuery.ilike("name", `%${q}%`);
+        if (categoryName)
+          countQuery = countQuery.contains("category_names", [categoryName]);
+        if (seasonStoreIds) countQuery = countQuery.in("id", seasonStoreIds);
+        if (letter && letter !== "All") {
+          if (letter === "0-9") countQuery = countQuery.regex("name", "^[0-9]");
+          else countQuery = countQuery.ilike("name", `${letter}%`);
+        }
+        const { count, error: cErr } = await countQuery;
+        if (cErr) throw cErr;
+        total = count || 0;
+      } catch (err) {
+        console.warn("Stores.list: count query failed:", err);
+        total = rows.length;
+      }
+    }
+
+    return { rows, total: total || rows.length, nextCursor };
   } catch (e) {
-    console.error("Stores.list error:", e);
-    return { rows: [], total: 0 };
+    console.error("Stores.list alphabetical error:", e);
+    return { rows: [], total: 0, nextCursor: null };
   }
 }
+
+// export async function list({
+//   q = "",
+//   categorySlug = null,
+//   seasonSlug = null, // NEW
+//   sort = "newest",
+//   page = 1,
+//   limit = 20,
+//   skipCount = false,
+//   mode = "default",
+// } = {}) {
+//   const safePage = Number(page) >= 1 ? Number(page) : 1;
+//   const safeLimit = Number(limit) >= 1 ? Number(limit) : 20;
+//   const from = (safePage - 1) * safeLimit;
+//   const to = from + safeLimit - 1;
+
+//   // Resolve category name if filter present
+//   let categoryName = null;
+//   if (categorySlug) {
+//     try {
+//       const { data: cat, error: ce } = await supabase
+//         .from("merchant_categories")
+//         .select("name")
+//         .eq("slug", String(categorySlug).trim())
+//         .maybeSingle();
+//       if (ce) throw ce;
+//       categoryName = cat?.name || null;
+//     } catch (err) {
+//       console.warn("Stores.list: category lookup failed", err);
+//       categoryName = null;
+//     }
+//   }
+
+//   // Resolve season filter if provided
+//   let seasonStoreIds = null;
+//   if (seasonSlug) {
+//     try {
+//       const { data: seasonStores, error: sErr } = await supabase
+//         .from("stores_season")
+//         .select("store_id")
+//         .eq("season_slug", seasonSlug);
+//       if (sErr) throw sErr;
+//       seasonStoreIds = seasonStores.map((s) => s.store_id);
+//       if (!seasonStoreIds.length) return { rows: [], total: 0 }; // no stores
+//     } catch (err) {
+//       console.warn("Stores.list: season lookup failed", err);
+//       seasonStoreIds = null;
+//     }
+//   }
+
+//   // HOMEPAGE mode — lightweight select
+//   if (mode === "homepage") {
+//     try {
+//       let query = supabase
+//         .from("merchants")
+//         .select("id, slug, name, logo_url, active_coupons_count")
+//         .order("created_at", { ascending: false })
+//         .range(from, to);
+
+//       if (q) query = query.ilike("name", `%${q}%`);
+//       if (categoryName)
+//         query = query.contains("category_names", [categoryName]);
+//       if (seasonStoreIds) query = query.in("id", seasonStoreIds);
+
+//       const { data, error } = await query;
+//       if (error) throw error;
+
+//       const rows = (data || []).map((r) => ({
+//         id: r.id,
+//         slug: r.slug,
+//         name: r.name,
+//         logo_url: r.logo_url,
+//         stats: { active_coupons: r.active_coupons_count || 0 },
+//       }));
+
+//       return { rows, total: rows.length };
+//     } catch (e) {
+//       console.error("Stores.list(homepage) error:", e);
+//       return { rows: [], total: 0 };
+//     }
+//   }
+
+//   // DEFAULT mode — full listing for /stores page
+//   try {
+//     // Count only if required
+//     let total = null;
+//     if (!skipCount) {
+//       try {
+//         let cQuery = supabase
+//           .from("merchants")
+//           .select("id", { count: "exact", head: true });
+//         if (q) cQuery = cQuery.ilike("name", `%${q}%`);
+//         if (categoryName)
+//           cQuery = cQuery.contains("category_names", [categoryName]);
+//         if (seasonStoreIds) cQuery = cQuery.in("id", seasonStoreIds);
+
+//         const { count, error: cErr } = await cQuery;
+//         if (cErr) throw cErr;
+//         total = count || 0;
+//       } catch (countErr) {
+//         console.warn("Stores.list: count query failed:", countErr);
+//         total = 0;
+//       }
+//     }
+
+//     // Main query
+//     let query = supabase
+//       .from("merchants")
+//       .select("id, slug, name, logo_url, created_at, active_coupons_count")
+//       .order("created_at", { ascending: false })
+//       .range(from, to);
+
+//     if (q) query = query.ilike("name", `%${q}%`);
+//     if (categoryName) query = query.contains("category_names", [categoryName]);
+//     if (seasonStoreIds) query = query.in("id", seasonStoreIds);
+
+//     const { data, error } = await query;
+//     if (error) throw error;
+
+//     const rows = (data || []).map((r) => ({
+//       id: r.id,
+//       slug: r.slug,
+//       name: r.name,
+//       logo_url: r.logo_url,
+//       stats: { active_coupons: r.active_coupons_count || 0 },
+//     }));
+
+//     return { rows, total: total || rows.length };
+//   } catch (e) {
+//     console.error("Stores.list error:", e);
+//     return { rows: [], total: 0 };
+//   }
+// }
 
 /**
  * Fetch store by slug
@@ -272,5 +469,23 @@ export async function listSlugs() {
   } catch (e) {
     console.error("Unexpected error in listSlugs:", e);
     return { slugs: [] };
+  }
+}
+
+export async function fetchProofsByMerchantId(merchantId) {
+  try {
+    const { data, error } = await supabase
+      .from("merchant_proofs")
+      .select("id, image_url, filename, created_at")
+      .eq("merchant_id", merchantId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Supabase fetchProofsByMerchantId error:", error);
+      return { proofs: [] };
+    }
+    return { proofs: data || [] };
+  } catch (e) {
+    console.error("Unexpected error in fetchProofsByMerchantId:", e);
+    return { proofs: [] };
   }
 }

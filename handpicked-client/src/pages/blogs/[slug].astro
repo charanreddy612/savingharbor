@@ -69,22 +69,30 @@ const pageDesc = meta.description || "Saving Harbor editorial.";
 const canonical = meta.canonical;
 const jsonld = meta.jsonld;
 
+// Keep common structural tags + some editor-specific tags
 const _ALLOWED_TAGS = [
-  "h1","h2","h3","h4","p","br",
+  "h1","h2","h3","h4","h5","h6",
+  "p","br","div","span",
   "strong","b","em","i","u","s",
   "ul","ol","li",
-  "a","img","blockquote"
+  "a","img","blockquote","figure","figcaption"
 ];
-const _ALLOWED_ATTR = {
-  a: ["href","title","rel","target"],
-  img: ["src","srcset","data-src","data-srcset","alt","width","height","loading"],
-  "*": []
-};
-console.log('DBG RAW_FROM_DB:', post?.content_html?.slice(0,300));
+
+// Allow class and style so editor output and Tailwind prose styles survive.
+// NOTE: allowing "style" is risky for untrusted authors — OK here if content is admin-trusted.
+const _ALLOWED_ATTR = [
+  "href","title","rel","target",
+  "src","alt","width","height",
+  "id","class","style","loading"
+];
+
 const safeBodyHtml = post?.content_html
-  ? DOMPurify.sanitize(post.content_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
+  ? DOMPurify.sanitize(post.content_html, {
+      ALLOWED_TAGS: _ALLOWED_TAGS,
+      ALLOWED_ATTR: _ALLOWED_ATTR,
+    })
   : null;
-console.log('DBG AFTER_SANITIZE:', safeBodyHtml?.slice(0,300));
+
 // Generate TOC (server-safe — no DOMParser)
 let toc: { id: string; text: string }[] = [];
 let safeBodyHtmlWithIds = safeBodyHtml || "";
@@ -181,7 +189,7 @@ if (safeBodyHtml) {
             )}
 
             {safeBodyHtml ? (
-              <div class="prose prose-lg prose-gray max-w-none ql-editor">
+              <div class="prose max-w-none ql-editor merchant-description">
                 <div set:html={safeBodyHtmlWithIds} />
               </div>
             ) : (

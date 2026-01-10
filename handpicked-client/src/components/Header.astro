@@ -4,6 +4,8 @@ import HeaderSearchIsland from "../components/islands/HeaderSearchIsland.jsx";
 const nav = [
   { href: "/stores", label: "Stores" },
   { href: "/coupons", label: "Coupons" },
+  // { href: "/halloween", label: "Halloween" },
+  // { href: "/black-friday", label: "Black Friday" },
   { href: "/blogs", label: "Blogs" },
 ];
 ---
@@ -32,18 +34,18 @@ const nav = [
           width="70"
           height="55"
           class="rounded-sm shadow-sm"
+          loading="eager"
         />
         <span class="font-semibold text-lg tracking-tight text-slate-900"
           >Saving Harbor</span
         >
       </a>
 
-      <!-- Search (centered, full width on mobile) -->
+      <!-- Search -->
       <div class="w-full md:flex-1 md:px-6">
         <div
           class="relative bg-white rounded-full border border-gray-200 shadow-sm"
         >
-          <!-- Left search icon -->
           <div
             class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
           >
@@ -68,8 +70,6 @@ const nav = [
                 stroke-linejoin="round"></path>
             </svg>
           </div>
-
-          <!-- island wrapper: padding creates the visual flush look -->
           <div class="pl-10 pr-4 py-2">
             <HeaderSearchIsland client:visible />
           </div>
@@ -96,5 +96,5 @@ const nav = [
     </div>
   </div>
 </header>
-<!-- main content anchor used by skip-link -->
+
 <main id="content"></main>

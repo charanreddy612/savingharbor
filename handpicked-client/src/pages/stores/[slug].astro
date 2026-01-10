@@ -12,6 +12,7 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardStore from "../../components/CardStore.astro";
 import Pagination from "../../components/Pagination.astro";
 
+import MerchantProofsIsland from "../../components/islands/MerchantProofsIsland.jsx";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
 import SubscribeBox from "../../components/SubscribeBox.jsx";
 import FaqAccordion from "../../components/FAQAccordion.jsx";
@@ -105,11 +106,11 @@ const _ALLOWED_TAGS = [
   "ul","ol","li",
   "a","img","blockquote"
 ];
-const _ALLOWED_ATTR = {
-  a: ["href","title","rel","target"],
-  img: ["src","alt","title","width","height"],
-  "*": [] // leave empty unless you need classes; see note below
-};
+const _ALLOWED_ATTR = [
+  "href","title","rel","target",
+  "src","alt","width","height",
+  "id", "class", "loading" // add any small attrs you need
+];
 
 const safeSideHtml = store?.about_html
   ? DOMPurify.sanitize(store.about_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
@@ -118,6 +119,17 @@ const safeSideHtml = store?.about_html
 const safeDescriptionHtml = store?.description_html
   ? DOMPurify.sanitize(store.description_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
   : null;
+
+  // server-side fetch
+let proofs = [];
+try {
+  let res : any;
+  res = await api.get(`/stores/${store?.id}/proofs`);
+  console.log("proofs received ::: ", res);
+  proofs = res.proofs || [];
+} catch (e) {
+  console.error("Error fetching proofs:", e);
+}
 ---
 
 <style>
@@ -241,7 +253,8 @@ const safeDescriptionHtml = store?.description_html
                 />
               </div>
             </section>
-
+            <!-- Merchant proofs -->
+            <MerchantProofsIsland client:visible proofs={proofs} />
             <!-- About Store -->
             <section id="about-section" class="card-base p-6">
               <h2 class="section-heading">About this store</h2>

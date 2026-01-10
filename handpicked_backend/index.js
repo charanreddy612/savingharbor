@@ -21,7 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 // CORS
 const allowedOrigins = [
   'https://savingharbor.com',
-  'https://www.savingharbor.com'
+  'https://www.savingharbor.com',
+  'https://dev.savingharbor.com',
 ];
 
 app.use(
