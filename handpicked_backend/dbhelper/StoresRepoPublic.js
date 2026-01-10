@@ -101,7 +101,7 @@ export async function list({
       .select("id, slug, name, logo_url, active_coupons_count")
       .order("name", { ascending: true })
       .order("id", { ascending: true })
-      .limit(safeLimit);
+      .limit(safeLimit + 1);
 
     // Apply filters
     if (q) query = query.ilike("name", `%${q}%`);
@@ -124,7 +124,7 @@ export async function list({
           .toString("utf8")
           .split(":");
         if (name && id) {
-          query = query.gt("name", name).or(`name.eq.${name},id.gt.${id}`);
+          query = query.or(`name.gt.${name},and(name.eq.${name},id.gt.${id})`);
         }
       } catch (e) {
         console.warn("Stores.list: invalid cursor:", cursor);
@@ -134,7 +134,10 @@ export async function list({
     const { data, error } = await query;
     if (error) throw error;
 
-    const rows = (data || []).map((r) => ({
+    const hasMore = data.length > safeLimit;
+    const pageRows = data.slice(0, safeLimit);
+
+    const rows = pageRows.map((r) => ({
       id: r.id,
       slug: r.slug,
       name: r.name,
@@ -144,8 +147,8 @@ export async function list({
 
     // Compute next cursor
     let nextCursor = null;
-    if (rows.length === safeLimit) {
-      const last = rows[rows.length - 1];
+    if (hasMore) {
+      const last = pageRows[pageRows.length - 1];
       nextCursor = Buffer.from(`${last.name}:${last.id}`).toString("base64");
     }
 
