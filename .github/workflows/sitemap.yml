@@ -1,23 +1,28 @@
 name: Update Sitemap
 on:
   schedule:
-    - cron: '0 2 * * *'  # 2 AM UTC daily
-  workflow_dispatch:  # Manual trigger option
+    - cron: "0 2 * * *"
+  workflow_dispatch:
 
 jobs:
   update-sitemap:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./handpicked-client
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: production
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
-      - run: node handpicked-client/scripts/generate-sitemaps.js
+      - run: node scripts/generate-sitemaps.js
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "chore: update sitemap [skip ci]" || echo "No changes"
-          git push
+          git push origin production
