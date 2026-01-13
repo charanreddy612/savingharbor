@@ -4,11 +4,6 @@ import { sanitize } from "../utils/sanitize.js";
 
 /**
  * list(params)
- * - params: { q, categorySlug, sort, page, limit, skipCount=false, mode="default" }
- * - returns: { rows: Array, total: number }
- */
-/**
- * list(params)
  * - params: { q, categorySlug, seasonSlug, sort, letter, cursor, limit, skipCount=false, mode="default" }
  * - returns: { rows: Array, total: number, nextCursor: string|null }
  */
@@ -66,7 +61,7 @@ export async function list({
       let query = supabase
         .from("merchants")
         .select("id, slug, name, logo_url, active_coupons_count")
-        .eq("home", true) //
+        .eq("tag_home", true) //
         .order("created_at", { ascending: false })
         .range(0, safeLimit - 1);
 
@@ -111,7 +106,7 @@ export async function list({
     // Alphabetical filtering
     if (letter && letter !== "All") {
       if (letter === "0-9") {
-        query = query.regex("name", "^[0-9]");
+        query = query.gte("name", "0").lt("name", "9\uffff");
       } else {
         query = query.ilike("name", `${letter}%`);
       }
