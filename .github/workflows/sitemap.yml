@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: '18'
       - run: npm ci
-      - run: node scripts/generate-sitemaps.js
+      - run: node handpicked-client/scripts/generate-sitemaps.js
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
