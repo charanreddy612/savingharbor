@@ -7,6 +7,8 @@ on:
 jobs:
   update-sitemap:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Add this
     defaults:
       run:
         working-directory: ./handpicked-client
