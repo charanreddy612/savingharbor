@@ -27,3 +27,6 @@ Thumbs.db
 
 # Vercel build output
 .vercel
+
+# sitemap temp files
+*.tmp

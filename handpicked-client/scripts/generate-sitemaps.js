@@ -102,22 +102,28 @@ async function fetchBlog_supabase() {
 
 // ----------------- helpers -----------------
 async function writeGzippedSitemap(filename, items) {
-  const filepath = path.join(OUT_DIR, filename);
+  const finalPath = path.join(OUT_DIR, filename);
+  const tmpPath = finalPath + ".tmp";
+
   const smStream = new SitemapStream({ hostname: HOSTNAME });
   const gzipStream = smStream.pipe(zlib.createGzip());
+
   items.forEach((i) => {
-    const entry = {
+    smStream.write({
       url: i.url,
       lastmod: i.lastmod,
       changefreq: i.changefreq,
       priority: i.priority,
-    };
-    smStream.write(entry);
+    });
   });
   smStream.end();
   const buffer = await streamToPromise(gzipStream);
-  fs.writeFileSync(filepath, buffer);
-  console.log("Wrote", filepath);
+
+  fs.writeFileSync(tmpPath, buffer);
+  // atomic replace (Google never sees a broken file)
+  fs.renameSync(tmpPath, finalPath);
+
+  console.log("Wrote (atomic)", finalPath);
 }
 
 function chunk(arr, size) {
@@ -184,11 +190,14 @@ function chunk(arr, size) {
 ${files
   .map(
     (f) =>
-      `  <sitemap>\n    <loc>${HOSTNAME}/sitemaps/${f}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`
+      `  <sitemap>\n    <loc>${HOSTNAME}/sitemaps/${f}</loc>\n    <lastmod>${today}</lastmod>\n  </sitemap>`,
   )
   .join("\n")}
 </sitemapindex>`;
-    fs.writeFileSync(INDEX_OUT, indexXml, "utf8");
+    const tmpIndex = INDEX_OUT + ".tmp";
+    fs.writeFileSync(tmpIndex, indexXml, "utf8");
+    fs.renameSync(tmpIndex, INDEX_OUT);
+
     console.log("Wrote", INDEX_OUT);
 
     console.log("Sitemap generation complete.");
