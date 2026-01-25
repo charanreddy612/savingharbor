@@ -160,7 +160,7 @@ export default function StoresGrid({ apiUrl }) {
     <div className="min-h-screen">
       {/* Alphabet Filter Pills - Sticky */}
       <div className="sticky top-0 z-10 bg-white py-4 mb-6 border-b shadow-sm">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 justify-center">
           {ALPHABET.map((letter) => (
             <button
               key={letter}
