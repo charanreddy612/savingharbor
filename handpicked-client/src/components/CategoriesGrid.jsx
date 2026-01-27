@@ -2,8 +2,32 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const ALPHABET = [
-  "All", "0-9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-  "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
 ];
 const INITIAL_LOAD = 24;
 const LOAD_MORE = 12;
@@ -17,11 +41,16 @@ export default function CategoriesGrid({ apiUrl }) {
   const [cursor, setCursor] = useState(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
+  const [availableLetters, setAvailableLetters] = useState(ALPHABET);
 
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
 
-  const fetchCategories = async (letter, currentCursor = null, append = false) => {
+  const fetchCategories = async (
+    letter,
+    currentCursor = null,
+    append = false,
+  ) => {
     try {
       setError(null);
       if (append) setLoadingMore(true);
@@ -29,7 +58,7 @@ export default function CategoriesGrid({ apiUrl }) {
 
       const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
       let url = `${apiUrl}/public/v1/categories?limit=${limit}`;
-      
+
       if (letter !== "All") url += `&letter=${encodeURIComponent(letter)}`;
       if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
 
@@ -44,7 +73,7 @@ export default function CategoriesGrid({ apiUrl }) {
       const nextCursor = data.meta?.nextCursor || null;
 
       if (append) {
-        setCategories(prev => [...prev, ...newCategories]);
+        setCategories((prev) => [...prev, ...newCategories]);
       } else {
         setCategories(newCategories);
       }
@@ -52,6 +81,22 @@ export default function CategoriesGrid({ apiUrl }) {
       setTotal(totalCount);
       setHasMore(!!nextCursor);
       setCursor(nextCursor);
+
+      if (!currentCursor && newCategories.length > 0) {
+        // Only on first load
+        const firstLetters = new Set(
+          newCategories.map((cat) => {
+            const firstChar = cat.name.charAt(0).toUpperCase();
+            return /[A-Z]/.test(firstChar) ? firstChar : "0-9";
+          }),
+        );
+
+        const activeLetters = ALPHABET.filter((letter) => {
+          if (letter === "All") return true;
+          return Array.from(firstLetters).includes(letter);
+        });
+        setAvailableLetters(activeLetters);
+      }
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError(err.message);
@@ -84,7 +129,7 @@ export default function CategoriesGrid({ apiUrl }) {
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { threshold: 0.1, rootMargin: "100px" }
+      { threshold: 0.1, rootMargin: "100px" },
     );
 
     observer.observe(loadMoreRef.current);
@@ -104,20 +149,26 @@ export default function CategoriesGrid({ apiUrl }) {
       {/* Alphabet Filter - EXACT StoresGrid copy */}
       <div className="sticky top-0 z-10 bg-white py-4 mb-6 border-b shadow-sm">
         <div className="flex flex-wrap gap-3 justify-center">
-          {ALPHABET.map((letter) => (
-            <button
-              key={letter}
-              onClick={() => handleLetterChange(letter)}
-              disabled={loading && selectedLetter !== letter}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedLetter === letter
-                  ? "bg-brand-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
-              }`}
-            >
-              {letter}
-            </button>
-          ))}
+          {availableLetters.map(
+            (
+              letter, // ← CHANGED: availableLetters
+            ) => (
+              <button
+                key={letter}
+                onClick={() => handleLetterChange(letter)}
+                disabled={loading || !availableLetters.includes(letter)} // ← NEW
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedLetter === letter
+                    ? "bg-brand-primary text-white shadow-md"
+                    : availableLetters.includes(letter) // ← NEW
+                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      : "bg-gray-50 text-gray-400 cursor-not-allowed" // ← NEW: disabled style
+                }`}
+              >
+                {letter}
+              </button>
+            ),
+          )}
         </div>
       </div>
 
@@ -129,7 +180,8 @@ export default function CategoriesGrid({ apiUrl }) {
           <span className="text-red-600">Error: {error}</span>
         ) : (
           <span>
-            Showing {categories.length} of {total} categories starting with "{selectedLetter}"
+            Showing {categories.length} of {total} categories starting with "
+            {selectedLetter}"
           </span>
         )}
       </div>
@@ -173,7 +225,9 @@ export default function CategoriesGrid({ apiUrl }) {
                     />
                   ) : (
                     <div className="w-12 h-12 bg-gradient-to-r from-brand-primary/20 to-brand-primary rounded-lg flex items-center justify-center">
-                      <span className="text-brand-primary text-xl font-bold">🏷️</span>
+                      <span className="text-brand-primary text-xl font-bold">
+                        🏷️
+                      </span>
                     </div>
                   )}
                 </div>
