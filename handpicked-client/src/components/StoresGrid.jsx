@@ -33,7 +33,7 @@ const ALPHABET = [
 const INITIAL_LOAD = 100;
 const LOAD_MORE = 50;
 
-export default function StoresGrid({ apiUrl }) {
+export default function StoresGrid({ apiUrl, categorySlug }) {
   const [stores, setStores] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState("0-9"); // Default to 0-9
   const [loading, setLoading] = useState(true);
@@ -59,20 +59,23 @@ export default function StoresGrid({ apiUrl }) {
 
       const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
 
-      // Build URL with proper parameters
-      let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(
-        letter
-      )}`;
+      // // Build URL with proper parameters
+      // let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(
+      //   letter
+      // )}`;
 
-      if (currentCursor) {
-        url += `&cursor=${encodeURIComponent(currentCursor)}`;
-      }
+      // if (currentCursor) {
+      //   url += `&cursor=${encodeURIComponent(currentCursor)}`;
+      // }
 
+      let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(letter)}`;
+      if (categorySlug) url += `&category=${encodeURIComponent(categorySlug)}`; // ADD THIS
+      if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
       const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(
-          `API returned ${response.status}: ${response.statusText}`
+          `API returned ${response.status}: ${response.statusText}`,
         );
       }
 
@@ -138,7 +141,7 @@ export default function StoresGrid({ apiUrl }) {
       {
         threshold: 0.1,
         rootMargin: "100px",
-      }
+      },
     );
 
     observer.observe(loadMoreRef.current);

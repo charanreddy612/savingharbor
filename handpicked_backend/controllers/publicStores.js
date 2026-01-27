@@ -23,9 +23,6 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 /**
  * GET /public/v1/stores
- */
-/**
- * GET /public/v1/stores
  * Cursor-based pagination
  */
 export async function list(req, res) {

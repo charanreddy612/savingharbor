@@ -6,3 +6,5 @@ export const COUPON_STATUS = ["active", "all"];
 export const COUPON_SORTS = ["latest", "ending", "editor"];
 
 export const BLOG_SORTS = ["latest", "featured"];
+
+export const CATEGORY_SORTS = ["name"];

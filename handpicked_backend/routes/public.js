@@ -13,6 +13,7 @@ const publicRouter = Router();
 
 // Categories
 publicRouter.get("/categories", publicCategories.list);
+publicRouter.get("/categories/:slug", publicCategories.detail);
 
 // Stores
 publicRouter.get("/stores", publicStores.list);
