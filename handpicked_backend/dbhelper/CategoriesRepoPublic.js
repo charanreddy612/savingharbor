@@ -78,9 +78,7 @@ export async function list({
               .from("merchants")
               .select("id", { count: "exact", head: true })
               .eq("is_publish", true)
-              .or(
-                `category_names.cs.${row.name.toLowerCase()},category_names.cs.%${row.name.toLowerCase()}%,category_names.contains.${row.name}`,
-              );
+              .contains("category_names", [row.name]);
             storeCount = count || 0;
           } catch (e) {
             console.warn("Category store count failed:", row.name, e);
@@ -88,9 +86,6 @@ export async function list({
 
           // TEMPORARILY disable filtering until data is fixed
           // if (storeCount === 0) return null;
-
-          // ONLY return categories WITH stores ✅
-          if (storeCount === 0) return null;
 
           // Children count
           let childrenCount = 0;
