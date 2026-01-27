@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const ALPHABET = [
+  "All",
   "A",
   "B",
   "C",
@@ -41,7 +42,6 @@ export default function CategoriesGrid({ apiUrl }) {
   const [cursor, setCursor] = useState(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(null);
-  const [availableLetters, setAvailableLetters] = useState(ALPHABET);
 
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
@@ -81,22 +81,6 @@ export default function CategoriesGrid({ apiUrl }) {
       setTotal(totalCount);
       setHasMore(!!nextCursor);
       setCursor(nextCursor);
-
-      if (!currentCursor && newCategories.length > 0) {
-        // Only on first load
-        const firstLetters = new Set(
-          newCategories.map((cat) => {
-            const firstChar = cat.name.charAt(0).toUpperCase();
-            return /[A-Z]/.test(firstChar) ? firstChar : "0-9";
-          }),
-        );
-
-        const activeLetters = ALPHABET.filter((letter) => {
-          if (letter === "All") return true;
-          return Array.from(firstLetters).includes(letter);
-        });
-        setAvailableLetters(activeLetters);
-      }
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError(err.message);
@@ -149,26 +133,20 @@ export default function CategoriesGrid({ apiUrl }) {
       {/* Alphabet Filter - EXACT StoresGrid copy */}
       <div className="sticky top-0 z-10 bg-white py-4 mb-6 border-b shadow-sm">
         <div className="flex flex-wrap gap-3 justify-center">
-          {availableLetters.map(
-            (
-              letter, // ← CHANGED: availableLetters
-            ) => (
-              <button
-                key={letter}
-                onClick={() => handleLetterChange(letter)}
-                disabled={loading || !availableLetters.includes(letter)} // ← NEW
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedLetter === letter
-                    ? "bg-brand-primary text-white shadow-md"
-                    : availableLetters.includes(letter) // ← NEW
-                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      : "bg-gray-50 text-gray-400 cursor-not-allowed" // ← NEW: disabled style
-                }`}
-              >
-                {letter}
-              </button>
-            ),
-          )}
+          {ALPHABET.map((letter) => (
+            <button
+              key={letter}
+              onClick={() => handleLetterChange(letter)}
+              disabled={loading && selectedLetter !== letter}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                selectedLetter === letter
+                  ? "bg-brand-primary text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              }`}
+            >
+              {letter}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -208,44 +186,46 @@ export default function CategoriesGrid({ apiUrl }) {
       ) : categories.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {categories.map((category) => (
-              <a
-                key={category.id}
-                href={`/categories/${category.slug}`}
-                className="group block rounded-lg bg-white border border-gray-200 p-4 h-full transition-all hover:shadow-lg hover:border-brand-primary flex flex-col"
-              >
-                {/* Category Image */}
-                <div className="aspect-square mb-3 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg overflow-hidden">
-                  {category.thumb_url ? (
-                    <img
-                      src={category.thumb_url}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gradient-to-r from-brand-primary/20 to-brand-primary rounded-lg flex items-center justify-center">
-                      <span className="text-brand-primary text-xl font-bold">
-                        🏷️
-                      </span>
-                    </div>
-                  )}
-                </div>
+            {categories
+              .filter((cat) => cat.stats?.stores > 0)
+              .map((category) => (
+                <a
+                  key={category.id}
+                  href={`/categories/${category.slug}`}
+                  className="group block rounded-lg bg-white border border-gray-200 p-4 h-full transition-all hover:shadow-lg hover:border-brand-primary flex flex-col"
+                >
+                  {/* Category Image */}
+                  <div className="aspect-square mb-3 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg overflow-hidden">
+                    {category.thumb_url ? (
+                      <img
+                        src={category.thumb_url}
+                        alt={category.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-r from-brand-primary/20 to-brand-primary rounded-lg flex items-center justify-center">
+                        <span className="text-brand-primary text-xl font-bold">
+                          🏷️
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Category Name */}
-                <h3 className="text-sm font-semibold text-gray-900 text-center mb-2 group-hover:text-brand-primary transition-colors line-clamp-2">
-                  {category.name}
-                </h3>
+                  {/* Category Name */}
+                  <h3 className="text-sm font-semibold text-gray-900 text-center mb-2 group-hover:text-brand-primary transition-colors line-clamp-2">
+                    {category.name}
+                  </h3>
 
-                {/* Stats */}
-                <div className="text-xs text-gray-500 space-y-1 mt-auto">
-                  <div>{category.stats?.stores || 0} stores</div>
-                  {category.stats?.children > 0 && (
-                    <div>{category.stats.children} sub-categories</div>
-                  )}
-                </div>
-              </a>
-            ))}
+                  {/* Stats */}
+                  <div className="text-xs text-gray-500 space-y-1 mt-auto">
+                    <div>{category.stats?.stores || 0} stores</div>
+                    {category.stats?.children > 0 && (
+                      <div>{category.stats.children} sub-categories</div>
+                    )}
+                  </div>
+                </a>
+              ))}
           </div>
 
           {/* Load More - EXACT StoresGrid copy */}

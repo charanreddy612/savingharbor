@@ -8,7 +8,7 @@ import { supabase } from "../dbhelper/dbclient.js";
 export async function list({
   q = "",
   sort = "name",
-  letter = "A",
+  letter = "All",
   cursor = null,
   limit = 100,
   skipCount = false,
@@ -65,53 +65,51 @@ export async function list({
     const pageRows = data.slice(0, safeLimit);
 
     // Add store counts via JSONB overlap
-    const rows = (
-      await Promise.all(
-        pageRows.map(async (row) => {
-          let storeCount = 0;
-          try {
-            const { count } = await supabase
-              .from("merchants")
-              .select("id", { count: "exact", head: true })
-              .eq("is_publish", true)
-              .contains("category_names", [row.name]);
-            storeCount = count || 0;
-          } catch (e) {
-            console.warn("Category store count failed:", e);
-          }
+    const rows = (await Promise.all(
+      pageRows.map(async (row) => {
+        let storeCount = 0;
+        try {
+          const { count } = await supabase
+            .from("merchants")
+            .select("id", { count: "exact", head: true })
+            .eq("is_publish", true)
+            .contains("category_names", [row.name]);
+          storeCount = count || 0;
+        } catch (e) {
+          console.warn("Category store count failed:", e);
+        }
 
-          // ONLY return categories WITH stores ✅
-          if (storeCount === 0) return null;
+        // ONLY return categories WITH stores ✅
+        if (storeCount === 0) return null;
 
-          // Children count
-          let childrenCount = 0;
-          try {
-            const { count: cc } = await supabase
-              .from("merchant_categories")
-              .select("id", { count: "exact", head: true })
-              .eq("parent_id", row.id)
-              .eq("is_publish", true);
-            childrenCount = cc || 0;
-          } catch (e) {
-            console.warn("Category children count failed:", e);
-          }
+        // Children count
+        let childrenCount = 0;
+        try {
+          const { count: cc } = await supabase
+            .from("merchant_categories")
+            .select("id", { count: "exact", head: true })
+            .eq("parent_id", row.id)
+            .eq("is_publish", true);
+          childrenCount = cc || 0;
+        } catch (e) {
+          console.warn("Category children count failed:", e);
+        }
 
-          return {
-            id: row.id,
-            name: row.name,
-            slug: row.slug,
-            description: row.description || "",
-            thumb_url: row.thumb_url || null,
-            meta_title: row.meta_title || "",
-            meta_description: row.meta_description || "",
-            stats: {
-              stores: storeCount,
-              children: childrenCount,
-            },
-          };
-        }),
-      )
-    ).filter(Boolean);
+        return {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          description: row.description || "",
+          thumb_url: row.thumb_url || null,
+          meta_title: row.meta_title || "",
+          meta_description: row.meta_description || "",
+          stats: {
+            stores: storeCount,
+            children: childrenCount,
+          },
+        };
+      }),
+    )).filter(Boolean);
 
     // Next cursor
     let nextCursor = null;
@@ -120,31 +118,32 @@ export async function list({
       nextCursor = Buffer.from(`${last.name}:${last.id}`).toString("base64");
     }
 
-    // Total count
-    let total = null;
-    if (!skipCount) {
-      try {
-        let countQuery = supabase
-          .from("merchant_categories")
-          .select("id", { count: "exact", head: true })
-          .eq("is_publish", true)
-          .is("parent_id", null);
+    // // Total count
+    // let total = null;
+    // if (!skipCount) {
+    //   try {
+    //     let countQuery = supabase
+    //       .from("merchant_categories")
+    //       .select("id", { count: "exact", head: true })
+    //       .eq("is_publish", true)
+    //       .is("parent_id", null);
 
-        if (q) countQuery = countQuery.ilike("name", `%${q}%`);
-        if (letter && letter !== "All") {
-          if (letter === "0-9") countQuery = countQuery.regex("name", "^[0-9]");
-          else countQuery = countQuery.ilike("name", `${letter}%`);
-        }
+    //     if (q) countQuery = countQuery.ilike("name", `%${q}%`);
+    //     if (letter && letter !== "All") {
+    //       countQuery = countQuery.ilike("name", `${letter}%`);
+    //     }
 
-        const { count, error: cErr } = await countQuery;
-        if (cErr) throw cErr;
-        total = count || 0;
-      } catch (err) {
-        console.warn("Categories.list: count query failed:", err);
-        total = rows.length;
-      }
-    }
+    //     const { count, error: cErr } = await countQuery;
+    //     if (cErr) throw cErr;
+    //     total = count || 0;
+    //   } catch (err) {
+    //     console.warn("Categories.list: count query failed:", err);
+    //     total = rows.length;
+    //   }
+    // }
 
+    let total = rows.length;
+    
     return { rows, total: total || rows.length, nextCursor };
   } catch (e) {
     console.error("Categories.list error:", e);
