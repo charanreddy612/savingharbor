@@ -64,6 +64,10 @@ export async function list({
     const hasMore = data.length > safeLimit;
     const pageRows = data.slice(0, safeLimit);
 
+    //Total Count 
+    let total = pageRows.length;
+
+
     // Add store counts via JSONB overlap
     const rows = (await Promise.all(
       pageRows.map(async (row) => {
@@ -140,10 +144,7 @@ export async function list({
     //     console.warn("Categories.list: count query failed:", err);
     //     total = rows.length;
     //   }
-    // }
-
-    let total = rows.length;
-    
+    // }    
     return { rows, total: total || rows.length, nextCursor };
   } catch (e) {
     console.error("Categories.list error:", e);
