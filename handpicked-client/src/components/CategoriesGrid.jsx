@@ -187,7 +187,7 @@ export default function CategoriesGrid({ apiUrl }) {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {categories
-              .filter((cat) => cat.stats?.stores > 0)
+              // .filter((cat) => cat.stats?.stores > 0)
               .map((category) => (
                 <a
                   key={category.id}
