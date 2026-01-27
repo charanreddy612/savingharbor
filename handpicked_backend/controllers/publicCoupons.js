@@ -114,7 +114,7 @@ export async function list(req, res) {
           const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
             .toString()
             .trim()
-            .replace(/\/+$/, ""); // e.g. https://handpickedclient.onrender.com/public/v1
+            .replace(/\/+$/, ""); // 
 
           // meta may contain next_cursor/prev_cursor (cursor mode) or page/total (offset mode)
           let apiPrev = null;

@@ -57,7 +57,7 @@ export default function CategoriesGrid({ apiUrl }) {
       else setLoading(true);
 
       const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
-      let url = `${apiUrl}/public/v1/categories?limit=${limit}`;
+      let url = `${apiUrl}/categories?limit=${limit}`;
 
       if (letter !== "All") url += `&letter=${encodeURIComponent(letter)}`;
       if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;

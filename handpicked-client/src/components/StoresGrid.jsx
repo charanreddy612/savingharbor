@@ -60,15 +60,7 @@ export default function StoresGrid({ apiUrl, categorySlug }) {
       const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
 
       // // Build URL with proper parameters
-      // let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(
-      //   letter
-      // )}`;
-
-      // if (currentCursor) {
-      //   url += `&cursor=${encodeURIComponent(currentCursor)}`;
-      // }
-
-      let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(letter)}`;
+      let url = `${apiUrl}/stores?limit=${limit}&letter=${encodeURIComponent(letter)}`;
       if (categorySlug) url += `&category=${encodeURIComponent(categorySlug)}`; // ADD THIS
       if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
       const response = await fetch(url);
