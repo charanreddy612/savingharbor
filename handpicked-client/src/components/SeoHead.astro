@@ -9,7 +9,7 @@ function getCurrentMonthYear() {
   const now = new Date();
   const month = now.toLocaleString("en-US", { month: "long" }); // e.g. "Sep"
   const year = now.getFullYear(); // e.g. 2025
-  return `- ${month}, ${year}`;
+  return `( ${month}, ${year} ) | Verified`;
 }
 
 // detect existing suffix like "{Sep, 2025}" (basic but reliable)
