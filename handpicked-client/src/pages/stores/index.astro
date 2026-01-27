@@ -10,7 +10,7 @@ const pageDesc = "Explore verified stores with handpicked coupons.";
 const canonical = "https://savingharbor.com/stores";
 
 // Get API URL from environment or use default
-const apiUrl = import.meta.env.PUBLIC_API_URL || "https://api.savingharbor.com";
+const apiUrl = import.meta.env.PUBLIC_API_BASE_URL || "https://api.savingharbor.com";
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical }}>
@@ -22,7 +22,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "https://api.savingharbor.com";
     </div>
 
     <!-- React component handles all filtering, infinite scroll, and store display -->
-    <StoresGrid client:load apiUrl={apiUrl} />
+    <StoresGrid client:load apiUrl={apiUrl} categorySlug={null} />
   </main>
   <Footer />
 </Base>
