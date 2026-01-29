@@ -3,7 +3,6 @@ import * as StoresRepo from "../dbhelper/StoresRepoPublic.js";
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { ok, fail, notFound } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
-import { buildCanonical } from "../utils/seo.js";
 import { buildStoreJsonLd } from "../utils/jsonld.js";
 import {
   valPage,
@@ -74,15 +73,7 @@ export async function list(req, res) {
         const { rows, total, nextCursor } = await StoresRepo.list(params);
 
         // Build canonical (may be async)
-        const canonical = await buildCanonical({
-          origin: params.origin,
-          path: params.path,
-          limit,
-          q: params.q,
-          categorySlug: params.categorySlug,
-          sort: params.sort,
-          seasonSlug: params.seasonSlug,
-        });
+        const canonical = null;
 
         return {
           data: rows,
@@ -94,7 +85,7 @@ export async function list(req, res) {
           },
         };
       },
-      { ttlSeconds: 60, keyExtra: cacheKey }
+      { ttlSeconds: 60, keyExtra: cacheKey },
     );
 
     return ok(res, result);
@@ -103,123 +94,6 @@ export async function list(req, res) {
     return fail(res, "Failed to list stores", e);
   }
 }
-
-// export async function list(req, res) {
-//   try {
-//     const page = valPage(req.query.page);
-//     const limit = valLimit(req.query.limit);
-//     const sort = valEnum(req.query.sort, STORE_SORTS, "newest");
-//     const locale = valLocale(req.query.locale) || deriveLocale(req);
-//     const qRaw = String(req.query.q || "");
-//     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
-//     const categorySlug = String(req.query.category || "").trim();
-
-//     // origin/path may be sync or async
-//     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
-//     const path = await Promise.resolve(getPath(req));
-
-//     //Season filter
-//     const seasonSlug = req.query.season
-//       ? String(req.query.season).trim().toLowerCase()
-//       : null;
-
-//     const params = {
-//       q: q.trim(),
-//       categorySlug,
-//       sort,
-//       locale,
-//       page,
-//       limit,
-//       origin,
-//       path,
-//       seasonSlug, // include seasonSlug
-//     };
-
-//     const cacheKey = makeListCacheKey("stores", {
-//       page,
-//       limit,
-//       q: params.q || "",
-//       category: params.categorySlug || "",
-//       sort: params.sort || "",
-//       locale: params.locale || "",
-//       type: params.type || "",
-//       season: params.seasonSlug || "", // include seasonSlug in cache key
-//     });
-
-//     const result = await withCache(
-//       req,
-//       async () => {
-//         const { rows, total } = await StoresRepo.list(params);
-
-//         // Build prev/next navigation using resolved origin/path
-//         const nav = buildPrevNext({
-//           origin: params.origin,
-//           path: params.path,
-//           page,
-//           limit,
-//           total,
-//           extraParams: {
-//             q: params.q || undefined,
-//             category: params.categorySlug || undefined,
-//             sort: params.sort,
-//             locale: params.locale || undefined,
-//             season: params.seasonSlug || undefined, // include season in nav links
-//           },
-//         });
-
-//         // If frontend configured PUBLIC_API_BASE_URL, rewrite prev/next to backend base
-//         const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
-//           .toString()
-//           .trim()
-//           .replace(/\/+$/, "");
-//         if (backendBase) {
-//           const rewrite = (raw) => {
-//             if (!raw) return null;
-//             try {
-//               const u = new URL(raw, "http://example.invalid");
-//               return `${backendBase}${u.pathname}${u.search}`;
-//             } catch (err) {
-//               return raw;
-//             }
-//           };
-//           nav.prev = nav.prev ? rewrite(nav.prev) : null;
-//           nav.next = nav.next ? rewrite(nav.next) : null;
-//         }
-
-//         // Build canonical (may be async)
-//         const canonical = await buildCanonical({
-//           origin: params.origin,
-//           path: params.path,
-//           page,
-//           limit,
-//           q: params.q,
-//           categorySlug: params.categorySlug,
-//           sort: params.sort,
-//           seasonSlug: params.seasonSlug, // include seasonSlug
-//         });
-
-//         return {
-//           data: rows,
-//           meta: {
-//             page,
-//             limit,
-//             total,
-//             canonical,
-//             prev: nav.prev,
-//             next: nav.next,
-//             total_pages: nav.totalPages,
-//           },
-//         };
-//       },
-//       { ttlSeconds: 60, keyExtra: cacheKey }
-//     );
-
-//     return ok(res, result);
-//   } catch (e) {
-//     console.error("Stores list controller error:", e);
-//     return fail(res, "Failed to list stores", e);
-//   }
-// }
 
 /** Store Detail — enriched for frontend needs
  *
@@ -239,7 +113,7 @@ export async function detail(req, res) {
     const sort = valEnum(
       req.query.sort,
       ["editor", "latest", "ending"],
-      "editor"
+      "editor",
     );
     const locale = valLocale(req.query.locale) || deriveLocale(req);
 
@@ -316,15 +190,15 @@ export async function detail(req, res) {
                 return { total_offers_added_last_30d: 0, recent: [] };
               })
             : typeof CouponsRepo?.countRecentForStore === "function"
-            ? CouponsRepo.countRecentForStore({
-                merchantId: store.id,
-                days: 30,
-                limit: 10,
-              }).catch((e) => {
-                console.warn("countRecentForStore failed:", e);
-                return { total_offers_added_last_30d: 0, recent: [] };
-              })
-            : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
+              ? CouponsRepo.countRecentForStore({
+                  merchantId: store.id,
+                  days: 30,
+                  limit: 10,
+                }).catch((e) => {
+                  console.warn("countRecentForStore failed:", e);
+                  return { total_offers_added_last_30d: 0, recent: [] };
+                })
+              : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
 
         const [couponsResult, relatedResult, trendingResult, recentResult] =
           await Promise.all([
@@ -511,15 +385,7 @@ export async function detail(req, res) {
         };
 
         // canonical + seo
-        const canonical = await buildCanonical({
-          origin: params.origin,
-          path: params.path,
-          page,
-          limit,
-          q: params.q,
-          categorySlug: params.categorySlug,
-          sort: params.sort,
-        });
+        const canonical = null;
 
         const seo = StoresRepo.buildSeo(store, {
           canonical,
@@ -619,7 +485,7 @@ export async function detail(req, res) {
           },
         };
       },
-      { ttlSeconds: 60, keyExtra: cacheKey }
+      { ttlSeconds: 60, keyExtra: cacheKey },
     );
 
     if (!result?.data) return notFound(res, "Store not found");
@@ -642,14 +508,14 @@ function normalizeFaqsFromColumn(raw) {
     } catch (err) {
       console.warn(
         "normalizeFaqsFromColumn: failed to JSON.parse faqs string:",
-        err
+        err,
       );
       return [];
     }
   } else {
     console.warn(
       "normalizeFaqsFromColumn: unexpected faqs column type:",
-      typeof raw
+      typeof raw,
     );
     return [];
   }

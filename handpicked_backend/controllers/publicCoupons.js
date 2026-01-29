@@ -2,7 +2,6 @@
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { ok, fail } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
-import { buildCanonical } from "../utils/seo.js";
 import {
   valPage,
   valLimit,
@@ -163,7 +162,7 @@ export async function list(req, res) {
             data: safeRows,
             meta: {
               ...meta,
-              canonical: buildCanonical({ ...params }),
+              canonical: null,
               prev: nav.prev,
               next: nav.next,
               total_pages: nav.totalPages,
@@ -178,7 +177,7 @@ export async function list(req, res) {
               page,
               limit,
               total: 0,
-              canonical: buildCanonical({ ...params }),
+              canonical: null,
               prev: null,
               next: null,
               total_pages: 1,

@@ -2,7 +2,6 @@
 import * as CategoriesRepo from "../dbhelper/CategoriesRepoPublic.js";
 import { ok, fail, notFound } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
-import { buildCanonical } from "../utils/seo.js";
 import {
   valLimit,
   valEnum,
@@ -56,13 +55,7 @@ export async function list(req, res) {
       async () => {
         const { rows, total, nextCursor } = await CategoriesRepo.list(params);
 
-        const canonical = await buildCanonical({
-          origin: params.origin,
-          path: params.path,
-          limit,
-          q: params.q,
-          sort: params.sort,
-        });
+        const canonical = null;
 
         return {
           data: rows,
@@ -118,11 +111,7 @@ export async function detail(req, res) {
           data: category,
           meta: {
             generated_at: new Date().toISOString(),
-            canonical: await buildCanonical({
-              origin: params.origin,
-              path: params.path,
-              slug: params.slug,
-            }),
+            canonical: null,
           },
         };
       },
