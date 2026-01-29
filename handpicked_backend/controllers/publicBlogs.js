@@ -2,7 +2,6 @@
 import * as BlogsRepo from "../dbhelper/BlogsRepoPublic.js";
 import { ok, fail, notFound } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
-import { buildCanonical } from "../utils/seo.js";
 import {
   valPage,
   valLimit,
@@ -83,16 +82,8 @@ export async function list(req, res) {
             },
           });
 
-          // Build canonical safely (await in case buildCanonical is async)
-          const canonical = await buildCanonical({
-            origin: params.origin,
-            path: params.path,
-            page,
-            limit,
-            q: params.q,
-            // categorySlug not used here; keep contract minimal
-            sort: params.sort,
-          });
+          // Build canonical
+          const canonical = null; 
 
           return {
             data: rows,
@@ -115,12 +106,7 @@ export async function list(req, res) {
               page,
               limit,
               total: 0,
-              canonical: await buildCanonical({
-                origin: params.origin,
-                path: params.path,
-                page,
-                limit,
-              }),
+              canonical: null,
               prev: null,
               next: null,
               total_pages: 1,
@@ -186,11 +172,7 @@ export async function detail(req, res) {
           const blog = await BlogsRepo.getBySlug(slug);
           if (!blog) return { data: null, meta: { status: 404 } };
 
-          const canonical = await buildCanonical({
-            origin: params.origin,
-            path: params.path,
-            page: params.page,
-          });
+          const canonical = null;
           const seo = BlogsRepo.buildSeo(blog, {
             canonical,
             locale: params.locale,

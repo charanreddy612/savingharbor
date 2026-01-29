@@ -2,7 +2,6 @@
 import * as CouponsRepo from "../dbhelper/CouponsRepoPublic.js";
 import { ok, fail } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
-import { buildCanonical } from "../utils/seo.js";
 import {
   valPage,
   valLimit,
@@ -114,7 +113,7 @@ export async function list(req, res) {
           const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
             .toString()
             .trim()
-            .replace(/\/+$/, ""); // e.g. https://handpickedclient.onrender.com/public/v1
+            .replace(/\/+$/, ""); // 
 
           // meta may contain next_cursor/prev_cursor (cursor mode) or page/total (offset mode)
           let apiPrev = null;
@@ -163,7 +162,7 @@ export async function list(req, res) {
             data: safeRows,
             meta: {
               ...meta,
-              canonical: buildCanonical({ ...params }),
+              canonical: null,
               prev: nav.prev,
               next: nav.next,
               total_pages: nav.totalPages,
@@ -178,7 +177,7 @@ export async function list(req, res) {
               page,
               limit,
               total: 0,
-              canonical: buildCanonical({ ...params }),
+              canonical: null,
               prev: null,
               next: null,
               total_pages: 1,

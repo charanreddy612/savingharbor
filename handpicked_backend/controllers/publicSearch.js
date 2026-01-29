@@ -2,7 +2,6 @@ import * as SearchRepo from "../dbhelper/SearchRepoPublic.js";
 import { ok, fail } from "../utils/http.js";
 import { withCache } from "../utils/cache.js";
 import { requireQ, valLimit } from "../utils/validation.js";
-import { buildCanonical } from "../utils/seo.js";
 
 /* helpers copied from other controllers for canonical/path/origin */
 function getOrigin(req) {
@@ -37,10 +36,7 @@ export async function searchStores(req, res) {
       const meta = {
         q: "",
         limit,
-        canonical: buildCanonical({
-          origin: getOrigin(req),
-          path: getPath(req),
-        }),
+        canonical: null,
       };
       return ok(res, { data: { stores: [] }, meta });
     }
@@ -65,12 +61,7 @@ export async function searchStores(req, res) {
 
     // attach canonical for SEO / shareability
     result.meta = result.meta || {};
-    result.meta.canonical = buildCanonical({
-      origin: params.origin,
-      path: params.path,
-      q: params.q,
-      limit: params.limit,
-    });
+    result.meta.canonical = null;
 
     return ok(res, result);
   } catch (err) {

@@ -7,9 +7,9 @@ const siteName = "Saving Harbor";
 // utility: returns "{Mon, YYYY}"
 function getCurrentMonthYear() {
   const now = new Date();
-  const month = now.toLocaleString("en-US", { month: "short" }); // e.g. "Sep"
+  const month = now.toLocaleString("en-US", { month: "long" }); // e.g. "Sep"
   const year = now.getFullYear(); // e.g. 2025
-  return `- ${month}, ${year}`;
+  return `( ${month}, ${year} ) | Verified`;
 }
 
 // detect existing suffix like "{Sep, 2025}" (basic but reliable)
@@ -36,7 +36,7 @@ const defaultDesc = hasMonthYearSuffix(rawDesc)
   ? rawDesc
   : `${rawDesc} ${suffix}`;
 
-const canonical = meta.canonical;
+const canonical = `https://savingharbor.com${Astro.url.pathname}`;
 const ogImage = meta.og_image || "/og-default.png";
 const jsonld = meta.jsonld;
 ---

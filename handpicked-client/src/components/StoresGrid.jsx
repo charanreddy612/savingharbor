@@ -33,7 +33,7 @@ const ALPHABET = [
 const INITIAL_LOAD = 100;
 const LOAD_MORE = 50;
 
-export default function StoresGrid({ apiUrl }) {
+export default function StoresGrid({ apiUrl, categorySlug }) {
   const [stores, setStores] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState("0-9"); // Default to 0-9
   const [loading, setLoading] = useState(true);
@@ -59,20 +59,15 @@ export default function StoresGrid({ apiUrl }) {
 
       const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
 
-      // Build URL with proper parameters
-      let url = `${apiUrl}/public/v1/stores?limit=${limit}&letter=${encodeURIComponent(
-        letter
-      )}`;
-
-      if (currentCursor) {
-        url += `&cursor=${encodeURIComponent(currentCursor)}`;
-      }
-
+      // // Build URL with proper parameters
+      let url = `${apiUrl}/stores?limit=${limit}&letter=${encodeURIComponent(letter)}`;
+      if (categorySlug) url += `&category=${encodeURIComponent(categorySlug)}`; // ADD THIS
+      if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
       const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(
-          `API returned ${response.status}: ${response.statusText}`
+          `API returned ${response.status}: ${response.statusText}`,
         );
       }
 
@@ -138,7 +133,7 @@ export default function StoresGrid({ apiUrl }) {
       {
         threshold: 0.1,
         rootMargin: "100px",
-      }
+      },
     );
 
     observer.observe(loadMoreRef.current);
@@ -160,7 +155,7 @@ export default function StoresGrid({ apiUrl }) {
     <div className="min-h-screen">
       {/* Alphabet Filter Pills - Sticky */}
       <div className="sticky top-0 z-10 bg-white py-4 mb-6 border-b shadow-sm">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 justify-center">
           {ALPHABET.map((letter) => (
             <button
               key={letter}

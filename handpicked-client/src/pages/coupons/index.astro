@@ -69,7 +69,7 @@ const coupons = resp?.data || [];
 const meta = resp?.meta || {};
 const pageTitle = meta.title || "Coupons - Saving Harbor";
 const pageDesc = meta.description || "Browse verified, handpicked coupons and deals.";
-const canonical = meta.canonical;
+const canonical = `https://savingharbor.com${Astro.url.pathname}`;
 const jsonld = meta.jsonld;
 ---
 
