@@ -16,10 +16,18 @@ export async function searchStores({ q, limit = 6 }) {
 
   // preferred: call RPC
   try {
+    console.log("=== RPC SEARCH ===");
+    console.log("Calling RPC with term:", term);
+
     const { data, error } = await supabase.rpc("search_stores", {
       query: term,
       lim,
     });
+
+    console.log("RPC error:", error);
+    console.log("RPC data:", data);
+    console.log("RPC data is array?", Array.isArray(data));
+    console.log("==================");
 
     if (error) {
       console.warn(
@@ -28,9 +36,11 @@ export async function searchStores({ q, limit = 6 }) {
       );
       // fall through to fallback below
     } else if (Array.isArray(data)) {
+      console.log('RPC returned', data.length, 'results - returning');
       return normalizeStores(data);
     } else {
       // unexpected shape, fall back
+      
       console.warn(
         "SearchRepo.searchStores RPC returned unexpected shape, falling back",
       );
@@ -44,12 +54,22 @@ export async function searchStores({ q, limit = 6 }) {
 
   // Fallback: do a fast ilike query (will use pg_trgm index if installed)
   try {
+    const likeQ = `%${term}%`;
+
     // Slugify the search term for slug comparison
     const slugifiedTerm = term
       .toLowerCase()
       .replace(/['"]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+
+    console.log("=== SEARCH DEBUG ===");
+    console.log("Original term:", term);
+    console.log("Slugified term:", slugifiedTerm);
+    console.log(
+      "Search query:",
+      `name.ilike.%${term}%,slug.ilike.%${slugifiedTerm}%`,
+    );
 
     const { data, error } = await supabase
       .from("merchants")
@@ -60,6 +80,10 @@ export async function searchStores({ q, limit = 6 }) {
       .order("active_coupons_count", { ascending: false })
       .limit(lim);
 
+    console.log("Results count:", data?.length || 0);
+    console.log("Results:", data);
+    console.log("Error:", error);
+    console.log("===================");
     if (error) {
       console.error("SearchRepo.searchStores fallback query error:", error);
       return [];
