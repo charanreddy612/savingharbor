@@ -24,7 +24,7 @@ export async function searchStores({ q, limit = 6 }) {
     if (error) {
       console.warn(
         "SearchRepo.searchStores RPC error, falling back:",
-        error.message || error
+        error.message || error,
       );
       // fall through to fallback below
     } else if (Array.isArray(data)) {
@@ -32,23 +32,30 @@ export async function searchStores({ q, limit = 6 }) {
     } else {
       // unexpected shape, fall back
       console.warn(
-        "SearchRepo.searchStores RPC returned unexpected shape, falling back"
+        "SearchRepo.searchStores RPC returned unexpected shape, falling back",
       );
     }
   } catch (rpcErr) {
     console.warn(
       "SearchRepo.searchStores RPC threw, falling back:",
-      rpcErr && rpcErr.message ? rpcErr.message : rpcErr
+      rpcErr && rpcErr.message ? rpcErr.message : rpcErr,
     );
   }
 
   // Fallback: do a fast ilike query (will use pg_trgm index if installed)
   try {
-    const likeQ = `%${term}%`;
+    // Slugify the search term for slug comparison
+    const slugifiedTerm = term
+      .toLowerCase()
+      .replace(/['"]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
     const { data, error } = await supabase
       .from("merchants")
       .select("id, slug, name, logo_url, category_names, active_coupons_count")
-      .ilike("name", likeQ)
+      // .ilike("name", likeQ)
+      .or(`name.ilike.%${term}%,slug.ilike.%${slugifiedTerm}%`)
       .eq("is_publish", true)
       .order("active_coupons_count", { ascending: false })
       .limit(lim);
@@ -102,8 +109,8 @@ function normalizeStores(rows) {
         typeof r.active_coupons_count === "number"
           ? r.active_coupons_count
           : typeof r.active_coupons === "number"
-          ? r.active_coupons
-          : undefined,
+            ? r.active_coupons
+            : undefined,
     };
   });
 }
