@@ -3,7 +3,6 @@
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
-import Pagination from "../../components/Pagination.astro";
 import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro"; // explicit .astro
 
@@ -42,10 +41,15 @@ type CouponsResponse = {
 let resp: CouponsResponse | null = null;
 try {
   // resp = await api.get<CouponsResponse>("/coupons", {}, { retries: 2, timeout: 8000 });
-  const currentSearch = (typeof Astro !== "undefined" && Astro?.request && Astro.request.url)
-  ? new URL(Astro.request.url).search
-  : ""; // fallback: no query when rendering outside SSR
-  resp = await api.get<CouponsResponse>(`/coupons${currentSearch}`, {}, { retries: 2, timeout: 8000 });
+  const currentSearch =
+    typeof Astro !== "undefined" && Astro?.request && Astro.request.url
+      ? new URL(Astro.request.url).search
+      : ""; // fallback: no query when rendering outside SSR
+  resp = await api.get<CouponsResponse>(
+    `/coupons${currentSearch}`,
+    {},
+    { retries: 2, timeout: 8000 },
+  );
 } catch (e) {
   console.error("Error fetching coupons:", e);
   resp = {
@@ -68,9 +72,13 @@ try {
 const coupons = resp?.data || [];
 const meta = resp?.meta || {};
 const pageTitle = meta.title || "Coupons - Saving Harbor";
-const pageDesc = meta.description || "Browse verified, handpicked coupons and deals.";
+const pageDesc =
+  meta.description || "Browse verified, handpicked coupons and deals.";
 const canonical = `https://savingharbor.com${Astro.url.pathname}`;
 const jsonld = meta.jsonld;
+
+// Only change: pass next URL to frontend
+const nextUrl = meta.next || null;
 ---
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
@@ -81,30 +89,36 @@ const jsonld = meta.jsonld;
 
     {
       coupons.length > 0 ? (
-        <!-- stable wrapper for client-side pagination updates -->
-        <div id="resource-list" data-resource="coupons" class="mt-6">
+        <div
+          id="resource-list"
+          data-resource="coupons"
+          data-next-url={nextUrl}
+          class="mt-6"
+        >
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {coupons.map((c) => (
-                <div
-                  class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
-                  style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
-                >
-              <CouponRevealIsland client:idle coupon={c} storeSlug={c.merchant?.slug} />
+              <div
+                class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+              >
+                <CouponRevealIsland
+                  client:visible
+                  coupon={c}
+                  storeSlug={c.merchant?.slug}
+                />
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <p class="mt-6 text-gray-500">No coupons available right now. Check back soon.</p>
+        <p class="mt-6 text-gray-500">
+          No coupons available right now. Check back soon.
+        </p>
       )
     }
-
-    <div class="mt-10">
-      <Pagination prev={meta.prev} next={meta.next} total_pages={meta.total_pages} />
-    </div>
   </main>
   <Footer />
 
   <!-- Inline import so Vite bundles src/client/cursor-pagination.js and rewrites the path for prod -->
-<script type="module" src="/js/cursor-pagination.js"></script>
+  <script type="module" src="src/client/cursor-pagination.js"></script>
 </Base>
