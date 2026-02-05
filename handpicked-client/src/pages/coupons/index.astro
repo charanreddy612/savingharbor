@@ -1,10 +1,9 @@
 ---
-// src/pages/coupons/index.astro
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import { api } from "../../lib/api";
-import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro"; // explicit .astro
+import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
 
 type merchant = {
   id: number | null;
@@ -31,6 +30,7 @@ type CouponsResponse = {
     canonical?: string;
     prev?: string | null;
     next?: string | null;
+    next_cursor?: string | null;
     total_pages?: number;
     jsonld?: any;
     title?: string;
@@ -40,13 +40,16 @@ type CouponsResponse = {
 
 let resp: CouponsResponse | null = null;
 try {
-  // resp = await api.get<CouponsResponse>("/coupons", {}, { retries: 2, timeout: 8000 });
-  const currentSearch =
-    typeof Astro !== "undefined" && Astro?.request && Astro.request.url
-      ? new URL(Astro.request.url).search
-      : ""; // fallback: no query when rendering outside SSR
+  const url = new URL(Astro.request.url);
+  const params = new URLSearchParams(url.search);
+
+  // Force cursor mode for infinite scroll (empty cursor = first page)
+  if (!params.has("page") && !params.has("cursor")) {
+    params.set("cursor", "");
+  }
+
   resp = await api.get<CouponsResponse>(
-    `/coupons${currentSearch}`,
+    `/coupons?${params}`,
     {},
     { retries: 2, timeout: 8000 },
   );
@@ -76,8 +79,6 @@ const pageDesc =
   meta.description || "Browse verified, handpicked coupons and deals.";
 const canonical = `https://savingharbor.com${Astro.url.pathname}`;
 const jsonld = meta.jsonld;
-
-// Only change: pass next URL to frontend
 const nextUrl = meta.next || null;
 ---
 
