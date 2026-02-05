@@ -192,7 +192,7 @@ export default function CategoriesGrid({ apiUrl }) {
                 <a
                   key={category.id}
                   href={`/categories/${category.slug}`}
-                  className="group block rounded-lg bg-white border border-gray-200 p-4 h-full transition-all hover:shadow-lg hover:border-brand-primary flex flex-col"
+                  className="group rounded-lg bg-white border border-gray-200 p-4 h-full transition-all hover:shadow-lg hover:border-brand-primary flex flex-col"
                 >
                   {/* Category Image */}
                   <div className="aspect-square mb-3 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg overflow-hidden">

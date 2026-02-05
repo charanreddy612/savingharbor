@@ -61,8 +61,8 @@ export function valPage(v) {
 }
 export function valLimit(v) {
   const n = Number(v);
-  const x = Number.isFinite(n) ? Math.floor(n) : 20;
-  return Math.min(Math.max(x, 1), 50);
+  const x = Number.isFinite(n) ? Math.floor(n) : 50;
+  return Math.min(Math.max(x, 1), 199);
 }
 export function valEnum(v, allowed, dflt) {
   const s = String(v || "").trim();
