@@ -45,8 +45,10 @@ export async function list({
       return null;
     }
   };
+
   const decodeCursor = (c) => {
-    if (!c) return null;
+    if (c === null || c === undefined) return null; // Only reject null/undefined
+    if (c === "") return { id: null, key: null }; // Empty cursor = first page
     try {
       return JSON.parse(Buffer.from(String(c), "base64").toString());
     } catch (e) {
@@ -88,7 +90,7 @@ export async function list({
     let qBuilder = supabase
       .from("coupons")
       .select(
-        "id, coupon_type, title, coupon_code, ends_at, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )"
+        "id, coupon_type, title, coupon_code, ends_at, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )",
       )
       .eq("is_publish", true)
       .order("id", { ascending: false })
@@ -99,7 +101,7 @@ export async function list({
     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
     if (status !== "all") {
       qBuilder = qBuilder.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
       );
     }
     // category filter: filter by merchant category if requested (avoid expensive relation joins)
@@ -115,7 +117,7 @@ export async function list({
       } else if (mErr) {
         console.warn(
           "Coupons.list(homepage): category merchant lookup failed",
-          mErr
+          mErr,
         );
       }
     }
@@ -150,13 +152,13 @@ export async function list({
 
   // ---------- DEFAULT mode: support cursor (keyset) OR fallback to OFFSET ----------
   // If a cursor is provided, use keyset pagination (id DESC)
-  if (cursor) {
+  if (cursor !== null) {
     const decoded = decodeCursor(cursor);
 
     let qBuilder = supabase
       .from("coupons")
       .select(
-        `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )`
+        `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
       )
       .eq("is_publish", true)
       .order("id", { ascending: false })
@@ -172,7 +174,7 @@ export async function list({
     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
     if (status !== "all") {
       qBuilder = qBuilder.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
       );
     }
     if (categoryName) {
@@ -236,7 +238,7 @@ export async function list({
   let mainQuery = supabase
     .from("coupons")
     .select(
-      `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )`
+      `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
     )
     .eq("is_publish", true)
     .range(from, to);
@@ -246,7 +248,7 @@ export async function list({
   if (type && type !== "all") mainQuery = mainQuery.eq("coupon_type", type);
   if (status !== "all") {
     mainQuery = mainQuery.or(
-      `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+      `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
     );
   }
   if (categoryName) {
@@ -298,7 +300,7 @@ export async function list({
     if (type && type !== "all") cQuery = cQuery.eq("coupon_type", type);
     if (status !== "all") {
       cQuery = cQuery.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`
+        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
       );
     }
     if (categoryName) {
@@ -313,7 +315,7 @@ export async function list({
       } else if (mErr2) {
         console.warn(
           "Coupons.list: category merchant lookup for count failed",
-          mErr2
+          mErr2,
         );
       }
     }
@@ -367,7 +369,7 @@ export async function listForStore({
   let query = supabase
     .from("coupons")
     .select(
-      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )"
+      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )",
     )
     .eq("merchant_id", merchantId)
     .eq("is_publish", true)
@@ -459,7 +461,7 @@ export async function getById(offerId) {
          logo_url,
          aff_url,
          web_url
-       )`
+       )`,
     )
     .eq("id", offerId)
     .maybeSingle();
@@ -537,7 +539,7 @@ export async function listTopByClicks(merchantId, limit = 3) {
        ends_at,
        click_count,
        proof_image_url,
-       merchant_id`
+       merchant_id`,
     )
     .eq("merchant_id", merchantId)
     .eq("is_publish", true)
@@ -574,7 +576,7 @@ export async function countRecentForStore({
 
   // compute cutoff ISO
   const cutoff = new Date(
-    Date.now() - days * 24 * 60 * 60 * 1000
+    Date.now() - days * 24 * 60 * 60 * 1000,
   ).toISOString();
 
   // Total count (use exact count head)
@@ -597,7 +599,7 @@ export async function countRecentForStore({
     const { data: recentRows, error: rErr } = await supabase
       .from("coupons")
       .select(
-        "id, coupon_type, title, description, published_at, created_at, type_text"
+        "id, coupon_type, title, description, published_at, created_at, type_text",
       )
       .eq("merchant_id", merchantId)
       .eq("is_publish", true)
