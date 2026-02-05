@@ -2,7 +2,7 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
-import zlib from "zlib";
+// import zlib from "zlib";
 import { SitemapStream, streamToPromise } from "sitemap";
 import { createClient } from "@supabase/supabase-js";
 import { fileURLToPath } from "url";
@@ -59,8 +59,8 @@ async function fetchStores_supabase() {
     lastmod: r.updated_at
       ? new Date(r.updated_at).toISOString().slice(0, 10)
       : undefined,
-    changefreq: "weekly",
-    priority: 0.7,
+    changefreq: "daily",
+    priority: 1.0,
   }));
 }
 
@@ -101,12 +101,36 @@ async function fetchBlog_supabase() {
 }
 
 // ----------------- helpers -----------------
-async function writeGzippedSitemap(filename, items) {
+// async function writeGzippedSitemap(filename, items) {
+//   const finalPath = path.join(OUT_DIR, filename);
+//   const tmpPath = finalPath + ".tmp";
+
+//   const smStream = new SitemapStream({ hostname: HOSTNAME });
+//   const gzipStream = smStream.pipe(zlib.createGzip());
+
+//   items.forEach((i) => {
+//     smStream.write({
+//       url: i.url,
+//       lastmod: i.lastmod,
+//       changefreq: i.changefreq,
+//       priority: i.priority,
+//     });
+//   });
+//   smStream.end();
+//   const buffer = await streamToPromise(gzipStream);
+
+//   fs.writeFileSync(tmpPath, buffer);
+//   // atomic replace (Google never sees a broken file)
+//   fs.renameSync(tmpPath, finalPath);
+
+//   console.log("Wrote (atomic)", finalPath);
+// }
+
+async function writeSitemap(filename, items) {
   const finalPath = path.join(OUT_DIR, filename);
   const tmpPath = finalPath + ".tmp";
 
   const smStream = new SitemapStream({ hostname: HOSTNAME });
-  const gzipStream = smStream.pipe(zlib.createGzip());
 
   items.forEach((i) => {
     smStream.write({
@@ -116,11 +140,12 @@ async function writeGzippedSitemap(filename, items) {
       priority: i.priority,
     });
   });
+
   smStream.end();
-  const buffer = await streamToPromise(gzipStream);
+
+  const buffer = await streamToPromise(smStream);
 
   fs.writeFileSync(tmpPath, buffer);
-  // atomic replace (Google never sees a broken file)
   fs.renameSync(tmpPath, finalPath);
 
   console.log("Wrote (atomic)", finalPath);
@@ -140,8 +165,8 @@ function chunk(arr, size) {
     // 1) pages (static indexes) — includes /coupons only as a listing page
     const pages = [
       { url: "/", lastmod: today, changefreq: "daily", priority: 1.0 },
-      { url: "/stores", lastmod: today, changefreq: "daily", priority: 0.8 },
-      { url: "/coupons", lastmod: today, changefreq: "daily", priority: 0.8 },
+      { url: "/stores", lastmod: today, changefreq: "daily", priority: 1.0 },
+      { url: "/coupons", lastmod: today, changefreq: "daily", priority: 1.0 },
       { url: "/blogs", lastmod: today, changefreq: "daily", priority: 0.6 },
 
       // Static pages
@@ -151,15 +176,10 @@ function chunk(arr, size) {
       { url: "/press", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/privacy", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/terms", lastmod: today, changefreq: "yearly", priority: 0.5 },
-      {
-        url: "/how-it-works",
-        lastmod: today,
-        changefreq: "yearly",
-        priority: 0.5,
-      },
+      { url: "/how-it-works", lastmod: today, changefreq: "yearly", priority: 0.5 },
       { url: "/faq", lastmod: today, changefreq: "yearly", priority: 0.5 },
     ];
-    await writeGzippedSitemap("sitemap-pages.xml.gz", pages);
+    await writeSitemap("sitemap-pages.xml", pages);
 
     // 2) stores (per-store pages) from Supabase
     const stores = await fetchStores_supabase();
@@ -167,9 +187,9 @@ function chunk(arr, size) {
     for (let i = 0; i < storeChunks.length; i++) {
       const name =
         storeChunks.length === 1
-          ? "sitemap-stores.xml.gz"
-          : `sitemap-stores-${i + 1}.xml.gz`;
-      await writeGzippedSitemap(name, storeChunks[i]);
+          ? "sitemap-stores.xml"
+          : `sitemap-stores-${i + 1}.xml`;
+      await writeSitemap(name, storeChunks[i]);
     }
 
     // 3) blog (per-post pages) from Supabase
@@ -178,13 +198,28 @@ function chunk(arr, size) {
     for (let i = 0; i < postChunks.length; i++) {
       const name =
         postChunks.length === 1
-          ? "sitemap-blog.xml.gz"
-          : `sitemap-blog-${i + 1}.xml.gz`;
-      await writeGzippedSitemap(name, postChunks[i]);
+          ? "sitemap-blog.xml"
+          : `sitemap-blog-${i + 1}.xml`;
+      await writeSitemap(name, postChunks[i]);
     }
 
-    // 4) build sitemap-index.xml pointing at all .xml.gz files we just wrote
-    const files = fs.readdirSync(OUT_DIR).filter((f) => f.endsWith(".xml.gz"));
+    // 4) stores listing pages (0-9, A-Z)
+
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    const storeListPages = [
+      { url: "/stores", lastmod: today, changefreq: "daily", priority: 1.0 },
+      ...letters.map((l) => ({
+        url: `/stores/${l}`,
+        lastmod: today,
+        changefreq: "daily",
+        priority: 1.0,
+      })),
+    ];
+
+    await writeSitemap("sitemap-stores-list.xml", storeListPages);
+
+    // 5) build sitemap-index.xml pointing at all .xml files we just wrote
+    const files = fs.readdirSync(OUT_DIR).filter((f) => f.endsWith(".xml"));
     const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${files
