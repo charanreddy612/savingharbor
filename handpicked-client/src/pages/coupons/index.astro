@@ -39,23 +39,20 @@ type CouponsResponse = {
 };
 
 let resp: CouponsResponse | null = null;
-// try {
-//   const url = new URL(Astro.request.url);
-//   const params = new URLSearchParams(url.search);
-
-//   // Force cursor mode for infinite scroll (empty cursor = first page)
-//   if (!params.has("page") && !params.has("cursor")) {
-//     params.set("cursor", "");
-//   }
-
-//   resp = await api.get<CouponsResponse>(
-//     `/coupons?${params}`,
-//     {},
-//     { retries: 2, timeout: 8000 },
-//   );
 try {
-  // Force cursor mode - ignore any incoming query params for pagination
-  resp = await api.get<CouponsResponse>(`/coupons?cursor=&limit=50&type=all&status=active&sort=latest&locale=en`, {}, { retries: 2, timeout: 8000 });
+  const url = new URL(Astro.request.url);
+  const params = new URLSearchParams(url.search);
+
+  // Force cursor mode for infinite scroll (empty cursor = first page)
+  if (!params.has("page") && !params.has("cursor")) {
+    params.set("cursor", "");
+  }
+
+  resp = await api.get<CouponsResponse>(
+    `/coupons?${params}`,
+    {},
+    { retries: 2, timeout: 8000 },
+  );
 } catch (e) {
   console.error("Error fetching coupons:", e);
   resp = {
