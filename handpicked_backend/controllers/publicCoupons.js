@@ -31,8 +31,9 @@ export async function list(req, res) {
     const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const cursor =
-      req.query && req.query.cursor ? String(req.query.cursor) : null;
-
+      req.query && req.query.cursor !== undefined
+        ? String(req.query.cursor)
+        : null;
     const type = valEnum(req.query.type, COUPON_TYPES, "all");
     const status = valEnum(req.query.status, COUPON_STATUS, "active");
     const sort = valEnum(req.query.sort, COUPON_SORTS, "latest");
@@ -113,7 +114,7 @@ export async function list(req, res) {
           const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
             .toString()
             .trim()
-            .replace(/\/+$/, ""); // 
+            .replace(/\/+$/, ""); //
 
           // meta may contain next_cursor/prev_cursor (cursor mode) or page/total (offset mode)
           let apiPrev = null;
@@ -123,7 +124,7 @@ export async function list(req, res) {
             // Cursor-mode next/prev (if repo returned next_cursor)
             if (meta && meta.next_cursor) {
               apiNext = `${backendBase}/coupons?cursor=${encodeURIComponent(
-                meta.next_cursor
+                meta.next_cursor,
               )}&limit=${meta.limit || limit}`;
             } else if (nav && nav.next) {
               // Fallback: use legacy nav but point at backend (so it returns HTML or JSON depending)
@@ -137,7 +138,7 @@ export async function list(req, res) {
 
             if (meta && meta.prev_cursor) {
               apiPrev = `${backendBase}/coupons?cursor=${encodeURIComponent(
-                meta.prev_cursor
+                meta.prev_cursor,
               )}&limit=${meta.limit || limit}`;
             } else if (nav && nav.prev) {
               try {
@@ -186,13 +187,13 @@ export async function list(req, res) {
           };
         }
       },
-      { ttlSeconds, keyExtra: cacheKey }
+      { ttlSeconds, keyExtra: cacheKey },
     );
 
     // Prevent Vercel CDN from caching HTML incorrectly; keep restrictive headers on API responses.
     res.setHeader(
       "Cache-Control",
-      "no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0"
+      "no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0",
     );
 
     return ok(res, result);
