@@ -209,8 +209,21 @@ const nextUrl = meta.next || null;
 
       const sentinel = document.createElement("div");
       sentinel.id = "scroll-sentinel";
-      sentinel.style.height = "1px";
+      sentinel.style.height = "20px"; // Increase height
+      sentinel.style.backgroundColor = "red"; // Visual debug
       resourceList.appendChild(sentinel);
+
+      // Add immediate intersection check
+      setTimeout(() => {
+        const rect = sentinel.getBoundingClientRect();
+        console.log(
+          "Sentinel position:",
+          rect,
+          "In viewport:",
+          rect.top < window.innerHeight,
+        );
+      }, 100);
+
       observer.observe(sentinel);
       console.log("Observer attached to sentinel");
     }
