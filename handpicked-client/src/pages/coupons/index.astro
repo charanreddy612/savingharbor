@@ -119,6 +119,81 @@ const nextUrl = meta.next || null;
   </main>
   <Footer />
 
-  <!-- Inline import so Vite bundles src/client/cursor-pagination.js and rewrites the path for prod -->
-  <script type="module" src="/src/client/cursor-pagination.js"></script>
+  <script>
+    import { createElement } from "react";
+    import { createRoot } from "react-dom/client";
+    import CouponReveal from "../../components/couponReveal.jsx";
+
+    let loading = false;
+    let hasMore = true;
+    let nextUrl: string | null = null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore && nextUrl) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    async function loadMore() {
+      if (!nextUrl) return;
+      loading = true;
+      try {
+        const res = await fetch(nextUrl);
+        const json = await res.json();
+
+        if (json.data?.length) {
+          appendCoupons(json.data);
+          nextUrl = json.meta.next || null;
+          hasMore = !!nextUrl;
+        } else {
+          hasMore = false;
+        }
+      } catch (e) {
+        console.error("Load more failed:", e);
+      } finally {
+        loading = false;
+      }
+    }
+
+    function appendCoupons(coupons: any[]) {
+      const grid = document.querySelector("#resource-list .grid");
+      if (!grid) return;
+
+      coupons.forEach((c) => {
+        const div = document.createElement("div");
+        div.className =
+          "rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card";
+        div.style.cssText =
+          "border-top-width:3px;border-top-style:solid;border-top-color:transparent";
+
+        grid.appendChild(div);
+        createRoot(div).render(
+          createElement(CouponReveal, {
+            coupon: c,
+            storeSlug: c.merchant?.slug,
+          }),
+        );
+      });
+    }
+
+    const resourceList = document.querySelector(
+      "#resource-list",
+    ) as HTMLElement;
+    if (resourceList?.dataset?.resource === "coupons") {
+      const nextUrlEl = document.querySelector(
+        "[data-next-url]",
+      ) as HTMLElement;
+      nextUrl = nextUrlEl?.dataset?.nextUrl || null;
+      hasMore = !!nextUrl;
+
+      const sentinel = document.createElement("div");
+      sentinel.id = "scroll-sentinel";
+      sentinel.style.height = "1px";
+      resourceList.appendChild(sentinel);
+      observer.observe(sentinel);
+    }
+  </script>
 </Base>
