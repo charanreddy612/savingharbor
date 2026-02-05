@@ -131,6 +131,16 @@ const nextUrl = meta.next || null;
 
     const observer = new IntersectionObserver(
       (entries) => {
+        console.log(
+          "Sentinel intersecting:",
+          entries[0].isIntersecting,
+          "loading:",
+          loading,
+          "hasMore:",
+          hasMore,
+          "nextUrl:",
+          nextUrl,
+        );
         if (entries[0].isIntersecting && !loading && hasMore && nextUrl) {
           loadMore();
         }
@@ -140,15 +150,18 @@ const nextUrl = meta.next || null;
 
     async function loadMore() {
       if (!nextUrl) return;
+      console.log("Loading more from:", nextUrl);
       loading = true;
       try {
         const res = await fetch(nextUrl);
         const json = await res.json();
+        console.log("Received:", json);
 
         if (json.data?.length) {
           appendCoupons(json.data);
           nextUrl = json.meta.next || null;
           hasMore = !!nextUrl;
+          console.log("Next URL:", nextUrl);
         } else {
           hasMore = false;
         }
@@ -183,6 +196,8 @@ const nextUrl = meta.next || null;
     const resourceList = document.querySelector(
       "#resource-list",
     ) as HTMLElement;
+    console.log("Resource list found:", !!resourceList);
+
     if (resourceList?.dataset?.resource === "coupons") {
       const nextUrlEl = document.querySelector(
         "[data-next-url]",
@@ -190,11 +205,14 @@ const nextUrl = meta.next || null;
       nextUrl = nextUrlEl?.dataset?.nextUrl || null;
       hasMore = !!nextUrl;
 
+      console.log("Initial nextUrl:", nextUrl, "hasMore:", hasMore);
+
       const sentinel = document.createElement("div");
       sentinel.id = "scroll-sentinel";
       sentinel.style.height = "1px";
       resourceList.appendChild(sentinel);
       observer.observe(sentinel);
+      console.log("Observer attached to sentinel");
     }
   </script>
 </Base>
