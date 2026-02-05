@@ -85,7 +85,7 @@ const { slug } = Astro.params as { slug: string };
 
 let resp: StoreDetailResponse | null = null;
 try {
-  resp = await api.get<StoreDetailResponse>(`/stores/${slug}`, {}, { retries: 2, timeout: 8000 });
+  resp = await api.get<StoreDetailResponse>(`/stores/${slug}?limit100`, {}, { retries: 2, timeout: 8000 });
 } catch (e) {
   console.error("Error fetching store detail:", e);
   resp = { data: null, meta: { title: "Store - Saving Harbor", description: "Store details unavailable." } };
@@ -188,8 +188,9 @@ try {
                   {store.stats?.active_coupons !== undefined && (
                     <div class="mt-2">
                       <span class="pill pill-green">
-                        {store.stats.active_coupons}{" "}
-                        {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"}
+                        All {store.coupons?.total || 0} coupons loaded
+                        {/* {store.stats.active_coupons}{" "}
+                        {store.stats.active_coupons === 1 ? "active coupon" : "active coupons"} */}
                       </span>
                     </div>
                   )}
@@ -243,15 +244,6 @@ try {
               ) : (
                 <p class="text-gray-500">No active coupons at the moment.</p>
               )}
-
-              <div class="mt-4">
-                <Pagination
-                  aria-label="Store coupons pagination"
-                  prev={store.coupons?.prev}
-                  next={store.coupons?.next}
-                  total_pages={store.coupons?.total_pages}
-                />
-              </div>
             </section>
             <!-- Merchant proofs -->
             <MerchantProofsIsland client:visible proofs={proofs} />
