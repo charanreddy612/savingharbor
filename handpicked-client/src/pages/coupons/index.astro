@@ -144,9 +144,43 @@ const nextUrl = meta.next || null;
     import { createRoot } from "react-dom/client";
     import CouponReveal from "../../components/couponReveal.jsx";
 
+    type merchant = {
+      id: number | null;
+      slug: string | null;
+      logo_url: String | null;
+    };
+
+    type Coupon = {
+      id: string | number;
+      title?: string | null;
+      code?: string | null;
+      ends_at?: string | null;
+      merchant_name?: string | null;
+      merchant_id?: number | null;
+      merchant: merchant | null;
+    };
+
+    type CouponsResponse = {
+      data: Coupon[];
+      meta: {
+        page?: number;
+        limit?: number;
+        total?: number;
+        canonical?: string;
+        prev?: string | null;
+        next?: string | null;
+        next_cursor?: string | null;
+        total_pages?: number;
+        jsonld?: any;
+        title?: string;
+        description?: string;
+      };
+    };
     let loading = false;
     let hasMore = true;
     let nextUrl: string | null = null;
+
+    const API_BASE = "https://api.savingharbor.com/public/v1";
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -164,16 +198,17 @@ const nextUrl = meta.next || null;
           loadMore();
         }
       },
-      { rootMargin: "200px" },
+      { rootMargin: "0px" },
     );
 
     async function loadMore() {
       if (!nextUrl) return;
-      console.log("Loading more from:", nextUrl);
+      const fullUrl = `${API_BASE}${nextUrl}`;
+      console.log("Loading more from:", fullUrl);
       loading = true;
       try {
-        const res = await fetch(nextUrl);
-        const json = await res.json();
+        const res = await fetch(fullUrl);
+        const json = (await res.json()) as CouponsResponse;
         console.log("Received:", json);
 
         if (json.data?.length) {
