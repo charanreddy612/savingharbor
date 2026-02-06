@@ -76,30 +76,20 @@ export async function list(req, res) {
             .filter((i) => !!i.ends_at)
             .map((i) => buildOfferJsonLd(i, params.origin));
 
-          const backendBase = (process.env.PUBLIC_API_BASE_URL || "")
-            .toString()
-            .trim()
-            .replace(/\/+$/, "");
-
           let apiPrev = null;
           let apiNext = null;
-console.log('>>> backendBase:', backendBase);
-console.log('>>> meta.next_cursor:', meta?.next_cursor);
-          if (backendBase && meta) {
-            console.log('>>> Building apiNext URL');
-            // Cursor-mode URLs only
-            if (meta.next_cursor) {
-              apiNext = `${backendBase}/coupons?cursor=${encodeURIComponent(
-                meta.next_cursor,
-              )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
-              console.log('>>> apiNext:', apiNext);
-            }
+          console.log(">>> meta.next_cursor:", meta?.next_cursor);
+          if (meta && meta.next_cursor) {
+            apiNext = `/coupons?cursor=${encodeURIComponent(
+              meta.next_cursor,
+            )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
+            console.log(">>> apiNext:", apiNext);
+          }
 
-            if (meta.prev_cursor) {
-              apiPrev = `${backendBase}/coupons?cursor=${encodeURIComponent(
-                meta.prev_cursor,
-              )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
-            }
+          if (meta.prev_cursor) {
+            apiPrev = `/coupons?cursor=${encodeURIComponent(
+              meta.prev_cursor,
+            )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
           }
 
           return {
