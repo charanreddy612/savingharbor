@@ -63,7 +63,7 @@ export async function list(req, res) {
       type: params.type || "",
     });
 
-    const ttlSeconds = Number(process.env.CACHE_TTL_PUBLIC || 60);
+    const ttlSeconds = 0; // Disabled for testing - change to 60 after it works
 
     const result = await withCache(
       req,
@@ -78,15 +78,15 @@ export async function list(req, res) {
 
           let apiPrev = null;
           let apiNext = null;
-          console.log(">>> meta.next_cursor:", meta?.next_cursor);
+
+          // Build relative cursor URLs
           if (meta && meta.next_cursor) {
             apiNext = `/coupons?cursor=${encodeURIComponent(
               meta.next_cursor,
             )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
-            console.log(">>> apiNext:", apiNext);
           }
 
-          if (meta.prev_cursor) {
+          if (meta && meta.prev_cursor) {
             apiPrev = `/coupons?cursor=${encodeURIComponent(
               meta.prev_cursor,
             )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
