@@ -176,46 +176,35 @@ const nextUrl = meta.next || null;
         description?: string;
       };
     };
+
+    const API_BASE = "https://api.savingharbor.com/public/v1";
+
     let loading = false;
     let hasMore = true;
     let nextUrl: string | null = null;
 
-    const API_BASE = "https://api.savingharbor.com/public/v1";
-
     const observer = new IntersectionObserver(
       (entries) => {
-        console.log(
-          "Sentinel intersecting:",
-          entries[0].isIntersecting,
-          "loading:",
-          loading,
-          "hasMore:",
-          hasMore,
-          "nextUrl:",
-          nextUrl,
-        );
         if (entries[0].isIntersecting && !loading && hasMore && nextUrl) {
           loadMore();
         }
       },
-      { rootMargin: "0px" },
+      { rootMargin: "200px" },
     );
 
     async function loadMore() {
       if (!nextUrl) return;
       const fullUrl = `${API_BASE}${nextUrl}`;
-      console.log("Loading more from:", fullUrl);
+
       loading = true;
       try {
         const res = await fetch(fullUrl);
         const json = (await res.json()) as CouponsResponse;
-        console.log("Received:", json);
 
         if (json.data?.length) {
           appendCoupons(json.data);
           nextUrl = json.meta.next || null;
           hasMore = !!nextUrl;
-          console.log("Next URL:", nextUrl);
         } else {
           hasMore = false;
         }
@@ -250,7 +239,6 @@ const nextUrl = meta.next || null;
     const resourceList = document.querySelector(
       "#resource-list",
     ) as HTMLElement;
-    console.log("Resource list found:", !!resourceList);
 
     if (resourceList?.dataset?.resource === "coupons") {
       const nextUrlEl = document.querySelector(
@@ -259,27 +247,11 @@ const nextUrl = meta.next || null;
       nextUrl = nextUrlEl?.dataset?.nextUrl || null;
       hasMore = !!nextUrl;
 
-      console.log("Initial nextUrl:", nextUrl, "hasMore:", hasMore);
-
       const sentinel = document.createElement("div");
       sentinel.id = "scroll-sentinel";
-      sentinel.style.height = "20px"; // Increase height
-      sentinel.style.backgroundColor = "red"; // Visual debug
+      sentinel.style.height = "1px";
       resourceList.appendChild(sentinel);
-
-      // Add immediate intersection check
-      setTimeout(() => {
-        const rect = sentinel.getBoundingClientRect();
-        console.log(
-          "Sentinel position:",
-          rect,
-          "In viewport:",
-          rect.top < window.innerHeight,
-        );
-      }, 100);
-
       observer.observe(sentinel);
-      console.log("Observer attached to sentinel");
     }
   </script>
 </Base>
