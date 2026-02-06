@@ -83,13 +83,16 @@ export async function list(req, res) {
 
           let apiPrev = null;
           let apiNext = null;
-
+console.log('>>> backendBase:', backendBase);
+console.log('>>> meta.next_cursor:', meta?.next_cursor);
           if (backendBase && meta) {
+            console.log('>>> Building apiNext URL');
             // Cursor-mode URLs only
             if (meta.next_cursor) {
               apiNext = `${backendBase}/coupons?cursor=${encodeURIComponent(
                 meta.next_cursor,
               )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
+              console.log('>>> apiNext:', apiNext);
             }
 
             if (meta.prev_cursor) {
