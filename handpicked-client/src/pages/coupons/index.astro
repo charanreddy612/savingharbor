@@ -5,6 +5,8 @@ import Footer from "../../components/Footer.astro";
 import { api } from "../../lib/api";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
 
+const API_BASE = import.meta.env.PUBLIC_API_BASE_URL;
+
 type merchant = {
   id: number | null;
   slug: string | null;
@@ -37,23 +39,6 @@ type CouponsResponse = {
     description?: string;
   };
 };
-
-// let resp: CouponsResponse | null = null;
-// try {
-//   const url = new URL(Astro.request.url);
-//   const params = new URLSearchParams(url.search);
-
-//   // Force cursor mode for infinite scroll (empty cursor = first page)
-//   if (!params.has("page") && !params.has("cursor")) {
-//     params.set("cursor", "");
-//   }
-
-//   resp = await api.get<CouponsResponse>(
-//     `/coupons?${params}`,
-//     {},
-//     { retries: 2, timeout: 8000 },
-//   );
-// }
 
 let resp: CouponsResponse | null = null;
 try {
@@ -139,49 +124,49 @@ const nextUrl = meta.next || null;
   </main>
   <Footer />
 
-  <script>
+  <script define:vars={{ API_BASE }}>
     import { createElement } from "react";
     import { createRoot } from "react-dom/client";
     import CouponReveal from "../../components/couponReveal.jsx";
 
-    type merchant = {
-      id: number | null;
-      slug: string | null;
-      logo_url: String | null;
-    };
+    // type merchant = {
+    //   id: number | null;
+    //   slug: string | null;
+    //   logo_url: String | null;
+    // };
 
-    type Coupon = {
-      id: string | number;
-      title?: string | null;
-      code?: string | null;
-      ends_at?: string | null;
-      merchant_name?: string | null;
-      merchant_id?: number | null;
-      merchant: merchant | null;
-    };
+    // type Coupon = {
+    //   id: string | number;
+    //   title?: string | null;
+    //   code?: string | null;
+    //   ends_at?: string | null;
+    //   merchant_name?: string | null;
+    //   merchant_id?: number | null;
+    //   merchant: merchant | null;
+    // };
 
-    type CouponsResponse = {
-      data: Coupon[];
-      meta: {
-        page?: number;
-        limit?: number;
-        total?: number;
-        canonical?: string;
-        prev?: string | null;
-        next?: string | null;
-        next_cursor?: string | null;
-        total_pages?: number;
-        jsonld?: any;
-        title?: string;
-        description?: string;
-      };
-    };
+    // type CouponsResponse = {
+    //   data: Coupon[];
+    //   meta: {
+    //     page?: number;
+    //     limit?: number;
+    //     total?: number;
+    //     canonical?: string;
+    //     prev?: string | null;
+    //     next?: string | null;
+    //     next_cursor?: string | null;
+    //     total_pages?: number;
+    //     jsonld?: any;
+    //     title?: string;
+    //     description?: string;
+    //   };
+    // };
 
-    const API_BASE = "https://api.savingharbor.com/public/v1";
+    // const API_BASE = "https://api.savingharbor.com/public/v1";
 
     let loading = false;
     let hasMore = true;
-    let nextUrl: string | null = null;
+    let nextUrl = null;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -199,7 +184,7 @@ const nextUrl = meta.next || null;
       loading = true;
       try {
         const res = await fetch(fullUrl);
-        const json = (await res.json()) as CouponsResponse;
+        const json = await res.json();
 
         if (json.data?.length) {
           appendCoupons(json.data);
@@ -215,7 +200,7 @@ const nextUrl = meta.next || null;
       }
     }
 
-    function appendCoupons(coupons: any[]) {
+    function appendCoupons(coupons) {
       const grid = document.querySelector("#resource-list .grid");
       if (!grid) return;
 
@@ -236,14 +221,10 @@ const nextUrl = meta.next || null;
       });
     }
 
-    const resourceList = document.querySelector(
-      "#resource-list",
-    ) as HTMLElement;
+    const resourceList = document.querySelector("#resource-list");
 
     if (resourceList?.dataset?.resource === "coupons") {
-      const nextUrlEl = document.querySelector(
-        "[data-next-url]",
-      ) as HTMLElement;
+      const nextUrlEl = document.querySelector("[data-next-url]");
       nextUrl = nextUrlEl?.dataset?.nextUrl || null;
       hasMore = !!nextUrl;
 

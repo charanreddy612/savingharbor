@@ -73,7 +73,7 @@ export async function list(req, res) {
         const { rows, total, nextCursor } = await StoresRepo.list(params);
 
         // Build canonical (may be async)
-        const canonical = null;
+        const canonical = `${origin}/stores?sort=${sort}&limit=${limit}${params.q ? `&q=${encodeURIComponent(params.q)}` : ""}`;
 
         return {
           data: rows,
@@ -346,7 +346,7 @@ export async function detail(req, res) {
         };
 
         // canonical + seo
-        const canonical = null;
+        const canonical = `${origin}/stores/${slug}`;
 
         const seo = StoresRepo.buildSeo(store, {
           canonical,
