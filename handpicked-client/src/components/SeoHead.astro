@@ -106,7 +106,7 @@ const jsonld = meta.jsonld;
   />
   {
     jsonld && (
-      <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />
+      <script type="application/ld+json" set:html={JSON.stringify(jsonld, null, 2)} />
     )
   }
 </head>

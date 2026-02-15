@@ -307,6 +307,21 @@ export async function detail(req, res) {
           answer: DOMPurify.sanitize(f.answer),
         }));
 
+        const faqJsonLd = faqs.length
+          ? {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: faqs.map((f) => ({
+                "@type": "Question",
+                name: f.question,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: f.answer,
+                },
+              })),
+            }
+          : null;
+
         // Testimonials / ratings fallback (kept as before)
         let testimonials = [];
         let avgRating = null;
@@ -365,6 +380,7 @@ export async function detail(req, res) {
               item: b.url,
             })),
           },
+          faq: faqJsonLd,
         };
 
         // Coupons prev/next navigation helper – rewrite to backend base if configured
