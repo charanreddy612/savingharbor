@@ -171,7 +171,7 @@ export async function detail(req, res) {
           merchantId: store.id,
           type: "all",
           page: 1,
-          limit: 3,
+          limit: 50,
           sort: "trending",
           skipCount: true,
         }).catch((e) => {
@@ -179,26 +179,38 @@ export async function detail(req, res) {
           return null;
         });
 
-        const recentActivityPromise =
-          typeof ActivityRepo?.recentOffersForStore === "function"
-            ? ActivityRepo.recentOffersForStore({
-                merchantId: store.id,
-                days: 30,
-                limit: 10,
-              }).catch((e) => {
-                console.warn("recentOffersForStore failed:", e);
-                return { total_offers_added_last_30d: 0, recent: [] };
-              })
-            : typeof CouponsRepo?.countRecentForStore === "function"
-              ? CouponsRepo.countRecentForStore({
-                  merchantId: store.id,
-                  days: 30,
-                  limit: 10,
-                }).catch((e) => {
-                  console.warn("countRecentForStore failed:", e);
-                  return { total_offers_added_last_30d: 0, recent: [] };
-                })
-              : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
+        // const recentActivityPromise =
+        //   typeof ActivityRepo?.recentOffersForStore === "function"
+        //     ? ActivityRepo.recentOffersForStore({
+        //         merchantId: store.id,
+        //         days: 30,
+        //         limit: 10,
+        //       }).catch((e) => {
+        //         console.warn("recentOffersForStore failed:", e);
+        //         return { total_offers_added_last_30d: 0, recent: [] };
+        //       })
+        //     : typeof CouponsRepo?.countRecentForStore === "function"
+        //       ? CouponsRepo.countRecentForStore({
+        //           merchantId: store.id,
+        //           days: 30,
+        //           limit: 10,
+        //         }).catch((e) => {
+        //           console.warn("countRecentForStore failed:", e);
+        //           return { total_offers_added_last_30d: 0, recent: [] };
+        //         })
+        //       : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
+
+        const recentActivityPromise = CouponsRepo.listForStore({
+          merchantId: store.id,
+          type: "all",
+          page: 1,
+          limit: 5,
+          sort: "latest",
+          skipCount: true,
+        }).catch((e) => {
+          console.warn("recent listForStore failed:", e);
+          return { items: [], total: 0 };
+        });
 
         const [couponsResult, relatedResult, trendingResult, recentResult] =
           await Promise.all([
@@ -207,6 +219,36 @@ export async function detail(req, res) {
             trendingPromise,
             recentActivityPromise,
           ]);
+
+        const extractDiscountScore = (title = "") => {
+          const percentMatch = title.match(/(\d+)\s*%/);
+          if (percentMatch) return parseInt(percentMatch[1], 10);
+
+          const amountMatch = title.match(/\$\s?(\d{1,6})/);
+          if (amountMatch) return parseInt(amountMatch[1], 10);
+
+          return 0;
+        };
+
+        const trendingOffers = (trendingResult?.items || [])
+          .map((c) => ({
+            ...c,
+            _score: extractDiscountScore(c.title),
+          }))
+          .filter((c) => c._score > 0)
+          .sort((a, b) => b._score - a._score)
+          .slice(0, 5)
+          .map((c) => ({
+            id: c.id,
+            title: c.title,
+            coupon_type: c.coupon_type,
+            short_desc: c.description,
+            banner_image: null,
+            expires_at: c.ends_at,
+            is_active: true,
+            click_count: c.click_count || 0,
+            code: null,
+          }));
 
         const rawItems =
           couponsResult && couponsResult.items ? couponsResult.items : [];
@@ -328,36 +370,41 @@ export async function detail(req, res) {
         let reviewsCount = 0;
 
         // 🔹 Trending offers: always use H2/H3 blocks (unique ids per merchant)
-        let trendingOffers = [];
-        const trendingBlocks = [
-          ...(store.coupon_h2_blocks || []),
-          ...(store.coupon_h3_blocks || []),
-        ];
+        // let trendingOffers = [];
+        // const trendingBlocks = [
+        //   ...(store.coupon_h2_blocks || []),
+        //   ...(store.coupon_h3_blocks || []),
+        // ];
 
-        trendingOffers = trendingBlocks.map((b, idx) => ({
-          // make id unique across merchants: trending-<merchantId>-<1-based-index>
-          id: `trending-${store.id}-${idx + 1}`,
-          title: b.heading,
-          coupon_type: "deal",
-          short_desc: b.description,
-          banner_image: null,
-          expires_at: null,
-          is_active: true,
-          click_count: 0,
-          code: null,
-          // optional metadata so callers don’t need to refetch
-          _block_meta: {
-            kind: idx < (store.coupon_h2_blocks || []).length ? "h2" : "h3",
-            index:
-              idx < (store.coupon_h2_blocks || []).length
-                ? idx
-                : idx - (store.coupon_h2_blocks || []).length,
-          },
-        }));
+        // trendingOffers = trendingBlocks.map((b, idx) => ({
+        //   // make id unique across merchants: trending-<merchantId>-<1-based-index>
+        //   id: `trending-${store.id}-${idx + 1}`,
+        //   title: b.heading,
+        //   coupon_type: "deal",
+        //   short_desc: b.description,
+        //   banner_image: null,
+        //   expires_at: null,
+        //   is_active: true,
+        //   click_count: 0,
+        //   code: null,
+        //   // optional metadata so callers don’t need to refetch
+        //   _block_meta: {
+        //     kind: idx < (store.coupon_h2_blocks || []).length ? "h2" : "h3",
+        //     index:
+        //       idx < (store.coupon_h2_blocks || []).length
+        //         ? idx
+        //         : idx - (store.coupon_h2_blocks || []).length,
+        //   },
+        // }));
 
-        const recentActivity = recentResult || {
-          total_offers_added_last_30d: 0,
-          recent: [],
+        // const recentActivity = recentResult || {
+        //   total_offers_added_last_30d: 0,
+        //   recent: [],
+        // };
+
+        const recentActivity = {
+          total_offers: recentResult?.total || 0,
+          recent: recentResult?.items || [],
         };
 
         // canonical + seo
