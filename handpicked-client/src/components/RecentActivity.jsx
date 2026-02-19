@@ -18,10 +18,10 @@ export default function RecentActivity({ data }) {
     <aside className="card-base p-4">
       <h3 className="section-heading mb-2">Recent activity</h3>
 
-      <p className="text-sm text-gray-600 mb-3">
+      {/* <p className="text-sm text-gray-600 mb-3">
         <span className="pill pill-green">{total}</span>{" "}
         <span className="ml-1">offers added in the last 30 days</span>
-      </p>
+      </p> */}
 
       {recent.length === 0 ? (
         <p className="text-sm text-gray-500">No recent activity.</p>
