@@ -348,39 +348,6 @@ export async function detail(req, res) {
         let avgRating = null;
         let reviewsCount = 0;
 
-        // 🔹 Trending offers: always use H2/H3 blocks (unique ids per merchant)
-        // let trendingOffers = [];
-        // const trendingBlocks = [
-        //   ...(store.coupon_h2_blocks || []),
-        //   ...(store.coupon_h3_blocks || []),
-        // ];
-
-        // trendingOffers = trendingBlocks.map((b, idx) => ({
-        //   // make id unique across merchants: trending-<merchantId>-<1-based-index>
-        //   id: `trending-${store.id}-${idx + 1}`,
-        //   title: b.heading,
-        //   coupon_type: "deal",
-        //   short_desc: b.description,
-        //   banner_image: null,
-        //   expires_at: null,
-        //   is_active: true,
-        //   click_count: 0,
-        //   code: null,
-        //   // optional metadata so callers don’t need to refetch
-        //   _block_meta: {
-        //     kind: idx < (store.coupon_h2_blocks || []).length ? "h2" : "h3",
-        //     index:
-        //       idx < (store.coupon_h2_blocks || []).length
-        //         ? idx
-        //         : idx - (store.coupon_h2_blocks || []).length,
-        //   },
-        // }));
-
-        // const recentActivity = recentResult || {
-        //   total_offers_added_last_30d: 0,
-        //   recent: [],
-        // };
-
         const recentActivity = {
           total_offers: recentResult?.total || 0,
           recent: recentResult?.items || [],
