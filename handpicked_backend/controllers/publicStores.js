@@ -525,8 +525,6 @@ export async function getMerchantProofs(req, res) {
   }
 }
 
-import { insertStoreFeedback } from "../../repositories/storeFeedback.repo.js";
-
 /**
  * /public/v1/stores/:storeId/feedback
  */
@@ -542,7 +540,7 @@ export async function saveStoreFeedback(req, res) {
       });
     }
 
-    const feedback = await insertStoreFeedback({
+    const feedback = await StoresRepo.insertStoreFeedback({
       storeId,
       name: name.trim(),
       email: email || null,
