@@ -386,3 +386,32 @@ export async function fetchProofsByMerchantId(merchantId) {
     return { proofs: [] };
   }
 }
+
+/**
+ * Insert store feedback
+ * @param {Object} payload
+ * @param {number|string} payload.storeId
+ * @param {string} payload.name
+ * @param {string|null} payload.email
+ * @param {string} payload.message
+ */
+export async function insertStoreFeedback({ storeId, name, email, message }) {
+  const { data, error } = await supabase
+    .from("store_feedback")
+    .insert([
+      {
+        store_id: storeId,
+        name,
+        email,
+        message,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

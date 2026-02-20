@@ -524,3 +524,41 @@ export async function getMerchantProofs(req, res) {
     return res.status(500).json({ error: "Failed to fetch proofs" });
   }
 }
+
+import { insertStoreFeedback } from "../../repositories/storeFeedback.repo.js";
+
+/**
+ * /public/v1/stores/:storeId/feedback
+ */
+export async function saveStoreFeedback(req, res) {
+  try {
+    const { storeId } = req.params;
+    const { name, email, message } = req.body;
+
+    if (!name || !message) {
+      return res.status(400).json({
+        data: null,
+        error: { message: "Name and message are required" },
+      });
+    }
+
+    const feedback = await insertStoreFeedback({
+      storeId,
+      name: name.trim(),
+      email: email || null,
+      message: message.trim(),
+    });
+
+    return res.status(201).json({
+      data: feedback,
+      error: null,
+    });
+  } catch (err) {
+    console.error("Save feedback error:", err);
+
+    return res.status(500).json({
+      data: null,
+      error: { message: "Error submitting feedback" },
+    });
+  }
+}
