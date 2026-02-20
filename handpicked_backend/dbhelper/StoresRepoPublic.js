@@ -190,7 +190,14 @@ export async function getBySlug(slug) {
     const { data, error } = await supabase
       .from("merchants")
       .select(
-        "id, slug, name, logo_url, category_names, side_description_html, description_html, meta_title, meta_description, faqs, h1keyword, meta_keywords, coupon_h2_blocks, coupon_h3_blocks, active_coupons_count",
+        `id, slug, name, logo_url, category_names, side_description_html, description_html, meta_title, meta_description, faqs, h1keyword, meta_keywords, coupon_h2_blocks, coupon_h3_blocks, active_coupons_count, verifier_id",
+        authors:verifier_id (
+          id,
+          name,
+          designation,
+          same_as,
+          created_at
+        )`,
       )
       .eq("slug", normSlug)
       .maybeSingle();
@@ -241,6 +248,16 @@ export async function getBySlug(slug) {
         ? data.coupon_h3_blocks
         : [],
       active_coupons: activeCoupons,
+      verifier_id: data.verifier_id,
+      verifier: data.authors
+        ? {
+            id: data.authors.id,
+            name: data.authors.name,
+            designation: data.authors.designation,
+            same_as: data.authors.same_as || null,
+            created_at: data.authors.created_at,
+          }
+        : null,
     };
   } catch (e) {
     console.error("getBySlug unexpected error:", e);

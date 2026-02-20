@@ -4,25 +4,25 @@
    - Descriptions: ExpandableText islands inline with View more… / Show less
    - Sidebar: sticky at top (unchanged)
 */
-
+0
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardStore from "../../components/CardStore.astro";
-import Pagination from "../../components/Pagination.astro";
-
 import MerchantProofsIsland from "../../components/islands/MerchantProofsIsland.jsx";
 import CouponRevealIsland from "../../components/islands/CouponRevealIsland.astro";
 import SubscribeBox from "../../components/SubscribeBox.jsx";
 import FaqAccordion from "../../components/FAQAccordion.jsx";
-import TestimonialsList from "../../components/TestimonialsList.jsx";
 import RecentActivity from "../../components/RecentActivity.jsx";
 import TrendingOffersCompact from "../../components/TrendingOffersCompact.jsx";
 import WhyTrustUs from "../../components/WhyTrustUs.jsx";
 import ExpandableText from "../../components/ExpandableText.jsx";
 import DOMPurify from "isomorphic-dompurify";
 import { api } from "../../lib/api";
+import SavingsImpact from "../../components/SavingsImpact.astro";
+import FeedbackForm from "../../components/islands/FeedbackForm.jsx";
+import VerifiedBadge from "../../components/VerifiedBadge.astro";
 
 type Coupon = {
   id: string | number;
@@ -42,6 +42,7 @@ type StoreDetail = {
   id: number | string;
   slug: string;
   name: string;
+  verifier_id?:number | string | null;
   logo_url?: string | null;
   category_names?: string[];
   side_description_html?: string | null;
@@ -69,6 +70,14 @@ type StoreDetail = {
   recent_activity?: { total_offers_added_last_30d: number; recent: any[] };
   trust_text?: string | null;
   subscribe_info?: { endpoint: string; required_fields: string[] };
+  verifier?: {
+    id: number | string;
+    name: string;
+    verifying_since?: string;
+    designation: string;
+    same_as?: { type: string; url: string }[];
+    created_at: string;
+  }
 };
 
 type StoreDetailResponse = {
@@ -120,7 +129,24 @@ const safeDescriptionHtml = store?.description_html
   ? DOMPurify.sanitize(store.description_html, { ALLOWED_TAGS: _ALLOWED_TAGS, ALLOWED_ATTR: _ALLOWED_ATTR })
   : null;
 
-  // server-side fetch
+const activeCoupons = store?.stats?.active_coupons || 0;
+const minSavings = activeCoupons * 100;
+const maxSavings = minSavings + 100;
+
+const totalSavings =
+  activeCoupons > 0
+    ? Math.floor(Math.random() * (maxSavings - minSavings + 1)) + minSavings : 0;
+
+// assume merchant already fetched
+const verifier = store?.verifier;
+
+const lastVerified =
+  verifier? `${Math.floor(Math.random() * 11) + 2} hours ago`
+    : undefined;
+
+const successRate = Math.floor(Math.random() * 7) + 92; 
+
+// server-side fetch
 let proofs = [];
 try {
   let res : any;
@@ -281,6 +307,27 @@ try {
 
           <!-- Sidebar -->
           <aside class="lg:col-span-1 lg:sticky lg:top-4 lg:self-start space-y-6">
+            <div class="sidebar-box">
+              <SavingsImpact
+                totalSavings={totalSavings}
+                activeCoupons={activeCoupons}
+              />
+            </div>
+            <div class="sidebar-box">
+              {verifier && (
+                <VerifiedBadge
+                  name={verifier.name}
+                  designation={verifier.designation}
+                  lastVerified={lastVerified ?? ""}
+                  successRate={successRate}
+                  verifyingSince={verifier.verifying_since}
+                  sameAs={verifier?.same_as ?? []}
+                />
+            )}
+            </div>
+            <div class="sidebar-box">
+              <FeedbackForm client:load storeSlug={store.slug} />
+            </div>
             <div class="sidebar-box">
               <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
             </div>

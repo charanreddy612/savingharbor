@@ -179,27 +179,6 @@ export async function detail(req, res) {
           return null;
         });
 
-        // const recentActivityPromise =
-        //   typeof ActivityRepo?.recentOffersForStore === "function"
-        //     ? ActivityRepo.recentOffersForStore({
-        //         merchantId: store.id,
-        //         days: 30,
-        //         limit: 10,
-        //       }).catch((e) => {
-        //         console.warn("recentOffersForStore failed:", e);
-        //         return { total_offers_added_last_30d: 0, recent: [] };
-        //       })
-        //     : typeof CouponsRepo?.countRecentForStore === "function"
-        //       ? CouponsRepo.countRecentForStore({
-        //           merchantId: store.id,
-        //           days: 30,
-        //           limit: 10,
-        //         }).catch((e) => {
-        //           console.warn("countRecentForStore failed:", e);
-        //           return { total_offers_added_last_30d: 0, recent: [] };
-        //         })
-        //       : Promise.resolve({ total_offers_added_last_30d: 0, recent: [] });
-
         const recentActivityPromise = CouponsRepo.listForStore({
           merchantId: store.id,
           type: "all",
@@ -499,6 +478,8 @@ export async function detail(req, res) {
               endpoint: "/api/subscribe",
               required_fields: ["email"],
             },
+            verifier: store.verifier || null,
+            verifier_id: store.verifier_id || null,
           },
           meta: {
             generated_at: new Date().toISOString(),

@@ -19,6 +19,7 @@ publicRouter.get("/categories/:slug", publicCategories.detail);
 publicRouter.get("/stores", publicStores.list);
 publicRouter.get("/stores/:slug", publicStores.detail);
 publicRouter.get("/stores/:id/proofs", publicStores.getMerchantProofs);
+publicRouter.post("/stores/:storeId/feedback", publicStores.feedback);
 
 // Coupons
 publicRouter.get("/coupons", publicCoupons.list);
