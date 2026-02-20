@@ -307,14 +307,8 @@ try {
 
           <!-- Sidebar -->
           <aside class="lg:col-span-1 lg:sticky lg:top-4 lg:self-start space-y-6">
+            {verifier && (
             <div class="sidebar-box">
-              <SavingsImpact
-                totalSavings={totalSavings}
-                activeCoupons={activeCoupons}
-              />
-            </div>
-            <div class="sidebar-box">
-              {verifier && (
                 <VerifiedBadge
                   name={verifier.name}
                   designation={verifier.designation}
@@ -323,19 +317,23 @@ try {
                   verifyingSince={verifier.verifying_since}
                   sameAs={verifier?.same_as ?? []}
                 />
+            </div>
             )}
+            <div class="sidebar-box">
+              <SavingsImpact
+                totalSavings={totalSavings}
+                activeCoupons={activeCoupons}
+              />
             </div>
             <div class="sidebar-box">
-              <FeedbackForm client:load storeSlug={store.slug} />
+              <WhyTrustUs client:load />
+            </div>
+            <div class="sidebar-box">
+              <RecentActivity client:load data={store.recent_activity} />
             </div>
             <div class="sidebar-box">
               <TrendingOffersCompact client:load offers={store.trending_offers} storeSlug={store.slug} />
             </div>
-
-            <div class="sidebar-box">
-              <RecentActivity client:load data={store.recent_activity} />
-            </div>
-
             {/* <div class="sidebar-box"> */}
             <div class="sidebar-box">
               <div class="card-base p-4">
@@ -344,9 +342,9 @@ try {
               </div>
             </div>
             <div class="sidebar-box">
-              <WhyTrustUs client:load />
+              <FeedbackForm client:load storeSlug={store.slug} />
             </div>
-
+            
             {store.trust_text && (
               <div class="sidebar-box text-sm text-gray-700">
                 {store.trust_text}
