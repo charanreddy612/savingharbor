@@ -273,6 +273,7 @@ export async function getBySlug(slug) {
             name: data.authors.name,
             designation: data.authors.designation,
             same_as: data.authors.same_as || null,
+            verifying_since: data.authors.verifying_since,
             created_at: data.authors.created_at,
           }
         : null,
