@@ -1,3 +1,108 @@
+// src/lib/renderers/couponCardHtml.js
+
+// keep your existing escapeHtml
+export function escapeHtml(s = "") {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// load manifest once (server-safe OR browser-safe)
+let logoManifest = {};
+try {
+  if (typeof window === "undefined") {
+    // Node / server / build-time → use fs
+    const fs = await import("fs");
+    const path = await import("path");
+    const manifestPath = path.join(
+      process.cwd(),
+      "public/optimized/logos/manifest.json",
+    );
+    if (fs.existsSync(manifestPath)) {
+      logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    }
+  } else {
+    // Browser — fetch manifest only when card(s) are near the viewport (best perf)
+    let logoManifest = {};
+    let manifestLoaded = false;
+
+    const doFetchLogoManifest = async () => {
+      if (manifestLoaded) return;
+      manifestLoaded = true;
+      try {
+        const res = await fetch("/optimized/logos/manifest.json");
+        if (res.ok) {
+          logoManifest = await res.json();
+          // If you need to notify other code that logos are available:
+          // document.dispatchEvent(new CustomEvent('logoManifestLoaded', { detail: logoManifest }));
+        }
+      } catch (e) {
+        console.warn("Logo manifest fetch failed:", e);
+      }
+    };
+
+    // Choose a sensible selector that matches one of the card elements on the page.
+    // Tweak ".coupon-card, .store-card" if your actual card markup uses a different class.
+    const firstCard = document.querySelector(".coupon-card, .store-card");
+
+    if (firstCard && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        (entries, obs) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              obs.disconnect();
+              doFetchLogoManifest();
+              return;
+            }
+          }
+        },
+        { rootMargin: "300px" },
+      ); // preload slightly before visible
+      io.observe(firstCard);
+      // Safety fallback: if IO doesn't trigger for some reason, also schedule idle callback
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(
+          () => {
+            if (!manifestLoaded) doFetchLogoManifest();
+          },
+          { timeout: 2000 },
+        );
+      } else {
+        window.addEventListener(
+          "load",
+          () =>
+            setTimeout(() => {
+              if (!manifestLoaded) doFetchLogoManifest();
+            }, 1200),
+          { once: true },
+        );
+      }
+    } else {
+      // No IntersectionObserver → fallback to idle/load fetch
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(doFetchLogoManifest, { timeout: 2000 });
+      } else {
+        window.addEventListener(
+          "load",
+          () => setTimeout(doFetchLogoManifest, 1200),
+          { once: true },
+        );
+      }
+    }
+  }
+} catch (e) {
+  console.warn("Logo manifest load failed:", e.message || e);
+}
+
+/**
+ * renderCouponCardHtml(item)
+ * item: {
+ *   id, title, coupon_type, code, ends_at, merchant_id,
+ *   merchant: { id, slug, name, logo_url }, merchant_name,
+ *   click_count, description
+ * }
+ */
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
   const title = escapeHtml(item.title ?? "");
