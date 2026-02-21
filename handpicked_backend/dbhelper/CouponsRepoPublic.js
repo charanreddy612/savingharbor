@@ -14,6 +14,7 @@ import { supabase } from "../dbhelper/dbclient.js";
  * Returns:
  * { data: [...], meta: { total, page, limit, next_cursor, prev_cursor, has_more } }
  */
+
 export async function list({
   q,
   categorySlug,
@@ -21,34 +22,24 @@ export async function list({
   type,
   status,
   sort,
-  page = 1,
   limit = 20,
-  cursor = null, // new: opaque cursor string (base64 JSON)
-  skipCount = false, // important: default false (pages that need pagination)
-  mode = "default", // "homepage" | "default"
+  cursor = null,
+  mode = "default",
 } = {}) {
-  // normalize input
   const _limit = Math.min(Math.max(Number(limit) || 20, 1), 100);
-  const _page = Math.max(Number(page) || 1, 1);
 
-  // helpers to encode/decode opaque cursors
   const encodeCursor = (row) => {
     if (!row) return null;
     try {
-      // store id and an optional key field (ends_at or created_at) if needed later
-      const payload = {
-        id: row.id,
-        key: row.ends_at || row.published_at || null,
-      };
-      return Buffer.from(JSON.stringify(payload)).toString("base64");
+      return Buffer.from(JSON.stringify({ id: row.id })).toString("base64");
     } catch (e) {
       return null;
     }
   };
 
   const decodeCursor = (c) => {
-    if (c === null || c === undefined) return null; // Only reject null/undefined
-    if (c === "") return { id: null, key: null }; // Empty cursor = first page
+    if (c === null || c === undefined) return null;
+    if (c === "") return { id: null };
     try {
       return JSON.parse(Buffer.from(String(c), "base64").toString());
     } catch (e) {
@@ -56,11 +47,7 @@ export async function list({
     }
   };
 
-  // compute offset range for fallback (page)
-  const from = (_page - 1) * _limit;
-  const to = from + _limit - 1;
-
-  // Resolve category name if filter present
+  // Resolve category merchants if needed
   let categoryName = null;
   if (categorySlug) {
     const { data: cat, error: ce } = await supabase
@@ -72,7 +59,6 @@ export async function list({
     categoryName = cat?.name || null;
   }
 
-  // Resolve merchant id if storeSlug given
   let merchantId = null;
   if (storeSlug) {
     const { data: store, error: se } = await supabase
@@ -84,9 +70,9 @@ export async function list({
     merchantId = store?.id || null;
   }
 
-  // ---------- HOMEPAGE mode: lightweight, no counts ----------
+  // ---------- HOMEPAGE mode ----------
   if (mode === "homepage") {
-    // minimal select — reduce payload and join cost
+    const decoded = decodeCursor(cursor);
     let qBuilder = supabase
       .from("coupons")
       .select(
@@ -94,8 +80,9 @@ export async function list({
       )
       .eq("is_publish", true)
       .order("id", { ascending: false })
-      .range(from, to);
+      .limit(_limit);
 
+    if (decoded?.id) qBuilder = qBuilder.lt("id", decoded.id);
     if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
     if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
@@ -104,20 +91,15 @@ export async function list({
         `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
       );
     }
-    // category filter: filter by merchant category if requested (avoid expensive relation joins)
     if (categoryName) {
-      // Safer approach: resolve merchant ids for category first (cheap if category indexed)
       const { data: mids, error: mErr } = await supabase
         .from("merchants")
         .select("id")
         .contains("category_names", [categoryName]);
       if (!mErr && Array.isArray(mids) && mids.length) {
-        const ids = mids.map((m) => m.id);
-        qBuilder = qBuilder.in("merchant_id", ids);
-      } else if (mErr) {
-        console.warn(
-          "Coupons.list(homepage): category merchant lookup failed",
-          mErr,
+        qBuilder = qBuilder.in(
+          "merchant_id",
+          mids.map((m) => m.id),
         );
       }
     }
@@ -125,7 +107,6 @@ export async function list({
     const { data, error } = await qBuilder;
     if (error) throw error;
 
-    // Minimal mapping for homepage widgets
     const rows = (data || []).map((r) => ({
       id: r.id,
       title: r.title,
@@ -146,190 +127,57 @@ export async function list({
       merchant_name: r.merchants?.name || null,
     }));
 
-    return {
-      data: rows,
-      meta: { page: _page, limit: _limit, total: rows.length },
-    };
-  }
-
-  // ---------- DEFAULT mode: support cursor (keyset) OR fallback to OFFSET ----------
-  // If a cursor is provided, use keyset pagination (id DESC)
-  if (cursor !== null) {
-    const decoded = decodeCursor(cursor);
-
-    let qBuilder = supabase
-      .from("coupons")
-      .select(
-        `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
-      )
-      .eq("is_publish", true)
-      .order("id", { ascending: false })
-      .limit(_limit);
-
-    // Apply keyset: id < decoded.id (fetch older rows)
-    if (decoded && decoded.id) {
-      qBuilder = qBuilder.lt("id", decoded.id);
-    }
-
-    if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
-    if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
-    if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
-    if (status !== "all") {
-      qBuilder = qBuilder.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
-      );
-    }
-    if (categoryName) {
-      const { data: mids, error: mErr } = await supabase
-        .from("merchants")
-        .select("id")
-        .contains("category_names", [categoryName]);
-      if (!mErr && Array.isArray(mids) && mids.length) {
-        const ids = mids.map((m) => m.id);
-        qBuilder = qBuilder.in("merchant_id", ids);
-      } else if (mErr) {
-        console.warn("Coupons.list: category merchant lookup failed", mErr);
-      }
-    }
-
-    const { data, error } = await qBuilder;
-    if (error) throw error;
-
-    const rows = (data || []).map((r) => ({
-      id: r.id,
-      title: r.title,
-      code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
-      ends_at: r.ends_at,
-      merchant_id: r.merchant_id || null,
-      coupon_type: r.coupon_type,
-      description: r.description,
-      type_text: r.type_text,
-      show_proof: !!r.show_proof,
-      proof_image_url: r.proof_image_url || null,
-      is_editor: !!r.is_editor,
-      click_count: r.click_count || 0,
-      discount_type: r.discount_type || null,
-      discount_value: r.discount_value || null,
-      merchant: r.merchants
-        ? {
-            slug: r.merchants.slug,
-            name: r.merchants.name,
-            logo_url: r.merchants.logo_url,
-          }
-        : null,
-      merchant_name: r.merchants?.name || null,
-    }));
-
     const lastRow = rows.length ? rows[rows.length - 1] : null;
-    const nextCursor = encodeCursor(lastRow);
-    const hasMore = rows.length === _limit;
+    const nextCursor = rows.length === _limit ? encodeCursor(lastRow) : null;
 
-    // For cursor mode, total count may be expensive — keep null to indicate unknown
     return {
       data: rows,
       meta: {
-        page: _page,
         limit: _limit,
-        total: null,
         next_cursor: nextCursor,
         prev_cursor: null,
-        has_more: hasMore,
+        has_more: !!nextCursor,
       },
     };
   }
 
-  // FALLBACK: existing OFFSET pagination for SSR (page param)
-  let mainQuery = supabase
+  // ---------- DEFAULT mode: cursor only ----------
+  const decoded = decodeCursor(cursor);
+
+  let qBuilder = supabase
     .from("coupons")
     .select(
       `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
     )
     .eq("is_publish", true)
-    .range(from, to);
+    .order("id", { ascending: false })
+    .limit(_limit);
 
-  if (q) mainQuery = mainQuery.ilike("title", `%${q}%`);
-  if (merchantId) mainQuery = mainQuery.eq("merchant_id", merchantId);
-  if (type && type !== "all") mainQuery = mainQuery.eq("coupon_type", type);
+  if (decoded?.id) qBuilder = qBuilder.lt("id", decoded.id);
+  if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+  if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
+  if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
   if (status !== "all") {
-    mainQuery = mainQuery.or(
+    qBuilder = qBuilder.or(
       `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
     );
   }
   if (categoryName) {
-    // filter by merchant category: resolve merchant ids first (uses index on merchants.category_names)
     const { data: mids, error: mErr } = await supabase
       .from("merchants")
       .select("id")
       .contains("category_names", [categoryName]);
     if (!mErr && Array.isArray(mids) && mids.length) {
-      const ids = mids.map((m) => m.id);
-      mainQuery = mainQuery.in("merchant_id", ids);
-    } else if (mErr) {
-      console.warn("Coupons.list: category merchant lookup failed", mErr);
-    }
-  }
-
-  // Sorting
-  if (sort === "ending") {
-    mainQuery = mainQuery.order("ends_at", {
-      ascending: true,
-      nullsFirst: false,
-    });
-  } else if (sort === "trending") {
-    // trending relies on a click_count column or similar - prefer pre-aggregated metric
-    mainQuery = mainQuery
-      .order("click_count", { ascending: false })
-      .order("id", { ascending: false });
-  } else if (sort === "editor") {
-    mainQuery = mainQuery
-      .order("is_editor", { ascending: false })
-      .order("id", { ascending: false });
-  } else {
-    mainQuery = mainQuery.order("id", { ascending: false });
-  }
-
-  const { data, error } = await mainQuery;
-  if (error) throw error;
-
-  // Count only when required (skipCount === false)
-  let total = null;
-  if (!skipCount) {
-    let cQuery = supabase
-      .from("coupons")
-      .select("id", { count: "exact", head: true })
-      .eq("is_publish", true);
-
-    if (q) cQuery = cQuery.ilike("title", `%${q}%`);
-    if (merchantId) cQuery = cQuery.eq("merchant_id", merchantId);
-    if (type && type !== "all") cQuery = cQuery.eq("coupon_type", type);
-    if (status !== "all") {
-      cQuery = cQuery.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+      qBuilder = qBuilder.in(
+        "merchant_id",
+        mids.map((m) => m.id),
       );
     }
-    if (categoryName) {
-      // same merchant ids resolution as above
-      const { data: mids2, error: mErr2 } = await supabase
-        .from("merchants")
-        .select("id")
-        .contains("category_names", [categoryName]);
-      if (!mErr2 && Array.isArray(mids2) && mids2.length) {
-        const ids2 = mids2.map((m) => m.id);
-        cQuery = cQuery.in("merchant_id", ids2);
-      } else if (mErr2) {
-        console.warn(
-          "Coupons.list: category merchant lookup for count failed",
-          mErr2,
-        );
-      }
-    }
-
-    const { count, error: cErr } = await cQuery;
-    if (cErr) throw cErr;
-    total = count || 0;
   }
 
-  // Shape result (map merchants' minimal info where needed on UI; join later on client or via separate merchant fetch)
+  const { data, error } = await qBuilder;
+  if (error) throw error;
+
   const rows = (data || []).map((r) => ({
     id: r.id,
     title: r.title,
@@ -355,11 +203,366 @@ export async function list({
     merchant_name: r.merchants?.name || null,
   }));
 
+  const lastRow = rows.length ? rows[rows.length - 1] : null;
+  const nextCursor = rows.length === _limit ? encodeCursor(lastRow) : null;
+
   return {
     data: rows,
-    meta: { total: total || rows.length, page: _page, limit: _limit },
+    meta: {
+      limit: _limit,
+      next_cursor: nextCursor,
+      prev_cursor: null,
+      has_more: !!nextCursor,
+    },
   };
 }
+
+// export async function list({
+//   q,
+//   categorySlug,
+//   storeSlug,
+//   type,
+//   status,
+//   sort,
+//   page = 1,
+//   limit = 20,
+//   cursor = null, // new: opaque cursor string (base64 JSON)
+//   skipCount = false, // important: default false (pages that need pagination)
+//   mode = "default", // "homepage" | "default"
+// } = {}) {
+//   // normalize input
+//   const _limit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+//   const _page = Math.max(Number(page) || 1, 1);
+
+//   // helpers to encode/decode opaque cursors
+//   const encodeCursor = (row) => {
+//     if (!row) return null;
+//     try {
+//       // store id and an optional key field (ends_at or created_at) if needed later
+//       const payload = {
+//         id: row.id,
+//         key: row.ends_at || row.published_at || null,
+//       };
+//       return Buffer.from(JSON.stringify(payload)).toString("base64");
+//     } catch (e) {
+//       return null;
+//     }
+//   };
+
+//   const decodeCursor = (c) => {
+//     if (c === null || c === undefined) return null; // Only reject null/undefined
+//     if (c === "") return { id: null, key: null }; // Empty cursor = first page
+//     try {
+//       return JSON.parse(Buffer.from(String(c), "base64").toString());
+//     } catch (e) {
+//       return null;
+//     }
+//   };
+
+//   // compute offset range for fallback (page)
+//   const from = (_page - 1) * _limit;
+//   const to = from + _limit - 1;
+
+//   // Resolve category name if filter present
+//   let categoryName = null;
+//   if (categorySlug) {
+//     const { data: cat, error: ce } = await supabase
+//       .from("merchant_categories")
+//       .select("name")
+//       .eq("slug", categorySlug)
+//       .maybeSingle();
+//     if (ce) throw ce;
+//     categoryName = cat?.name || null;
+//   }
+
+//   // Resolve merchant id if storeSlug given
+//   let merchantId = null;
+//   if (storeSlug) {
+//     const { data: store, error: se } = await supabase
+//       .from("merchants")
+//       .select("id")
+//       .eq("slug", storeSlug)
+//       .maybeSingle();
+//     if (se) throw se;
+//     merchantId = store?.id || null;
+//   }
+
+//   // ---------- HOMEPAGE mode: lightweight, no counts ----------
+//   if (mode === "homepage") {
+//     // minimal select — reduce payload and join cost
+//     let qBuilder = supabase
+//       .from("coupons")
+//       .select(
+//         "id, coupon_type, title, coupon_code, ends_at, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )",
+//       )
+//       .eq("is_publish", true)
+//       .order("id", { ascending: false })
+//       .range(from, to);
+
+//     if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+//     if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
+//     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
+//     if (status !== "all") {
+//       qBuilder = qBuilder.or(
+//         `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+//       );
+//     }
+//     // category filter: filter by merchant category if requested (avoid expensive relation joins)
+//     if (categoryName) {
+//       // Safer approach: resolve merchant ids for category first (cheap if category indexed)
+//       const { data: mids, error: mErr } = await supabase
+//         .from("merchants")
+//         .select("id")
+//         .contains("category_names", [categoryName]);
+//       if (!mErr && Array.isArray(mids) && mids.length) {
+//         const ids = mids.map((m) => m.id);
+//         qBuilder = qBuilder.in("merchant_id", ids);
+//       } else if (mErr) {
+//         console.warn(
+//           "Coupons.list(homepage): category merchant lookup failed",
+//           mErr,
+//         );
+//       }
+//     }
+
+//     const { data, error } = await qBuilder;
+//     if (error) throw error;
+
+//     // Minimal mapping for homepage widgets
+//     const rows = (data || []).map((r) => ({
+//       id: r.id,
+//       title: r.title,
+//       code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+//       ends_at: r.ends_at,
+//       merchant_id: r.merchant_id || null,
+//       coupon_type: r.coupon_type,
+//       click_count: r.click_count,
+//       discount_type: r.discount_type || null,
+//       discount_value: r.discount_value || null,
+//       merchant: r.merchants
+//         ? {
+//             slug: r.merchants.slug,
+//             name: r.merchants.name,
+//             logo_url: r.merchants.logo_url,
+//           }
+//         : null,
+//       merchant_name: r.merchants?.name || null,
+//     }));
+
+//     return {
+//       data: rows,
+//       meta: { page: _page, limit: _limit, total: rows.length },
+//     };
+//   }
+
+//   // ---------- DEFAULT mode: support cursor (keyset) OR fallback to OFFSET ----------
+//   // If a cursor is provided, use keyset pagination (id DESC)
+//   if (cursor !== null) {
+//     const decoded = decodeCursor(cursor);
+
+//     let qBuilder = supabase
+//       .from("coupons")
+//       .select(
+//         `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
+//       )
+//       .eq("is_publish", true)
+//       .order("id", { ascending: false })
+//       .limit(_limit);
+
+//     // Apply keyset: id < decoded.id (fetch older rows)
+//     if (decoded && decoded.id) {
+//       qBuilder = qBuilder.lt("id", decoded.id);
+//     }
+
+//     if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
+//     if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
+//     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
+//     if (status !== "all") {
+//       qBuilder = qBuilder.or(
+//         `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+//       );
+//     }
+//     if (categoryName) {
+//       const { data: mids, error: mErr } = await supabase
+//         .from("merchants")
+//         .select("id")
+//         .contains("category_names", [categoryName]);
+//       if (!mErr && Array.isArray(mids) && mids.length) {
+//         const ids = mids.map((m) => m.id);
+//         qBuilder = qBuilder.in("merchant_id", ids);
+//       } else if (mErr) {
+//         console.warn("Coupons.list: category merchant lookup failed", mErr);
+//       }
+//     }
+
+//     const { data, error } = await qBuilder;
+//     if (error) throw error;
+
+//     const rows = (data || []).map((r) => ({
+//       id: r.id,
+//       title: r.title,
+//       code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+//       ends_at: r.ends_at,
+//       merchant_id: r.merchant_id || null,
+//       coupon_type: r.coupon_type,
+//       description: r.description,
+//       type_text: r.type_text,
+//       show_proof: !!r.show_proof,
+//       proof_image_url: r.proof_image_url || null,
+//       is_editor: !!r.is_editor,
+//       click_count: r.click_count || 0,
+//       discount_type: r.discount_type || null,
+//       discount_value: r.discount_value || null,
+//       merchant: r.merchants
+//         ? {
+//             slug: r.merchants.slug,
+//             name: r.merchants.name,
+//             logo_url: r.merchants.logo_url,
+//           }
+//         : null,
+//       merchant_name: r.merchants?.name || null,
+//     }));
+
+//     const lastRow = rows.length ? rows[rows.length - 1] : null;
+//     const nextCursor = encodeCursor(lastRow);
+//     const hasMore = rows.length === _limit;
+
+//     // For cursor mode, total count may be expensive — keep null to indicate unknown
+//     return {
+//       data: rows,
+//       meta: {
+//         page: _page,
+//         limit: _limit,
+//         total: null,
+//         next_cursor: nextCursor,
+//         prev_cursor: null,
+//         has_more: hasMore,
+//       },
+//     };
+//   }
+
+//   // FALLBACK: existing OFFSET pagination for SSR (page param)
+//   let mainQuery = supabase
+//     .from("coupons")
+//     .select(
+//       `id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )`,
+//     )
+//     .eq("is_publish", true)
+//     .range(from, to);
+
+//   if (q) mainQuery = mainQuery.ilike("title", `%${q}%`);
+//   if (merchantId) mainQuery = mainQuery.eq("merchant_id", merchantId);
+//   if (type && type !== "all") mainQuery = mainQuery.eq("coupon_type", type);
+//   if (status !== "all") {
+//     mainQuery = mainQuery.or(
+//       `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+//     );
+//   }
+//   if (categoryName) {
+//     // filter by merchant category: resolve merchant ids first (uses index on merchants.category_names)
+//     const { data: mids, error: mErr } = await supabase
+//       .from("merchants")
+//       .select("id")
+//       .contains("category_names", [categoryName]);
+//     if (!mErr && Array.isArray(mids) && mids.length) {
+//       const ids = mids.map((m) => m.id);
+//       mainQuery = mainQuery.in("merchant_id", ids);
+//     } else if (mErr) {
+//       console.warn("Coupons.list: category merchant lookup failed", mErr);
+//     }
+//   }
+
+//   // Sorting
+//   if (sort === "ending") {
+//     mainQuery = mainQuery.order("ends_at", {
+//       ascending: true,
+//       nullsFirst: false,
+//     });
+//   } else if (sort === "trending") {
+//     // trending relies on a click_count column or similar - prefer pre-aggregated metric
+//     mainQuery = mainQuery
+//       .order("click_count", { ascending: false })
+//       .order("id", { ascending: false });
+//   } else if (sort === "editor") {
+//     mainQuery = mainQuery
+//       .order("is_editor", { ascending: false })
+//       .order("id", { ascending: false });
+//   } else {
+//     mainQuery = mainQuery.order("id", { ascending: false });
+//   }
+
+//   const { data, error } = await mainQuery;
+//   if (error) throw error;
+
+//   // Count only when required (skipCount === false)
+//   let total = null;
+//   if (!skipCount) {
+//     let cQuery = supabase
+//       .from("coupons")
+//       .select("id", { count: "exact", head: true })
+//       .eq("is_publish", true);
+
+//     if (q) cQuery = cQuery.ilike("title", `%${q}%`);
+//     if (merchantId) cQuery = cQuery.eq("merchant_id", merchantId);
+//     if (type && type !== "all") cQuery = cQuery.eq("coupon_type", type);
+//     if (status !== "all") {
+//       cQuery = cQuery.or(
+//         `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+//       );
+//     }
+//     if (categoryName) {
+//       // same merchant ids resolution as above
+//       const { data: mids2, error: mErr2 } = await supabase
+//         .from("merchants")
+//         .select("id")
+//         .contains("category_names", [categoryName]);
+//       if (!mErr2 && Array.isArray(mids2) && mids2.length) {
+//         const ids2 = mids2.map((m) => m.id);
+//         cQuery = cQuery.in("merchant_id", ids2);
+//       } else if (mErr2) {
+//         console.warn(
+//           "Coupons.list: category merchant lookup for count failed",
+//           mErr2,
+//         );
+//       }
+//     }
+
+//     const { count, error: cErr } = await cQuery;
+//     if (cErr) throw cErr;
+//     total = count || 0;
+//   }
+
+//   // Shape result (map merchants' minimal info where needed on UI; join later on client or via separate merchant fetch)
+//   const rows = (data || []).map((r) => ({
+//     id: r.id,
+//     title: r.title,
+//     code: r.coupon_type === "coupon" ? r.coupon_code || null : null,
+//     ends_at: r.ends_at,
+//     merchant_id: r.merchant_id || null,
+//     coupon_type: r.coupon_type,
+//     description: r.description,
+//     type_text: r.type_text,
+//     show_proof: !!r.show_proof,
+//     proof_image_url: r.proof_image_url || null,
+//     is_editor: !!r.is_editor,
+//     click_count: r.click_count || 0,
+//     discount_type: r.discount_type || null,
+//     discount_value: r.discount_value || null,
+//     merchant: r.merchants
+//       ? {
+//           slug: r.merchants.slug,
+//           name: r.merchants.name,
+//           logo_url: r.merchants.logo_url,
+//         }
+//       : null,
+//     merchant_name: r.merchants?.name || null,
+//   }));
+
+//   return {
+//     data: rows,
+//     meta: { total: total || rows.length, page: _page, limit: _limit },
+//   };
+// }
 
 export async function listForStore({
   merchantId,

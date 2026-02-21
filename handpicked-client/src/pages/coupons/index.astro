@@ -28,23 +28,20 @@ type Coupon = {
 type CouponsResponse = {
   data: Coupon[];
   meta: {
-    page?: number;
     limit?: number;
-    total?: number;
-    canonical?: string;
-    prev?: string | null;
-    next?: string | null;
+    has_more?: boolean;
     next_cursor?: string | null;
-    total_pages?: number;
+    prev_cursor?: string | null;
+    next?: string | null;
+    prev?: string | null;
+    canonical?: string | null;
+    total_pages?: number | null;
     jsonld?: any;
-    title?: string;
-    description?: string;
   };
 };
 
 let resp: CouponsResponse | null = null;
 try {
-  // Build clean params for cursor mode
   const cleanParams = new URLSearchParams({
     cursor: "",
     limit: "50",
@@ -64,15 +61,11 @@ try {
   resp = {
     data: [],
     meta: {
-      page: 1,
       limit: 0,
-      total: 0,
+      has_more: false,
+      next_cursor: null,
       prev: null,
       next: null,
-      total_pages: 1,
-      title: "Coupons - Saving Harbor",
-      description: "Coupons temporarily unavailable.",
-      canonical: undefined,
       jsonld: undefined,
     },
   };
@@ -80,9 +73,8 @@ try {
 
 const coupons = resp?.data || [];
 const meta = resp?.meta || {};
-const pageTitle = meta.title || "Coupons - Saving Harbor";
-const pageDesc =
-  meta.description || "Browse verified, handpicked coupons and deals.";
+const pageTitle = "Coupons - Saving Harbor";
+const pageDesc = "Browse verified, handpicked coupons and deals.";
 const canonical = `https://savingharbor.com${Astro.url.pathname}`;
 const jsonld = meta.jsonld;
 const nextUrl = meta.next || null;
@@ -90,7 +82,7 @@ const nextUrl = meta.next || null;
 
 <Base meta={{ title: pageTitle, description: pageDesc, canonical, jsonld }}>
   <Header />
-<main class="container mx-auto px-4 py-10">
+  <main class="container mx-auto px-4 py-10">
     <h1 class="text-2xl font-bold text-brand-primary">Coupons</h1>
     <p class="mt-2 text-sm text-gray-500 max-w-2xl">{pageDesc}</p>
 
@@ -102,12 +94,9 @@ const nextUrl = meta.next || null;
           data-next-url={nextUrl}
           class="mt-6"
         >
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {coupons.map((c) => (
-              <div
-                class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
-                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
-              >
+              <div class="card-base p-0">
                 <CouponRevealIsland
                   client:visible
                   coupon={c}
@@ -147,12 +136,10 @@ const nextUrl = meta.next || null;
     async function loadMore() {
       if (!nextUrl) return;
       const fullUrl = `${API_BASE}${nextUrl}`;
-
       loading = true;
       try {
         const res = await fetch(fullUrl);
         const json = await res.json();
-
         if (json.data?.length) {
           appendCoupons(json.data);
           nextUrl = json.meta.next || null;
@@ -170,14 +157,9 @@ const nextUrl = meta.next || null;
     function appendCoupons(coupons) {
       const grid = document.querySelector("#resource-list .grid");
       if (!grid) return;
-
       coupons.forEach((c) => {
         const div = document.createElement("div");
-        div.className =
-          "rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card";
-        div.style.cssText =
-          "border-top-width:3px;border-top-style:solid;border-top-color:transparent";
-
+        div.className = "card-base p-0";
         grid.appendChild(div);
         createRoot(div).render(
           createElement(CouponReveal, {
@@ -189,10 +171,8 @@ const nextUrl = meta.next || null;
     }
 
     const resourceList = document.querySelector("#resource-list");
-
     if (resourceList?.dataset?.resource === "coupons") {
-      const nextUrlEl = document.querySelector("[data-next-url]");
-      nextUrl = nextUrlEl?.dataset?.nextUrl || null;
+      nextUrl = resourceList.dataset.nextUrl || null;
       hasMore = !!nextUrl;
 
       const sentinel = document.createElement("div");

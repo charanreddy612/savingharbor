@@ -20,7 +20,6 @@ import { makeListCacheKey } from "../utils/cacheKey.js";
 
 export async function list(req, res) {
   try {
-    const page = valPage(req.query.page);
     const limit = valLimit(req.query.limit);
     const cursor =
       req.query && req.query.cursor !== undefined
@@ -46,7 +45,6 @@ export async function list(req, res) {
       status,
       sort,
       locale,
-      page,
       limit,
       cursor,
       origin,
@@ -54,7 +52,7 @@ export async function list(req, res) {
     };
 
     const cacheKey = makeListCacheKey("coupons", {
-      page,
+      cursor: cursor || "",
       limit,
       q: params.q || "",
       category: params.categorySlug || "",
@@ -63,7 +61,7 @@ export async function list(req, res) {
       type: params.type || "",
     });
 
-    const ttlSeconds = 0; // Disabled for testing - change to 60 after it works
+    const ttlSeconds = 0;
 
     const result = await withCache(
       req,
@@ -76,26 +74,24 @@ export async function list(req, res) {
             .filter((i) => !!i.ends_at)
             .map((i) => buildOfferJsonLd(i, params.origin));
 
-          let apiPrev = null;
           let apiNext = null;
+          let apiPrev = null;
 
-          // Build relative cursor URLs
-          if (meta && meta.next_cursor) {
-            apiNext = `/coupons?cursor=${encodeURIComponent(
-              meta.next_cursor,
-            )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
+          if (meta?.next_cursor) {
+            apiNext = `/coupons?cursor=${encodeURIComponent(meta.next_cursor)}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
           }
 
-          if (meta && meta.prev_cursor) {
-            apiPrev = `/coupons?cursor=${encodeURIComponent(
-              meta.prev_cursor,
-            )}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
+          if (meta?.prev_cursor) {
+            apiPrev = `/coupons?cursor=${encodeURIComponent(meta.prev_cursor)}&limit=${meta.limit || limit}&type=${type}&status=${status}&sort=${sort}&locale=${locale}`;
           }
 
           return {
             data: safeRows,
             meta: {
-              ...meta,
+              limit: meta.limit,
+              has_more: meta.has_more || false,
+              next_cursor: meta.next_cursor || null,
+              prev_cursor: null,
               canonical: null,
               prev: apiPrev,
               next: apiNext,
@@ -108,9 +104,10 @@ export async function list(req, res) {
           return {
             data: [],
             meta: {
-              page,
               limit,
-              total: 0,
+              has_more: false,
+              next_cursor: null,
+              prev_cursor: null,
               canonical: null,
               prev: null,
               next: null,
