@@ -229,7 +229,6 @@ export function renderCouponCardHtml(item = {}) {
         </div>
       </div>
 
-      // Meta row — wrap usedBy + copied together, expiry on left
       <div class="flex items-center justify-between gap-2">
         ${endsAt ? expiryHtml : `<div></div>`}
         <div class="flex items-center gap-2">

@@ -111,9 +111,9 @@ export default function CouponReveal({ coupon, storeSlug }) {
         try {
           await navigator.clipboard.writeText(codeToReveal);
           // Show persistent copied indicator in meta row
-          const copiedBanner =
-            containerRef.current?.querySelector(`.copied-banner-${offerId}`) ??
-            document.querySelector(`.copied-banner-${offerId}`);
+          const copiedBanner = btnEl.parentElement?.querySelector(
+            `[class*="copied-banner"]`,
+          );
           if (copiedBanner) copiedBanner.classList.remove("hidden");
           pushToast("Code copied to clipboard");
         } catch (e) {
