@@ -139,7 +139,7 @@ export function renderCouponCardHtml(item = {}) {
     badgeBorder = "border-color:#86efac;";
   } else if (discountType === "flat" && discountValue) {
     badgeTop = `$${discountValue}`;
-    badgeBottom = "FLAT OFF";
+    badgeBottom = "OFF";
     badgeBg = "background:#fef3c7;";
     badgeBorder = "border-color:#fcd34d;";
   } else {

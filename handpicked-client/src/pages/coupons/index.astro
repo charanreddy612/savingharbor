@@ -118,80 +118,80 @@ const nextUrl = meta.next || null;
   </main>
   <Footer />
 
-<!-- Pass API_BASE to window so the module script can access it -->
-<script define:vars={{ API_BASE }}>
-  window.__API_BASE__ = API_BASE;
-</script>
+  <!-- Pass API_BASE to window so the module script can access it -->
+  <script define:vars={{ API_BASE }}>
+    window.__API_BASE__ = API_BASE;
+  </script>
 
-<script type="module">
-  import { createElement } from "react";
-  import { createRoot } from "react-dom/client";
-  import CouponReveal from "../../components/couponReveal.jsx";
-
-  const API_BASE = window.__API_BASE__ || "";
-
-  let loading = false;
-  let hasMore = true;
-  let nextUrl = null;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && !loading && hasMore && nextUrl) {
-        loadMore();
+  <script>
+    declare global {
+      interface Window {
+        __API_BASE__: string;
       }
-    },
-    { rootMargin: "200px" },
-  );
+    }
+    import { renderCouponCardHtml } from "../../lib/renderers/couponCardHtml.js";
 
-  async function loadMore() {
-    if (!nextUrl) return;
-    const fullUrl = `${API_BASE}${nextUrl}`;
-    loading = true;
-    try {
-      const res = await fetch(fullUrl);
-      const json = await res.json();
-      if (json.data?.length) {
-        appendCoupons(json.data);
-        nextUrl = json.meta.next || null;
+    const API_BASE = window.__API_BASE__ || "";
+
+    let loading = false;
+    let hasMore = true;
+    let nextUrl: string | null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore && nextUrl) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    async function loadMore() {
+      if (!nextUrl) return;
+      const fullUrl = `${API_BASE}${nextUrl}`;
+      loading = true;
+      try {
+        const res = await fetch(fullUrl);
+        const json = await res.json();
+        if (json.data?.length) {
+          appendCoupons(json.data);
+          nextUrl = json.meta.next || null;
+          hasMore = !!nextUrl;
+        } else {
+          hasMore = false;
+        }
+      } catch (e) {
+        console.error("Load more failed:", e);
+      } finally {
+        loading = false;
+      }
+    }
+
+    function appendCoupons(coupons: any[]) {
+      const grid = document.querySelector("#resource-list .grid");
+      if (!grid) return;
+      coupons.forEach((c: {} | undefined) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "card-base p-0";
+        wrapper.innerHTML = renderCouponCardHtml(c);
+        grid.appendChild(wrapper);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const resourceList = document.querySelector(
+        "#resource-list",
+      ) as HTMLElement;
+      if (resourceList?.dataset?.resource === "coupons") {
+        nextUrl = resourceList.dataset.nextUrl || null;
         hasMore = !!nextUrl;
-      } else {
-        hasMore = false;
+
+        const sentinel = document.createElement("div");
+        sentinel.id = "scroll-sentinel";
+        sentinel.style.height = "1px";
+        resourceList.appendChild(sentinel);
+        observer.observe(sentinel);
       }
-    } catch (e) {
-      console.error("Load more failed:", e);
-    } finally {
-      loading = false;
-    }
-  }
-
-  function appendCoupons(coupons) {
-    const grid = document.querySelector("#resource-list .grid");
-    if (!grid) return;
-    coupons.forEach((c) => {
-      const div = document.createElement("div");
-      div.className = "card-base p-0";
-      grid.appendChild(div);
-      createRoot(div).render(
-        createElement(CouponReveal, {
-          coupon: c,
-          storeSlug: c.merchant?.slug,
-        }),
-      );
     });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const resourceList = document.querySelector("#resource-list");
-    if (resourceList?.dataset?.resource === "coupons") {
-      nextUrl = resourceList.dataset.nextUrl || null;
-      hasMore = !!nextUrl;
-
-      const sentinel = document.createElement("div");
-      sentinel.id = "scroll-sentinel";
-      sentinel.style.height = "1px";
-      resourceList.appendChild(sentinel);
-      observer.observe(sentinel);
-    }
-  });
-</script>
+  </script>
 </Base>
