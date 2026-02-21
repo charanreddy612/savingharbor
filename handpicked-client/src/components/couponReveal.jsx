@@ -99,20 +99,6 @@ export default function CouponReveal({ coupon, storeSlug }) {
       const codeToReveal =
         serverCode ?? (c.code ? String(c.code).trim() : null);
 
-      // if (codeToReveal) {
-      //   const box = document.createElement("div");
-      //   box.className =
-      //     "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
-      //   box.textContent = codeToReveal;
-      //   btnEl.replaceWith(box);
-      //   try {
-      //     await navigator.clipboard.writeText(codeToReveal);
-      //     pushToast("Code copied to clipboard");
-      //   } catch (e) {
-      //     pushToast("Code revealed — copy manually");
-      //   }
-      // }
-
       if (codeToReveal) {
         // Replace button with code display
         const box = document.createElement("div");
@@ -125,9 +111,9 @@ export default function CouponReveal({ coupon, storeSlug }) {
         try {
           await navigator.clipboard.writeText(codeToReveal);
           // Show persistent copied indicator in meta row
-          const copiedBanner = btnEl
-            .closest(".card-base")
-            ?.querySelector(`.copied-banner-${offerId}`);
+          const copiedBanner =
+            containerRef.current?.querySelector(`.copied-banner-${offerId}`) ??
+            document.querySelector(`.copied-banner-${offerId}`);
           if (copiedBanner) copiedBanner.classList.remove("hidden");
           pushToast("Code copied to clipboard");
         } catch (e) {

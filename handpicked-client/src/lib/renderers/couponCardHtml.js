@@ -168,12 +168,12 @@ export function renderCouponCardHtml(item = {}) {
   const badgesHtml = `
     <div class="w-full flex items-center justify-between">
       <div class="flex items-center gap-1.5">
-        <img src="/images/verified-badge.webp" alt="Verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
-        <span class="text-xs text-emerald-700 font-medium">Verified</span>
+        <img src="/images/verified-badge.webp" alt="Verified" class="h-5 w-5 object-contain" loading="lazy" decoding="async" />
+        <span class="text-sm text-emerald-700 font-medium">Verified</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="text-xs text-emerald-700 font-medium">Re-verified</span>
-        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
+        <span class="text-sm text-emerald-700 font-medium">Re-verified</span>
+        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-5 w-5 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>
   `;
@@ -229,11 +229,11 @@ export function renderCouponCardHtml(item = {}) {
         </div>
       </div>
 
-      <!-- Meta row: expiry left, used-by + copied banner right -->
+      // Meta row — wrap usedBy + copied together, expiry on left
       <div class="flex items-center justify-between gap-2">
-        ${expiryHtml}
+        ${endsAt ? expiryHtml : `<div></div>`}
         <div class="flex items-center gap-2">
-          ${usedByHtml}
+          ${clickCount > 0 ? usedByHtml : ""}
           <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied</span>
         </div>
       </div>
