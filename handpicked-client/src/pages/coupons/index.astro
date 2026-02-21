@@ -175,9 +175,9 @@ const nextUrl = meta.next || null;
       coupons.forEach((c) => {
         const div = document.createElement("div");
         div.className =
-          "rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card";
-        div.style.cssText =
-          "border-top-width:3px;border-top-style:solid;border-top-color:transparent";
+          "card-base p-0";
+        // div.style.cssText =
+        //   "border-top-width:3px;border-top-style:solid;border-top-color:transparent";
 
         grid.appendChild(div);
         createRoot(div).render(
