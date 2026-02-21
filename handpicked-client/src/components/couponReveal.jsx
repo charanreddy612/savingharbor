@@ -124,18 +124,14 @@ export default function CouponReveal({ coupon, storeSlug }) {
         // Persistent "copied" banner below the code box
         try {
           await navigator.clipboard.writeText(codeToReveal);
-          const banner = document.createElement("div");
-          banner.className =
-            "w-full mt-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
-          banner.textContent = "✓ Code copied to clipboard";
-          box.insertAdjacentElement("afterend", banner);
+          // Show persistent copied indicator in meta row
+          const copiedBanner = btnEl
+            .closest(".card-base")
+            ?.querySelector(`.copied-banner-${offerId}`);
+          if (copiedBanner) copiedBanner.classList.remove("hidden");
           pushToast("Code copied to clipboard");
         } catch (e) {
-          const banner = document.createElement("div");
-          banner.className =
-            "w-full mt-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 text-center";
-          banner.textContent = "⚠ Copy manually — clipboard blocked";
-          box.insertAdjacentElement("afterend", banner);
+          pushToast("Code revealed — copy manually");
         }
       } else {
         // No code — it's a deal activation

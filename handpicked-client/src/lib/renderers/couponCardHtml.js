@@ -127,10 +127,10 @@ export function renderCouponCardHtml(item = {}) {
       : 0;
 
   // --- Discount badge config ---
-  let badgeTop = "";
-  let badgeBottom = "";
-  let badgeBg = "";
-  let badgeBorder = "";
+  let badgeTop = "",
+    badgeBottom = "",
+    badgeBg = "",
+    badgeBorder = "";
 
   if (discountType === "percent" && discountValue) {
     badgeTop = `${discountValue}%`;
@@ -164,6 +164,20 @@ export function renderCouponCardHtml(item = {}) {
     </div>
   `;
 
+  // Badges — verified left, re-verified right, slightly larger
+  const badgesHtml = `
+    <div class="w-full flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <img src="/images/verified-badge.webp" alt="Verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
+        <span class="text-xs text-emerald-700 font-medium">Verified</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs text-emerald-700 font-medium">Re-verified</span>
+        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
+      </div>
+    </div>
+  `;
+
   const usedByHtml =
     clickCount > 0
       ? `
@@ -174,7 +188,7 @@ export function renderCouponCardHtml(item = {}) {
       <span>${clickCount} ${clickCount === 1 ? "user" : "users"}</span>
     </div>
   `
-      : "";
+      : `<div></div>`;
 
   const expiryHtml = endsAt
     ? `
@@ -185,27 +199,18 @@ export function renderCouponCardHtml(item = {}) {
       <span>Expires ${endsAt}</span>
     </div>
   `
-    : "";
+    : `<div></div>`;
 
   return `
     <div class="card-base p-3 flex flex-col gap-2">
 
-      <!-- Top: badge + content -->
+      <!-- Verified badges row -->
+      ${badgesHtml}
+
+      <!-- Top: discount badge + content -->
       <div class="flex items-stretch gap-3">
-
-        <!-- Left: discount badge -->
         ${discountBadgeHtml}
-
-        <!-- Right: title + description -->
         <div class="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-          <div class="flex items-center gap-1.5 mb-0.5">
-            <img src="/images/verified-badge.webp" alt="Verified" class="h-3.5 w-3.5 object-contain" loading="lazy" decoding="async" />
-            <span class="text-xs text-emerald-700 font-medium">Verified</span>
-            <span class="text-gray-300 text-xs">·</span>
-            <span class="text-xs text-emerald-700 font-medium">Re-verified</span>
-            <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-3.5 w-3.5 object-contain" loading="lazy" decoding="async" />
-          </div>
-
           <div class="relative group" tabindex="0" aria-describedby="title-tip-${id}">
             <h3 class="font-semibold text-sm text-brand-primary truncate block">
               ${title}
@@ -224,10 +229,13 @@ export function renderCouponCardHtml(item = {}) {
         </div>
       </div>
 
-      <!-- Meta row -->
-      <div class="flex items-center justify-between">
+      <!-- Meta row: expiry left, used-by + copied banner right -->
+      <div class="flex items-center justify-between gap-2">
         ${expiryHtml}
-        ${usedByHtml}
+        <div class="flex items-center gap-2">
+          ${usedByHtml}
+          <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied</span>
+        </div>
       </div>
 
       <!-- Reveal button -->
