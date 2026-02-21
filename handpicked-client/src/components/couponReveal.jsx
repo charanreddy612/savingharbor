@@ -77,7 +77,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
             platform: "web",
           }),
         },
-        2
+        2,
       );
 
       if (resp.status === 429) {
@@ -99,18 +99,51 @@ export default function CouponReveal({ coupon, storeSlug }) {
       const codeToReveal =
         serverCode ?? (c.code ? String(c.code).trim() : null);
 
+      // if (codeToReveal) {
+      //   const box = document.createElement("div");
+      //   box.className =
+      //     "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
+      //   box.textContent = codeToReveal;
+      //   btnEl.replaceWith(box);
+      //   try {
+      //     await navigator.clipboard.writeText(codeToReveal);
+      //     pushToast("Code copied to clipboard");
+      //   } catch (e) {
+      //     pushToast("Code revealed — copy manually");
+      //   }
+      // }
+
       if (codeToReveal) {
+        // Replace button with code display
         const box = document.createElement("div");
         box.className =
-          "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
+          "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto text-center";
         box.textContent = codeToReveal;
         btnEl.replaceWith(box);
+
+        // Persistent "copied" banner below the code box
         try {
           await navigator.clipboard.writeText(codeToReveal);
+          const banner = document.createElement("div");
+          banner.className =
+            "w-full mt-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
+          banner.textContent = "✓ Code copied to clipboard";
+          box.insertAdjacentElement("afterend", banner);
           pushToast("Code copied to clipboard");
         } catch (e) {
-          pushToast("Code revealed — copy manually");
+          const banner = document.createElement("div");
+          banner.className =
+            "w-full mt-1.5 rounded-md px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 text-center";
+          banner.textContent = "⚠ Copy manually — clipboard blocked";
+          box.insertAdjacentElement("afterend", banner);
         }
+      } else {
+        // No code — it's a deal activation
+        const box = document.createElement("div");
+        box.className =
+          "w-full rounded-md px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
+        box.textContent = "Deal Activated";
+        btnEl.replaceWith(box);
       }
 
       if (serverRedirect) {
@@ -123,8 +156,8 @@ export default function CouponReveal({ coupon, storeSlug }) {
         const fallback = m.affl_url?.startsWith("http")
           ? m.affl_url
           : m.web_url?.startsWith("http")
-          ? m.web_url
-          : null;
+            ? m.web_url
+            : null;
         if (fallback && !codeToReveal) {
           setTimeout(() => {
             window.open(fallback, "_blank", "noopener,noreferrer");
@@ -148,13 +181,22 @@ export default function CouponReveal({ coupon, storeSlug }) {
     // If this offer was revealed previously in this session, reflect that state
     if (disabledOfferIds.has(String(c.id))) {
       const btn = el.querySelector(
-        `.js-reveal-btn[data-offer-id="${String(c.id)}"]`
+        `.js-reveal-btn[data-offer-id="${String(c.id)}"]`,
       );
+      // if (btn) {
+      //   const box = document.createElement("div");
+      //   box.className =
+      //     "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
+      //   box.textContent = "REVEALED";
+      //   btn.replaceWith(box);
+      // }
       if (btn) {
+        const isCoupon = btn.getAttribute("aria-label")?.includes("coupon");
         const box = document.createElement("div");
-        box.className =
-          "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
-        box.textContent = "REVEALED";
+        box.className = isCoupon
+          ? "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto text-center"
+          : "w-full rounded-md px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
+        box.textContent = isCoupon ? c.code || "REVEALED" : "Deal Activated";
         btn.replaceWith(box);
       }
     }
