@@ -96,7 +96,10 @@ const nextUrl = meta.next || null;
         >
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {coupons.map((c) => (
-              <div class="card-base p-0">
+              <div
+                class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+              >
                 <CouponRevealIsland
                   client:visible
                   coupon={c}
@@ -159,7 +162,10 @@ const nextUrl = meta.next || null;
       if (!grid) return;
       coupons.forEach((c) => {
         const div = document.createElement("div");
-        div.className = "card-base p-0";
+        div.className =
+          "rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card";
+        div.style.cssText =
+          "border-top-width:3px;border-top-style:solid;border-top-color:transparent";
         grid.appendChild(div);
         createRoot(div).render(
           createElement(CouponReveal, {
@@ -170,16 +176,18 @@ const nextUrl = meta.next || null;
       });
     }
 
-    const resourceList = document.querySelector("#resource-list");
-    if (resourceList?.dataset?.resource === "coupons") {
-      nextUrl = resourceList.dataset.nextUrl || null;
-      hasMore = !!nextUrl;
+    document.addEventListener("DOMContentLoaded", () => {
+      const resourceList = document.querySelector("#resource-list");
+      if (resourceList?.dataset?.resource === "coupons") {
+        nextUrl = resourceList.dataset.nextUrl || null;
+        hasMore = !!nextUrl;
 
-      const sentinel = document.createElement("div");
-      sentinel.id = "scroll-sentinel";
-      sentinel.style.height = "1px";
-      resourceList.appendChild(sentinel);
-      observer.observe(sentinel);
-    }
+        const sentinel = document.createElement("div");
+        sentinel.id = "scroll-sentinel";
+        sentinel.style.height = "1px";
+        resourceList.appendChild(sentinel);
+        observer.observe(sentinel);
+      }
+    });
   </script>
 </Base>
