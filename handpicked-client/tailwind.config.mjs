@@ -8,36 +8,44 @@ export default {
   ],
   theme: {
     extend: {
-      // 🔥 Store Page-Specific Extensions (Won't affect homepage)
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       boxShadow: {
         "store-card":
-          "0 4px 6px -1px rgba(0, 0, 255, 0.1), 0 2px 4px -1px rgba(0, 0, 255, 0.06)",
+          "0 4px 6px -1px rgba(46,42,39,0.10), 0 2px 4px -1px rgba(46,42,39,0.06)",
       },
       colors: {
-        // ✅ Verified Badge Colors
+        // ✅ Verified Badge Colors (unchanged)
         "verified-badge": {
           gold: "#FFD700",
           silver: "#C0C0C0",
           bronze: "#CD7F32",
         },
-        // ✅ Brand Colors (from logo)
-        "brand-primary": "#12866f", // Teal
-        "brand-secondary": "#2076cd", // Blue
-        "brand-accent": "#1282A2", // Gradient midpoint
-        "brand-dark": "#0B1220", // Navy background
-        'brand-muted': '#0C324F', // muted dark (muted backgrounds)
-        'surface': 'var(--surface)',
-        'surface-2': 'var(--surface-2)',
-        'on-surface': 'var(--on-surface)',
-        'brand-saving': '#008660', /* teal */
-        'brand-harbor': '#0077FF', /* blue */
-        'brand-anchor': '#00B4DB', /* gradient midpoint */
-        'brand-waves': '#0083B0', /* background navy */
-        'brand-navybg': '#0B0F1A', /* dark navy */
-        'brand-tagline': '#E4E4E4', /* light gray */
+
+        // ✅ Brand Colors — Warm Terracotta palette
+        "brand-primary": "#D96C4A", // Terracotta (CTA)
+        "brand-secondary": "#C45534", // Deep Clay (CTA hover)
+        "brand-accent": "#D96C4A", // same as primary
+        "brand-dark": "#2E2A27", // Soft Charcoal (text / dark bg)
+        "brand-muted": "#3D3532", // slightly lighter charcoal (muted backgrounds)
+
+        // legacy named tokens — remapped
+        "brand-saving": "#D96C4A",
+        "brand-harbor": "#C45534",
+        "brand-anchor": "#D96C4A",
+        "brand-waves": "#2E2A27",
+        "brand-navybg": "#2E2A27",
+        "brand-tagline": "#E8DED4", // Warm Gray
+
+        // surface tokens (CSS-var backed — keep as-is)
+        surface: "var(--surface)",
+        "surface-2": "var(--surface-2)",
+        "on-surface": "var(--on-surface)",
+
+        // page background convenience token
+        canvas: "#F6F1EA", // Warm Sand
+        "border-warm": "#E8DED4", // Subtle border
       },
     },
   },
