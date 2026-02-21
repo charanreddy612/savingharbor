@@ -305,6 +305,8 @@ export async function detail(req, res) {
             proof_image_url: r.proof_image_url || null,
             is_editor: !!r.is_editor,
             click_count: r.click_count || 0,
+            discount_type: r.discount_type || null,
+            discount_value: r.discount_value || null,
             merchant_id: r.merchant_id,
             merchant: r.merchant
               ? {

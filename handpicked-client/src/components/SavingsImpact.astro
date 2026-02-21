@@ -12,11 +12,13 @@ const { totalSavings, activeCoupons } = Astro.props;
   </h3>
 
   <div
-    class="rounded-lg p-4 text-white text-center"
-    style="background: linear-gradient(135deg,#5b7cff,#8b5cf6);"
+    class="rounded-lg px-4 py-3 mb-4 text-center"
+    style="background: linear-gradient(135deg,#334155,#4f46e5);"
   >
-    <div class="text-sm opacity-90">Total Savings Generated</div>
-    <div class="text-2xl font-bold mt-1">
+    <div class="text-xs text-white/80 uppercase tracking-widest mb-1">
+      Total Savings Generated
+    </div>
+    <div class="text-3xl font-extrabold text-white tracking-tight">
       ${totalSavings.toLocaleString()}+
     </div>
   </div>

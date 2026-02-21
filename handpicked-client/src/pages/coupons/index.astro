@@ -18,6 +18,8 @@ type Coupon = {
   title?: string | null;
   code?: string | null;
   ends_at?: string | null;
+  discount_type?: string | null;
+  discount_value?: string | null;
   merchant_name?: string | null;
   merchant_id?: number | null;
   merchant: merchant | null;
@@ -100,12 +102,13 @@ const nextUrl = meta.next || null;
           data-next-url={nextUrl}
           class="mt-6"
         >
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 ">
             {coupons.map((c) => (
-              <div
-                class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
-                style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
-              >
+              // <div
+              //   class="rounded-md bg-white/5 p-3 transition-shadow hover:shadow-store-card"
+              //   style="border-top-width: 3px; border-top-style: solid; border-top-color: transparent;"
+              // >
+              <div class="card-base p-0">
                 <CouponRevealIsland
                   client:visible
                   coupon={c}
@@ -128,41 +131,6 @@ const nextUrl = meta.next || null;
     import { createElement } from "react";
     import { createRoot } from "react-dom/client";
     import CouponReveal from "../../components/couponReveal.jsx";
-
-    // type merchant = {
-    //   id: number | null;
-    //   slug: string | null;
-    //   logo_url: String | null;
-    // };
-
-    // type Coupon = {
-    //   id: string | number;
-    //   title?: string | null;
-    //   code?: string | null;
-    //   ends_at?: string | null;
-    //   merchant_name?: string | null;
-    //   merchant_id?: number | null;
-    //   merchant: merchant | null;
-    // };
-
-    // type CouponsResponse = {
-    //   data: Coupon[];
-    //   meta: {
-    //     page?: number;
-    //     limit?: number;
-    //     total?: number;
-    //     canonical?: string;
-    //     prev?: string | null;
-    //     next?: string | null;
-    //     next_cursor?: string | null;
-    //     total_pages?: number;
-    //     jsonld?: any;
-    //     title?: string;
-    //     description?: string;
-    //   };
-    // };
-
-    // const API_BASE = "https://api.savingharbor.com/public/v1";
 
     let loading = false;
     let hasMore = true;

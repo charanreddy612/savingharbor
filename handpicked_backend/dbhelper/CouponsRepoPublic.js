@@ -369,7 +369,7 @@ export async function listForStore({
   let query = supabase
     .from("coupons")
     .select(
-      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, merchant_id, merchants:merchant_id ( slug, name, logo_url )",
+      "id, coupon_type, title, description, type_text, coupon_code, ends_at, show_proof, proof_image_url, is_editor, click_count, discount_type, discount_value, merchant_id, merchants:merchant_id ( slug, name, logo_url )",
     )
     .eq("merchant_id", merchantId)
     .eq("is_publish", true)
@@ -418,6 +418,8 @@ export async function listForStore({
     proof_image_url: r.proof_image_url || null,
     is_editor: !!r.is_editor,
     click_count: r.click_count || 0,
+    discount_type: r.discount_type || null,
+    discount_value: r.discount_value || null,
     merchant_id: r.merchant_id || null,
     merchant: r.merchants
       ? {
