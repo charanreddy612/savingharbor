@@ -1,5 +1,5 @@
 // dbhelper/AuthorsRepo.js
-import { supabase } from "../dbhelper/dbclient.js";
+import { supabase } from "./dbclient.js";
 
 /**
  * Fetch author by slug
