@@ -10,7 +10,7 @@
 @tailwind utilities;
 
 /* ------------------------------
-   Self-hosted Inter (use these names)
+   Self-hosted Inter
    (Ensure files exist in public/fonts/)
    ------------------------------ */
 @font-face {
@@ -32,27 +32,91 @@
 }
 
 /* ==========================
-   CSS Variables
+   CSS Variables — Solar Carbon
 ========================== */
 :root {
-  /* ── Brand tokens (Warm Terracotta palette) ── */
-  --brand-primary: #d96c4a; /* Terracotta */
-  --brand-secondary: #c45534; /* Deep Clay (hover / CTA hover) */
-  --brand-accent: #d96c4a; /* same as primary — update if you add a 3rd accent */
-  --brand-dark: #2e2a27; /* Soft Charcoal */
+  /* ── Core Foundation ── */
+  --bg-default: #F8F7F4;
+  /* Soft Bone */
+  --bg-surface: #FFFFFF;
+  /* Pure White */
+  --bg-subtle: #EEF1F4;
+  /* Mist Grey */
+  --border-default: #D9DEE5;
+  /* Soft Slate */
 
-  /* legacy named tokens — remapped to new palette */
-  --brand-saving: #d96c4a;
-  --brand-harbor: #c45534;
-  --brand-anchor: #d96c4a;
-  --brand-waves: #2e2a27;
-  --brand-navybg: #2e2a27;
-  --brand-tagline: #e8ded4; /* Warm Gray — replaces light gray */
+  /* ── Primary Action System ── */
+  --brand-primary: #FF5A1F;
+  /* Burnt Tangerine */
+  --brand-secondary: #E14A15;
+  /* Deep Ember (hover) */
+  --brand-pressed: #B93C10;
+  /* Dark Rust (pressed) */
+  --brand-primary-text: #FFFFFF;
 
-  /* surface tokens */
-  --surface: #ffffff; /* card surface */
-  --surface-2: rgba(214, 108, 74, 0.03); /* warm-tinted subtle surface */
-  --on-surface: #2e2a27; /* Soft Charcoal text on light surface */
+  /* ── Secondary Accent ── */
+  --brand-accent: #B8F200;
+  /* Electric Lime */
+  --brand-accent-soft: #ECFAD0;
+  /* Pale Lime Tint */
+  --brand-accent-text: #2A3300;
+  /* Deep Olive */
+
+  /* ── Deal Tag System ── */
+  --tag-verified: #0F766E;
+  /* Deep Teal */
+  --tag-expiring: #F59E0B;
+  /* Amber Gold */
+  --tag-exclusive: #2D2F4A;
+  /* Indigo Charcoal */
+  --tag-cashback-bg: #ECFAD0;
+  --tag-cashback-text: #2A3300;
+
+  /* ── Typography ── */
+  --text-primary: #111418;
+  /* Carbon Black */
+  --text-secondary: #4B5563;
+  /* Graphite */
+  --text-muted: #6B7280;
+  /* Cool Grey */
+  --link: #1E3A8A;
+  /* Deep Blue Slate */
+  --link-hover: #1D4ED8;
+  /* Royal Blue */
+
+  /* ── Card System ── */
+  --card-bg: #FFFFFF;
+  --card-border: #E5E7EB;
+  --card-shadow-sm: 0 1px 3px rgba(17, 20, 24, 0.05);
+  --card-shadow-md: 0 8px 24px rgba(17, 20, 24, 0.08);
+  --card-hover-border: rgba(255, 90, 31, 0.20);
+  --card-hover-shadow: 0 8px 24px rgba(255, 90, 31, 0.10);
+
+  /* ── Surface tokens ── */
+  --surface: #FFFFFF;
+  --surface-2: rgba(255, 90, 31, 0.03);
+  --on-surface: #111418;
+
+  /* ── Legacy aliases (keeps existing component classes working) ── */
+  --brand-dark: #111418;
+  --brand-navybg: #111418;
+  --brand-saving: #FF5A1F;
+  --brand-harbor: #E14A15;
+  --brand-anchor: #FF5A1F;
+  --brand-waves: #111418;
+  --brand-tagline: #6B7280;
+  --brand-tagline-safe: #4B5563;
+  --brand-primary-contrast: #E14A15;
+
+  /* ── Aliases used by body/links ── */
+  --color-bg: var(--bg-default);
+  --color-text: var(--text-primary);
+  --color-accent: var(--brand-primary);
+  --color-accent-hover: var(--brand-secondary);
+
+  /* ── Background gradient washes ── */
+  --bg-grad-start: rgba(255, 90, 31, 0.025);
+  --bg-grad-end: rgba(184, 242, 0, 0.02);
 }
 
 /* ==========================
@@ -61,21 +125,13 @@
 html {
   scroll-behavior: smooth;
 }
+
 body {
   @apply m-0 p-0 antialiased;
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family:
-    "Inter",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Helvetica,
-    Arial,
-    "Apple Color Emoji",
-    "Segoe UI Emoji";
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI,
+    Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -90,7 +146,12 @@ svg {
 }
 
 a {
-  @apply no-underline text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors duration-200;
+  color: var(--link);
+  @apply no-underline transition-colors duration-200;
+}
+
+a:hover {
+  color: var(--link-hover);
 }
 
 *,
@@ -118,67 +179,129 @@ a {
   border-top: 3px solid var(--brand-accent);
 }
 
-/* Base buttons */
+/* ==========================
+   Buttons
+========================== */
 .btn {
   @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  --tw-ring-color: var(--brand-primary);
 }
 
-/* Primary button */
 .btn-primary {
-  @apply bg-brand-primary text-white border border-brand-primary hover:bg-brand-secondary hover:border-brand-secondary;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary;
+  background: var(--brand-primary);
+  color: var(--brand-primary-text);
+  border: 1px solid var(--brand-primary);
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  --tw-ring-color: var(--brand-primary);
 }
 
-/* Outline button */
+.btn-primary:hover {
+  background: var(--brand-secondary);
+  border-color: var(--brand-secondary);
+}
+
 .btn-outline {
   @apply inline-flex items-center justify-center px-4 py-2 min-w-[96px] rounded font-semibold transition;
-  @apply border border-white text-white hover:bg-white hover:text-brand-primary;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white;
+  border: 1.5px solid var(--border-default);
+  color: var(--text-secondary);
+  background: transparent;
 }
 
-/* For colored/dark backgrounds */
+.btn-outline:hover {
+  background: var(--bg-subtle);
+}
+
 .btn-outline--dark {
-  @apply border border-white text-white hover:bg-white hover:text-brand-primary;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white;
+  @apply border border-white text-white;
 }
 
-/* For light/pale backgrounds */
+.btn-outline--dark:hover {
+  background: #fff;
+  color: var(--brand-primary);
+}
+
 .btn-outline--light {
-  @apply border border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white;
-  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-dark;
+  border: 1px solid var(--text-primary);
+  color: var(--text-primary);
 }
 
-/* Disabled state */
+.btn-outline--light:hover {
+  background: var(--text-primary);
+  color: #fff;
+}
+
 .btn:disabled,
 .btn-disabled {
   @apply opacity-60 cursor-not-allowed;
 }
 
-/* Toast */
+/* ==========================
+   Deal Tag System
+========================== */
+.tag-verified {
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--tag-verified);
+}
+
+.tag-expiring {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--tag-expiring);
+}
+
+.tag-exclusive {
+  background: rgba(45, 47, 74, 0.10);
+  color: var(--tag-exclusive);
+}
+
+.tag-cashback {
+  background: var(--tag-cashback-bg);
+  color: var(--tag-cashback-text);
+}
+
+.pill {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.pill-green {
+  @apply bg-emerald-50 text-emerald-700;
+}
+
+.pill-gray {
+  @apply bg-gray-100 text-gray-600;
+}
+
+/* ==========================
+   Components
+========================== */
 .toast {
-  @apply fixed bottom-6 right-6 bg-brand-dark text-white text-sm px-3 py-2 rounded shadow-lg;
+  @apply fixed bottom-6 right-6 text-sm px-3 py-2 rounded shadow-lg;
+  background: var(--text-primary);
+  color: #fff;
 }
 
-/* Sidebar sections */
 .sidebar-box {
-  @apply bg-white border border-gray-100 rounded-md p-4;
+  background: var(--bg-surface);
+  border: 1px solid var(--card-border);
+  @apply rounded-md p-4;
 }
 
-/* Card base */
 .card-base {
-  @apply bg-white border border-gray-200 rounded-lg transition-shadow duration-150;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  @apply rounded-lg transition-shadow duration-150;
 }
+
 .card-base:hover {
   @apply shadow-lg -translate-y-0.5;
 }
 
-/* Headings */
 .section-heading {
-  @apply text-xl font-semibold text-brand-primary mb-4;
+  @apply text-xl font-semibold mb-4;
+  color: var(--brand-primary);
 }
 
-/* Line-clamp utilities */
+/* Line-clamp */
 .line-clamp-1,
 .line-clamp-2,
 .line-clamp-3 {
@@ -186,31 +309,24 @@ a {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .line-clamp-1 {
   -webkit-line-clamp: 1;
 }
+
 .line-clamp-2 {
   -webkit-line-clamp: 2;
 }
+
 .line-clamp-3 {
   -webkit-line-clamp: 3;
-}
-
-/* Pills */
-.pill {
-  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
-}
-.pill-green {
-  @apply bg-emerald-50 text-emerald-700;
-}
-.pill-gray {
-  @apply bg-gray-100 text-gray-600;
 }
 
 /* Expandable */
 .expandable {
   position: relative;
 }
+
 .expandable .expandable-content {
   transition: max-height 180ms ease;
 }
@@ -220,15 +336,16 @@ a {
   margin-left: 0.5rem;
   margin-top: 0.25rem;
   font-size: 0.92rem;
-  color: #d96c4a; /* terracotta — replaces indigo-600 */
+  color: var(--link);
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
   text-decoration: underline;
 }
+
 .expand-toggle:focus {
-  outline: 2px solid rgba(217, 108, 74, 0.25);
+  outline: 2px solid rgba(30, 58, 138, 0.25);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -241,26 +358,53 @@ a {
    Typography / Prose
 ========================== */
 .prose :where(h1, h2, h3, h4) {
-  @apply text-on-surface;
-}
-.prose {
-  --tw-prose-links: var(--brand-primary);
-}
-.prose a {
-  @apply underline-offset-2 hover:underline;
-  color: var(--brand-primary);
-}
-.prose p {
-  @apply text-base leading-7 text-[var(--color-text)] mb-4;
+  color: var(--text-primary);
 }
 
-/* Footer & social */
+.prose {
+  --tw-prose-links: var(--link);
+}
+
+.prose a {
+  @apply underline-offset-2 hover:underline;
+  color: var(--link);
+}
+
+.prose p {
+  @apply text-base leading-7 mb-4;
+  color: var(--text-secondary);
+}
+
+/* ==========================
+   Footer & Social
+========================== */
 .footer-link {
-  @apply inline-block text-brand-primary hover:text-brand-dark transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary rounded px-1;
+  @apply inline-block transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded px-1;
+  color: var(--brand-primary);
 }
+
+.footer-link:hover {
+  color: var(--brand-secondary);
+}
+
 .social-btn {
-  @apply p-2 rounded hover:bg-white/10 hover:text-brand-primary transition focus:outline-none focus:ring-2 focus:ring-brand-primary;
+  @apply p-2 rounded transition-colors duration-150 ease-in-out;
+  color: currentColor;
+  background: transparent;
 }
+
+.social-btn:hover,
+.social-btn:active {
+  color: var(--brand-primary);
+  background: rgba(255, 90, 31, 0.08);
+}
+
+.social-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.18);
+  border-radius: 8px;
+}
+
 .social-btn.small {
   @apply p-1;
 }
@@ -268,41 +412,42 @@ a {
 .detail-summary {
   @apply cursor-pointer font-medium;
 }
+
 .details-panel {
-  @apply mt-2 text-sm text-gray-300;
+  @apply mt-2 text-sm;
+  color: var(--text-muted);
 }
 
-/* Cards */
+/* ==========================
+   Card helpers
+========================== */
 .card {
-  @apply rounded-md bg-white/10 p-4 transition-shadow;
+  @apply rounded-md p-4 transition-shadow;
+  background: var(--bg-surface);
 }
+
 .card-surface {
-  background-color: var(--surface-2);
+  background: var(--bg-surface);
   color: var(--on-surface);
   @apply rounded-md p-4 border;
-  border-color: var(--surface-2);
+  border-color: var(--card-border);
 }
 
-/* Accent borders */
 .accent-blue {
-  border-top-width: 4px;
-  border-top-style: solid;
-  border-top-color: var(--brand-secondary);
+  border-top: 4px solid var(--link);
 }
+
 .accent-amber {
-  border-top-width: 4px;
-  border-top-style: solid;
-  border-top-color: #f59e0b;
+  border-top: 4px solid var(--tag-expiring);
 }
 
-/* Store card shadow */
 .shadow-store-card {
-  box-shadow: 0 6px 20px rgba(46, 42, 39, 0.06); /* charcoal-tinted */
+  box-shadow: 0 6px 20px rgba(17, 20, 24, 0.06);
 }
 
-/* Hero */
 .site-hero {
   @apply text-3xl md:text-4xl font-bold tracking-tight;
+  color: var(--text-primary);
 }
 
 .on-brand-contrast {
@@ -310,9 +455,9 @@ a {
   mix-blend-mode: normal;
 }
 
-/* Accessibility */
 .skip-link {
-  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:px-3 focus:py-2 focus:bg-white focus:text-brand-primary rounded;
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:px-3 focus:py-2 focus:bg-white rounded;
+  color: var(--brand-primary);
 }
 
 .footer-col {
@@ -322,162 +467,96 @@ a {
 .hero-placeholder {
   width: 100%;
   aspect-ratio: 16/5;
-  background: #f6f1ea;
+  background: var(--bg-subtle);
 }
 
-/* ===========================
-   Visual polish overrides
-   =========================== */
-
-:root {
-  /* background & text */
-  --color-bg: #f6f1ea; /* Warm Sand */
-  --color-text: var(--on-surface);
-
-  /* gentle decorative washes */
-  --bg-grad-start: rgba(217, 108, 74, 0.03); /* terracotta tint */
-  --bg-grad-end: rgba(196, 85, 52, 0.015); /* deep clay tint */
-
-  /* card shadows & border */
-  --card-border: rgba(46, 42, 39, 0.06); /* charcoal-tinted border */
-  --card-shadow-sm: 0 1px 2px rgba(46, 42, 39, 0.05);
-  --card-shadow-md: 0 8px 24px rgba(46, 42, 39, 0.08);
-
-  /* accessible terracotta — slightly deeper for contrast on warm sand */
-  --brand-primary-contrast: #c45534; /* Deep Clay — 4.6:1 on #F6F1EA */
-
-  /* safe tagline color for text on white */
-  --brand-tagline-safe: #6b7280;
-
-  --color-accent: var(--brand-primary);
-  --color-accent-hover: var(--brand-secondary);
-}
-
-/* page canvas */
+/* ==========================
+   Visual Polish (overrides)
+========================== */
 html,
 body {
   height: 100%;
 }
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
   background-image:
-    radial-gradient(
-      circle at 10% 10%,
-      var(--bg-grad-start) 0%,
-      transparent 20%
-    ),
+    radial-gradient(circle at 10% 10%, var(--bg-grad-start) 0%, transparent 20%),
     radial-gradient(circle at 90% 90%, var(--bg-grad-end) 0%, transparent 25%);
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
-/* card overrides */
 .card {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow-sm);
   border-radius: 12px;
   padding: 1rem;
-  transition:
-    box-shadow 180ms ease,
-    transform 120ms ease;
+  transition: box-shadow 180ms ease, transform 120ms ease, border-color 180ms ease;
 }
+
 .card-surface {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow-md);
   border-radius: 12px;
   padding: 1.25rem;
 }
 
-/* hover / focus lift */
 .card:hover,
 .card:focus-within {
   transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(46, 42, 39, 0.1);
+  box-shadow: var(--card-hover-shadow);
+  border-color: var(--card-hover-border);
 }
 
-/* card separators */
 .card hr,
 .card .row-sep {
   border: none;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(46, 42, 39, 0.04),
-    rgba(46, 42, 39, 0.01)
-  );
+  background: linear-gradient(90deg, rgba(17, 20, 24, 0.04), rgba(17, 20, 24, 0.01));
   margin: 0.75rem 0;
 }
 
-/* inputs */
+/* Inputs */
 input,
 textarea,
 select {
-  background: #fff;
-  border: 1px solid rgba(46, 42, 39, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   outline: none;
-  transition:
-    box-shadow 120ms ease,
-    border-color 120ms ease;
+  color: var(--text-primary);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
 }
+
 input:focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 0 0 3px rgba(217, 108, 74, 0.15);
-  border-color: rgba(217, 108, 74, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 90, 31, 0.15);
+  border-color: rgba(255, 90, 31, 0.40);
 }
 
-/* hero heading */
-.site-hero {
-  color: var(--brand-dark);
-}
-
-/* links */
-a {
-  color: var(--brand-primary);
-}
-
-/* responsive card padding */
 @media (min-width: 1024px) {
   .card {
     padding: 1.25rem;
     border-radius: 14px;
   }
+
   .card-surface {
     padding: 1.5rem;
     border-radius: 14px;
   }
 }
 
-/* social buttons */
-.social-btn {
-  @apply p-2 rounded transition-colors duration-150 ease-in-out;
-  color: currentColor;
-  background: transparent;
-}
-.social-btn:hover,
-.social-btn:active {
-  color: var(--brand-primary-contrast);
-  background: rgba(217, 108, 74, 0.08);
-}
-.social-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(217, 108, 74, 0.18);
-  border-radius: 8px;
-}
-.social-btn.small {
-  @apply p-1;
-}
-
 .on-canvas-strong {
-  color: var(--brand-primary-contrast) !important;
+  color: var(--brand-primary) !important;
 }
 
-/* carousel slide buttons — WCAG touch target */
+/* Carousel — WCAG touch target */
 button[aria-label^="Go to slide"] {
   width: 44px !important;
   height: 44px !important;
@@ -494,6 +573,7 @@ button[aria-label^="Go to slide"] {
   position: relative !important;
   box-shadow: none !important;
 }
+
 button[aria-label^="Go to slide"]::before {
   content: "";
   width: 10px;
@@ -503,73 +583,91 @@ button[aria-label^="Go to slide"]::before {
   background: currentColor;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
+
 button[aria-label^="Go to slide"].bg-white::before {
   background: rgba(255, 255, 255, 0.6);
 }
+
 button[aria-label^="Go to slide"].bg-brand-primary::before {
   background: var(--brand-primary);
 }
+
 button[aria-label^="Go to slide"]:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 6px rgba(217, 108, 74, 0.18);
+  box-shadow: 0 0 0 6px rgba(255, 90, 31, 0.18);
   border-radius: 9999px;
 }
 
-/* Quill editor */
+/* ==========================
+   Quill Editor
+========================== */
 .ql-editor {
   line-height: 1.6;
   font-size: 1rem;
-  color: #2e2a27;
+  color: var(--text-primary);
 }
+
 .ql-editor h1 {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 1.2em 0 0.6em;
 }
+
 .ql-editor h2 {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 1em 0 0.5em;
 }
+
 .ql-editor h3 {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0.8em 0 0.4em;
 }
+
 .ql-editor p {
   margin: 0 0 0.8em;
 }
+
 .ql-editor a {
-  color: #d96c4a;
+  color: var(--link);
   text-decoration: underline;
 }
+
 .ql-editor strong,
 .ql-editor b {
   font-weight: 700;
 }
+
 .ql-editor em,
 .ql-editor i {
   font-style: italic;
 }
+
 .ql-editor u {
   text-decoration: underline;
 }
+
 .ql-editor s {
   text-decoration: line-through;
 }
+
 .ql-editor ul {
   list-style-type: disc;
   margin: 0.8em 0 0.8em 1.5em;
   padding: 0;
 }
+
 .ql-editor ol {
   list-style-type: decimal;
   margin: 0.8em 0 0.8em 1.5em;
   padding: 0;
 }
+
 .ql-editor li {
   margin-bottom: 0.3em;
 }
+
 .ql-editor img {
   max-width: 100%;
   height: auto;
@@ -577,15 +675,19 @@ button[aria-label^="Go to slide"]:focus-visible {
   margin: 1em auto;
 }
 
-/* fade-in animation */
+/* ==========================
+   Animations
+========================== */
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
+
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-in-out;
 }

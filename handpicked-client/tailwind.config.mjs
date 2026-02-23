@@ -13,39 +13,59 @@ export default {
       },
       boxShadow: {
         "store-card":
-          "0 4px 6px -1px rgba(46,42,39,0.10), 0 2px 4px -1px rgba(46,42,39,0.06)",
+          "0 4px 6px -1px rgba(17,20,24,0.08), 0 2px 4px -1px rgba(17,20,24,0.05)",
+        "card-hover": "0 8px 24px rgba(255,90,31,0.10)",
       },
       colors: {
-        // ✅ Verified Badge Colors (unchanged)
+        // ── Verified Badge Colors (unchanged) ──
         "verified-badge": {
           gold: "#FFD700",
           silver: "#C0C0C0",
           bronze: "#CD7F32",
         },
 
-        // ✅ Brand Colors — Warm Terracotta palette
-        "brand-primary": "#D96C4A", // Terracotta (CTA)
-        "brand-secondary": "#C45534", // Deep Clay (CTA hover)
-        "brand-accent": "#D96C4A", // same as primary
-        "brand-dark": "#2E2A27", // Soft Charcoal (text / dark bg)
-        "brand-muted": "#3D3532", // slightly lighter charcoal (muted backgrounds)
+        // ── Solar Carbon Brand Colors ──
+        "brand-primary": "#FF5A1F", // Burnt Tangerine (CTA)
+        "brand-secondary": "#E14A15", // Deep Ember (hover)
+        "brand-pressed": "#B93C10", // Dark Rust (pressed)
+        "brand-dark": "#111418", // Carbon Black
+        "brand-muted": "#4B5563", // Graphite
 
-        // legacy named tokens — remapped
-        "brand-saving": "#D96C4A",
-        "brand-harbor": "#C45534",
-        "brand-anchor": "#D96C4A",
-        "brand-waves": "#2E2A27",
-        "brand-navybg": "#2E2A27",
-        "brand-tagline": "#E8DED4", // Warm Gray
+        // ── Accent ──
+        "brand-accent": "#B8F200", // Electric Lime
+        "brand-accent-soft": "#ECFAD0", // Pale Lime Tint
+        "brand-accent-text": "#2A3300", // Deep Olive
 
-        // surface tokens (CSS-var backed — keep as-is)
+        // ── Deal Tag Colors ──
+        "tag-verified": "#0F766E", // Deep Teal
+        "tag-expiring": "#F59E0B", // Amber Gold
+        "tag-exclusive": "#2D2F4A", // Indigo Charcoal
+
+        // ── Typography ──
+        "text-primary": "#111418", // Carbon Black
+        "text-secondary": "#4B5563", // Graphite
+        "text-muted": "#6B7280", // Cool Grey
+        link: "#1E3A8A", // Deep Blue Slate
+        "link-hover": "#1D4ED8", // Royal Blue
+
+        // ── Backgrounds ──
+        "bg-default": "#F8F7F4", // Soft Bone
+        "bg-surface": "#FFFFFF", // Pure White
+        "bg-subtle": "#EEF1F4", // Mist Grey
+        "border-default": "#D9DEE5", // Soft Slate
+
+        // ── Legacy named tokens (remapped) ──
+        "brand-navybg": "#111418",
+        "brand-saving": "#FF5A1F",
+        "brand-harbor": "#E14A15",
+        "brand-anchor": "#FF5A1F",
+        "brand-waves": "#111418",
+        "brand-tagline": "#6B7280",
+
+        // ── Surface tokens (CSS-var backed) ──
         surface: "var(--surface)",
         "surface-2": "var(--surface-2)",
         "on-surface": "var(--on-surface)",
-
-        // page background convenience token
-        canvas: "#F6F1EA", // Warm Sand
-        "border-warm": "#E8DED4", // Subtle border
       },
     },
   },
