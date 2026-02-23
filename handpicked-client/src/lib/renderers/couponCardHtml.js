@@ -221,34 +221,32 @@ export function renderCouponCardHtml(item = {}) {
         </div>
       </div>
 
-      <!-- Expiry + used by row -->
+      <!-- Bottom row: expiry + used-by + button all in one line -->
       <div class="flex items-center justify-between gap-2 flex-wrap">
-        ${expiryHtml}
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          ${expiryHtml}
           ${usedByHtml}
           <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied!</span>
         </div>
-      </div>
-
-      <!-- Code pill + CTA button — side by side, NOT full width -->
-      <div class="flex items-center justify-between gap-2 pt-0.5">
-        ${codePillHtml || `<div></div>`}
-        <button
-          type="button"
-          class="js-reveal-btn flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
-          style="background:#FF5A1F;"
-          onmouseover="this.style.background='#E14A15'"
-          onmouseout="this.style.background='#FF5A1F'"
-          data-offer-id="${id}"
-          aria-label="${btnAriaLabel}"
-        >
-          ${
-            couponType === "coupon"
-              ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`
-              : `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`
-          }
-          ${btnLabel}
-        </button>
+        <div class="flex items-center gap-2">
+          ${codePillHtml}
+          <button
+            type="button"
+            class="js-reveal-btn flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
+            style="background:#FF5A1F;"
+            onmouseover="this.style.background='#E14A15'"
+            onmouseout="this.style.background='#FF5A1F'"
+            data-offer-id="${id}"
+            aria-label="${btnAriaLabel}"
+          >
+            ${
+              couponType === "coupon"
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`
+            }
+            ${btnLabel}
+          </button>
+        </div>
       </div>
 
     </div>
