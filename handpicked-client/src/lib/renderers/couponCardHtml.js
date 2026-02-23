@@ -1,6 +1,5 @@
 // src/lib/renderers/couponCardHtml.js
 
-// keep your existing escapeHtml
 export function escapeHtml(s = "") {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -12,7 +11,6 @@ export function escapeHtml(s = "") {
 let logoManifest = {};
 try {
   if (typeof window === "undefined") {
-    // Node / server / build-time → use fs
     const fs = await import("fs");
     const path = await import("path");
     const manifestPath = path.join(
@@ -23,7 +21,6 @@ try {
       logoManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     }
   } else {
-    // Browser — fetch manifest only when card(s) are near the viewport (best perf)
     let logoManifest = {};
     let manifestLoaded = false;
 
@@ -32,20 +29,13 @@ try {
       manifestLoaded = true;
       try {
         const res = await fetch("/optimized/logos/manifest.json");
-        if (res.ok) {
-          logoManifest = await res.json();
-          // If you need to notify other code that logos are available:
-          // document.dispatchEvent(new CustomEvent('logoManifestLoaded', { detail: logoManifest }));
-        }
+        if (res.ok) logoManifest = await res.json();
       } catch (e) {
         console.warn("Logo manifest fetch failed:", e);
       }
     };
 
-    // Choose a sensible selector that matches one of the card elements on the page.
-    // Tweak ".coupon-card, .store-card" if your actual card markup uses a different class.
     const firstCard = document.querySelector(".coupon-card, .store-card");
-
     if (firstCard && "IntersectionObserver" in window) {
       const io = new IntersectionObserver(
         (entries, obs) => {
@@ -58,9 +48,8 @@ try {
           }
         },
         { rootMargin: "300px" },
-      ); // preload slightly before visible
+      );
       io.observe(firstCard);
-      // Safety fallback: if IO doesn't trigger for some reason, also schedule idle callback
       if ("requestIdleCallback" in window) {
         requestIdleCallback(
           () => {
@@ -79,7 +68,6 @@ try {
         );
       }
     } else {
-      // No IntersectionObserver → fallback to idle/load fetch
       if ("requestIdleCallback" in window) {
         requestIdleCallback(doFetchLogoManifest, { timeout: 2000 });
       } else {
@@ -97,11 +85,6 @@ try {
 
 /**
  * renderCouponCardHtml(item)
- * item: {
- *   id, title, coupon_type, code, ends_at, merchant_id,
- *   merchant: { id, slug, name, logo_url }, merchant_name,
- *   click_count, description
- * }
  */
 export function renderCouponCardHtml(item = {}) {
   const id = escapeHtml(item.id ?? "");
@@ -126,93 +109,104 @@ export function renderCouponCardHtml(item = {}) {
       ? Number(item.click_count)
       : 0;
 
-  // --- Discount badge config ---
+  // ── Discount badge ──
   let badgeTop = "",
     badgeBottom = "",
     badgeBg = "",
-    badgeBorder = "";
+    badgeBorder = "",
+    badgeTextColor = "";
 
   if (discountType === "percent" && discountValue) {
     badgeTop = `${discountValue}%`;
     badgeBottom = "OFF";
-    badgeBg = "background:#dcfce7;";
-    badgeBorder = "border-color:#86efac;";
+    badgeBg = "background:#ECFAD0;";
+    badgeBorder = "border-color:#B8F200;";
+    badgeTextColor = "color:#2A3300;";
   } else if (discountType === "flat" && discountValue) {
     badgeTop = `$${discountValue}`;
     badgeBottom = "OFF";
     badgeBg = "background:#fef3c7;";
     badgeBorder = "border-color:#fcd34d;";
+    badgeTextColor = "color:#92400e;";
   } else {
-    badgeTop = "SALE";
-    badgeBottom = "DEAL";
-    badgeBg = "background:#e0e7ff;";
-    badgeBorder = "border-color:#a5b4fc;";
+    badgeTop = "DEAL";
+    badgeBottom = "";
+    badgeBg = "background:#FFF0EB;";
+    badgeBorder = "border-color:#FFCBB8;";
+    badgeTextColor = "color:#B93C10;";
   }
-
-  const badgeTextColor =
-    discountType === "percent"
-      ? "color:#15803d;"
-      : discountType === "flat"
-        ? "color:#92400e;"
-        : "color:#3730a3;";
 
   const discountBadgeHtml = `
     <div class="flex-shrink-0 flex flex-col items-center justify-center rounded-lg px-3 py-2 border"
-         style="${badgeBg} ${badgeBorder} min-width:64px; width:64px;">
-      <span class="font-extrabold leading-tight text-center" style="font-size:1.1rem; ${badgeTextColor}">${badgeTop}</span>
-      <span class="text-xs font-semibold tracking-wide text-center" style="${badgeTextColor} opacity:0.75;">${badgeBottom}</span>
+         style="${badgeBg} ${badgeBorder} min-width:60px; width:60px;">
+      <span class="font-extrabold leading-tight text-center" style="font-size:1rem; ${badgeTextColor}">${badgeTop}</span>
+      ${badgeBottom ? `<span class="text-xs font-semibold tracking-wide text-center" style="${badgeTextColor} opacity:0.7;">${badgeBottom}</span>` : ""}
     </div>
   `;
 
-  // Badges — verified left, re-verified right, slightly larger
+  // ── Verified badges ──
   const badgesHtml = `
     <div class="w-full flex items-center justify-between">
       <div class="flex items-center gap-1.5">
-        <img src="/images/verified-badge.webp" alt="Verified" class="h-5 w-5 object-contain" loading="lazy" decoding="async" />
-        <span class="text-sm text-emerald-700 font-medium">Verified</span>
+        <img src="/images/verified-badge.webp" alt="Verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
+        <span class="text-xs text-emerald-700 font-medium">Verified</span>
       </div>
       <div class="flex items-center gap-1.5">
-        <span class="text-sm text-emerald-700 font-medium">Re-verified</span>
-        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-5 w-5 object-contain" loading="lazy" decoding="async" />
+        <span class="text-xs text-emerald-700 font-medium">Re-verified</span>
+        <img src="/images/reverified-badge.webp" alt="Re-verified" class="h-4 w-4 object-contain" loading="lazy" decoding="async" />
       </div>
     </div>
   `;
 
+  // ── Used by ──
   const usedByHtml =
     clickCount > 0
-      ? `
-    <div class="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" />
-      </svg>
-      <span>${clickCount} ${clickCount === 1 ? "user" : "users"}</span>
-    </div>
-  `
-      : `<div></div>`;
+      ? `<div class="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-1.13a4 4 0 10-8 0 4 4 0 008 0z" />
+        </svg>
+        <span>${clickCount} ${clickCount === 1 ? "user" : "users"}</span>
+      </div>`
+      : "";
 
+  // ── Expiry ──
   const expiryHtml = endsAt
-    ? `
-    <div class="flex items-center gap-1 text-xs text-gray-400">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-      <span>Expires ${endsAt}</span>
-    </div>
-  `
-    : `<div></div>`;
+    ? `<div class="flex items-center gap-1 text-xs text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span>Expires ${endsAt}</span>
+      </div>`
+    : "";
+
+  // ── Coupon code pill (for coupon type) ──
+  const codePillHtml =
+    couponType === "coupon"
+      ? `<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed"
+            style="background:#F8F7F4; border-color:#D9DEE5;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M7 7h.01M17 17h.01M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span class="text-xs font-bold tracking-widest text-gray-500 blur-sm select-none js-code-blur">XXXXXXXX</span>
+      </div>`
+      : "";
+
+  const btnLabel = couponType === "coupon" ? "Reveal Code" : "Activate Deal";
+  const btnAriaLabel =
+    couponType === "coupon" ? "Reveal coupon code" : "Activate deal";
 
   return `
-    <div class="card-base p-3 flex flex-col gap-2">
+    <div class="card-base p-3 flex flex-col gap-2.5">
 
       <!-- Verified badges row -->
       ${badgesHtml}
 
-      <!-- Top: discount badge + content -->
-      <div class="flex items-stretch gap-3">
+      <!-- Discount badge + title + description -->
+      <div class="flex items-start gap-3">
         ${discountBadgeHtml}
-        <div class="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+        <div class="flex-1 min-w-0 flex flex-col gap-0.5">
           <div class="relative group" tabindex="0" aria-describedby="title-tip-${id}">
-            <h3 class="font-semibold text-sm text-brand-primary truncate block">
+            <h3 class="font-semibold text-sm leading-snug truncate block" style="color:#111418;">
               ${title}
             </h3>
             <div id="title-tip-${id}" role="tooltip"
@@ -221,31 +215,41 @@ export function renderCouponCardHtml(item = {}) {
               ${title}
             </div>
           </div>
-
-          <p class="text-xs text-gray-500 overflow-hidden"
-             style="-webkit-box-orient:vertical; display:-webkit-box; -webkit-line-clamp:2;">
+          <p class="text-xs leading-relaxed overflow-hidden" style="color:#6B7280; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;">
             ${description}
           </p>
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-2">
-        ${endsAt ? expiryHtml : `<div></div>`}
+      <!-- Expiry + used by row -->
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        ${expiryHtml}
         <div class="flex items-center gap-2">
-          ${clickCount > 0 ? usedByHtml : ""}
-          <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied</span>
+          ${usedByHtml}
+          <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied!</span>
         </div>
       </div>
 
-      <!-- Reveal button -->
-      <button
-        type="button"
-        class="js-reveal-btn w-full rounded-md px-3 py-2 text-sm font-semibold text-white bg-brand-primary hover:bg-brand-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed"
-        data-offer-id="${id}"
-        aria-label="${couponType === "coupon" ? "Reveal coupon code" : "Activate deal"}"
-      >
-        ${couponType === "coupon" ? "Reveal Code" : "Activate Deal"}
-      </button>
+      <!-- Code pill + CTA button — side by side, NOT full width -->
+      <div class="flex items-center justify-between gap-2 pt-0.5">
+        ${codePillHtml || `<div></div>`}
+        <button
+          type="button"
+          class="js-reveal-btn flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
+          style="background:#FF5A1F;"
+          onmouseover="this.style.background='#E14A15'"
+          onmouseout="this.style.background='#FF5A1F'"
+          data-offer-id="${id}"
+          aria-label="${btnAriaLabel}"
+        >
+          ${
+            couponType === "coupon"
+              ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`
+              : `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`
+          }
+          ${btnLabel}
+        </button>
+      </div>
 
     </div>
   `;
