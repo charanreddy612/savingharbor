@@ -34,7 +34,6 @@ export async function list(req, res) {
     const categorySlug = String(req.query.category || "").trim();
     const letter = String(req.query.letter || "All").trim();
     const cursor = String(req.query.cursor || null);
-    const SITE_URL = "https://savingharbor.com";
     
     const seasonSlug = req.query.season
       ? String(req.query.season).trim().toLowerCase()
@@ -117,6 +116,7 @@ export async function detail(req, res) {
       "editor",
     );
     const locale = valLocale(req.query.locale) || deriveLocale(req);
+    const SITE_URL = "https://savingharbor.com";
 
     const params = {
       slug,
