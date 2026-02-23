@@ -75,7 +75,9 @@ type StoreDetail = {
   verifier?: {
     id: number | string;
     name: string;
+    slug: string;
     verifying_since?: string;
+    avatar_url?: string | null;
     designation: string;
     same_as?: { type: string; url: string }[];
     created_at: string;
@@ -314,6 +316,8 @@ try {
                 <VerifiedBadge
                   name={verifier.name}
                   designation={verifier.designation}
+                  authorSlug={verifier.slug}
+                  avatarUrl={verifier.avatar_url}
                   lastVerified={lastVerified ?? ""}
                   successRate={successRate}
                   verifyingSince={verifier.verifying_since}

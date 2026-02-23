@@ -210,7 +210,10 @@ export async function getBySlug(slug) {
     authors:verifier_id (
       id,
       name,
+      slug,
       designation,
+      bio_html,
+      avatar_url,
       verifying_since,
       same_as,
       created_at
@@ -271,7 +274,10 @@ export async function getBySlug(slug) {
         ? {
             id: data.authors.id,
             name: data.authors.name,
+            slug: data.authors.slug,
             designation: data.authors.designation,
+            bio_html: data.authors.bio_html,
+            avatar_url: data.authors.avatar_url,
             same_as: data.authors.same_as || null,
             verifying_since: data.authors.verifying_since,
             created_at: data.authors.created_at,

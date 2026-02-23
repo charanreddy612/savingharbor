@@ -376,6 +376,25 @@ export async function detail(req, res) {
             })),
           },
           faq: faqJsonLd,
+          person: store.verifier
+            ? {
+                "@context": "https://schema.org",
+                "@type": "Person",
+                "@id": `${SITE_URL}/author/${store.verifier.slug}`,
+                name: store.verifier.name,
+                jobTitle: store.verifier.designation,
+                ...(store.verifier.avatar_url
+                  ? {
+                      image: {
+                        "@type": "ImageObject",
+                        url: store.verifier.avatar_url,
+                      },
+                    }
+                  : {}),
+                worksFor: { "@id": `${SITE_URL}/#organization` },
+                sameAs: (store.verifier.same_as || []).map((s) => s.url),
+              }
+            : null,
         };
 
         // Coupons prev/next navigation helper – rewrite to backend base if configured

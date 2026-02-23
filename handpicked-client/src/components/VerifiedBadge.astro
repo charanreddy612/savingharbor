@@ -1,11 +1,14 @@
 ---
+// src/components/VerifiedBadge.astro
+
 interface Props {
   name: string;
   designation: string;
   lastVerified: string;
   successRate: number;
-  verifyingSince?: string;
-  avatarUrl?: string;
+  verifyingSince?: string | null;
+  avatarUrl?: string | null;
+  authorSlug: string;
   sameAs: { type: string; url: string }[];
 }
 
@@ -16,16 +19,9 @@ const {
   successRate,
   verifyingSince,
   avatarUrl,
+  authorSlug,
   sameAs,
 } = Astro.props;
-
-const personSchema = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name,
-  jobTitle: designation,
-  sameAs: sameAs.map((s) => s.url),
-};
 
 const icons: Record<string, string> = {
   linkedin: `<svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M4.98 3.5C4.98 4.88 3.86 6 2.48 6S0 4.88 0 3.5 1.12 1 2.48 1s2.5 1.12 2.5 2.5zM.22 8h4.52v14H.22V8zm7.56 0h4.33v1.92h.06c.6-1.14 2.06-2.34 4.24-2.34 4.54 0 5.38 2.99 5.38 6.87V22h-4.52v-6.74c0-1.6-.03-3.66-2.23-3.66-2.24 0-2.58 1.75-2.58 3.55V22H7.78V8z"/></svg>`,
@@ -36,82 +32,105 @@ const icons: Record<string, string> = {
 };
 ---
 
-<script type="application/ld+json">
-  {JSON.stringify(personSchema)}
-</script>
-
 <div class="card-base p-4">
-
   <!-- Header badge strip -->
   <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-    <!-- Green shield tick -->
     <svg viewBox="0 0 24 24" class="w-6 h-6 flex-shrink-0" aria-hidden="true">
-      <path fill="#16a34a" d="M12 2L4 5v6c0 5.25 3.5 10.15 8 11.35C16.5 21.15 20 16.25 20 11V5l-8-3z"/>
-      <path fill="white" stroke-width="0" d="M9.5 16.5l-3-3 1.41-1.41L9.5 13.67l6.59-6.58L17.5 8.5z"/>
+      <path
+        fill="#16a34a"
+        d="M12 2L4 5v6c0 5.25 3.5 10.15 8 11.35C16.5 21.15 20 16.25 20 11V5l-8-3z"
+      ></path>
+      <path
+        fill="white"
+        stroke-width="0"
+        d="M9.5 16.5l-3-3 1.41-1.41L9.5 13.67l6.59-6.58L17.5 8.5z"></path>
     </svg>
     <div>
-      <div class="text-sm font-bold text-gray-900 leading-tight">Verified Today</div>
-      <div class="text-xs text-gray-500 uppercase tracking-wider">Personally Tested</div>
+      <div class="text-sm font-bold text-gray-900 leading-tight">
+        Verified Today
+      </div>
+      <div class="text-xs text-gray-500 uppercase tracking-wider">
+        Personally Tested
+      </div>
     </div>
   </div>
 
-  <!-- Avatar + details row -->
+  <!-- Avatar + name + designation -->
   <div class="flex items-center gap-3 mb-4">
-    <!-- Avatar -->
     <div class="flex-shrink-0">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={name}
-          class="w-14 h-14 rounded-full object-cover ring-2 ring-indigo-100"
-        />
-      ) : (
-        <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl">
-          {name.charAt(0)}
-        </div>
-      )}
+      {
+        avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={name}
+            class="w-14 h-14 rounded-full object-cover"
+            style="outline: 2px solid #FFF0EB;"
+            loading="lazy"
+          />
+        ) : (
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl"
+            style="background:#FFF0EB; color:#FF5A1F;"
+          >
+            {name.charAt(0)}
+          </div>
+        )
+      }
     </div>
 
-    <!-- Name + designation -->
     <div class="flex-1 min-w-0">
-      <div class="font-bold text-gray-900 text-base leading-snug truncate">{name}</div>
-      <div class="text-xs font-semibold text-indigo-600 uppercase tracking-wide leading-snug mt-0.5 truncate">
+      <a
+        href={`/author/${authorSlug}`}
+        class="font-bold text-gray-900 text-base leading-snug truncate block hover:underline"
+        style="text-decoration-color:#FF5A1F;"
+      >
+        {name}
+      </a>
+      <div
+        class="text-xs font-semibold uppercase tracking-wide leading-snug mt-0.5 truncate"
+        style="color:#FF5A1F;"
+      >
         {designation}
       </div>
-      <!-- Social icons inline under name -->
-      {sameAs.length > 0 && (
-        <div class="flex gap-2 mt-1.5">
-          {sameAs.map((item) => (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer me"
-              aria-label={item.type}
-              class="text-gray-400 hover:text-indigo-600 transition"
-              set:html={icons[item.type]}
-            />
-          ))}
-        </div>
-      )}
+      {
+        sameAs.length > 0 && (
+          <div class="flex gap-2 mt-1.5">
+            {sameAs.map((item) => (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer me"
+                aria-label={item.type}
+                class="text-gray-400 hover:text-brand-primary transition"
+                set:html={icons[item.type]}
+              />
+            ))}
+          </div>
+        )
+      }
     </div>
   </div>
 
   <!-- Stats -->
-  <div class="bg-gray-50 rounded-lg px-3 py-2 space-y-1.5 text-sm">
+  <div
+    class="rounded-lg px-3 py-2 space-y-1.5 text-sm"
+    style="background:#F8F7F4;"
+  >
     <div class="flex justify-between items-center">
       <span class="text-gray-500">Last Verified</span>
       <span class="font-semibold text-gray-800">{lastVerified}</span>
     </div>
     <div class="flex justify-between items-center">
       <span class="text-gray-500">Success Rate</span>
-      <span class="font-semibold text-green-600">{successRate}%</span>
+      <span class="font-semibold" style="color:#FF5A1F;">{successRate}%</span>
     </div>
-    {verifyingSince && (
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500">Verifying Since</span>
-        <span class="font-semibold text-gray-800">{verifyingSince}</span>
-      </div>
-    )}
+    {
+      verifyingSince && (
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Verifying Since</span>
+          <span class="font-semibold text-gray-800">{verifyingSince}</span>
+        </div>
+      )
+    }
   </div>
-
 </div>
