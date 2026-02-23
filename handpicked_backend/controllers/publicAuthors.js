@@ -56,10 +56,12 @@ export async function detail(req, res) {
 
         const stores = await AuthorsRepo.getStoresByAuthor(author.id);
 
+        const storesCount = await AuthorsRepo.countStoresVerifiedByAuthor(author.id);
         return {
           data: {
             ...author,
             stores,
+            stores_count: storesCount,
           },
           meta: {
             generated_at: new Date().toISOString(),

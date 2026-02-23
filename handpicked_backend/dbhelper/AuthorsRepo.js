@@ -82,6 +82,30 @@ export async function getStoresByAuthor(authorId, { limit = 50 } = {}) {
 }
 
 /**
+ * Fetch all stores verified by this author (for their profile page)
+ */
+export async function countStoresVerifiedByAuthor(authorId) {
+  if (!authorId) return [];
+
+  try {
+    const { count, error } = await supabase
+      .from("merchants")
+      .select("*", { count: "exact", head: true })
+      .eq("verifier_id", authorId);
+
+    if (error) {
+      console.error("AuthorsRepo.getStoresVerifiedByAuthorCount error:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (e) {
+    console.error("AuthorsRepo.getStoresVerifiedByAuthorCount unexpected error:", e);
+    return 0;
+  }
+}
+ 
+/**
  * List all authors (for listing page)
  */
 export async function listAuthors({ limit = 100 } = {}) {

@@ -39,6 +39,7 @@ type AuthorDetail = {
   verifying_since?: string | null;
   same_as: SameAs[];
   stores: Store[];
+  stores_count: number;
 };
 
 type AuthorResponse = {
@@ -221,7 +222,7 @@ const icons: Record<string, string> = {
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                   />
                 </svg>
-                {author.stores.length} stores verified
+                Total {author.stores_count} stores verified
               </span>
             )
           }
@@ -252,7 +253,7 @@ const icons: Record<string, string> = {
       author.stores?.length > 0 && (
         <section>
           <h2 class="text-lg font-bold mb-4" style="color:#111418;">
-            Stores Verified by {author.name}
+            Stores Verified by {author.name} Today.
           </h2>
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {author.stores.map((store) => (
