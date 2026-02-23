@@ -79,6 +79,7 @@ export default function CouponReveal({ coupon, storeSlug }) {
   const containerRef = useRef(null);
   const [toasts, setToasts] = useState([]);
   const [disabledOfferIds, setDisabledOfferIds] = useState(new Set());
+  const revealedCodesRef = useRef(new Map()); // offerId → actual code string
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -137,6 +138,9 @@ export default function CouponReveal({ coupon, storeSlug }) {
         serverCode ?? (c.code ? String(c.code).trim() : null);
 
       if (codeToReveal) {
+        // ── Save code so session restore can show it ──
+        revealedCodesRef.current.set(String(offerId), codeToReveal);
+
         // ── Show the actual code ──
         const { wrapper } = buildCodeBox(codeToReveal);
 
@@ -196,8 +200,8 @@ export default function CouponReveal({ coupon, storeSlug }) {
       if (btn) {
         const couponType = btn.getAttribute("data-coupon-type");
         if (couponType === "coupon") {
-          // show actual code, not "REVEALED"
-          const code = btn.getAttribute("data-code") || c.code || "";
+          // use the code we saved after the API call
+          const code = revealedCodesRef.current.get(String(c.id)) || "";
           if (code) {
             const { wrapper } = buildCodeBox(code);
             btn.replaceWith(wrapper);
