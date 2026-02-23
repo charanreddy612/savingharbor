@@ -16,7 +16,7 @@ export async function getAuthorBySlug(slug) {
         slug,
         name,
         designation,
-        description,
+        bio_html,
         avatar_url,
         verifying_since,
         same_as,
