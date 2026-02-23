@@ -179,17 +179,8 @@ export function renderCouponCardHtml(item = {}) {
       </div>`
     : "";
 
-  // ── Coupon code pill (for coupon type) ──
-  const codePillHtml =
-    couponType === "coupon"
-      ? `<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed"
-            style="background:#F8F7F4; border-color:#D9DEE5;">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M7 7h.01M17 17h.01M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        <span class="text-xs font-bold tracking-widest text-gray-500 blur-sm select-none js-code-blur">XXXXXXXX</span>
-      </div>`
-      : "";
+  // code stored on button via data-code — handler reads & displays it on click
+  const rawCode = escapeHtml(item.code ?? "");
 
   const btnLabel = couponType === "coupon" ? "Reveal Code" : "Activate Deal";
   const btnAriaLabel =
@@ -229,7 +220,6 @@ export function renderCouponCardHtml(item = {}) {
           <span class="copied-banner-${id} text-xs font-semibold text-green-700 hidden">✓ Copied!</span>
         </div>
         <div class="flex items-center gap-2">
-          ${codePillHtml}
           <button
             type="button"
             class="js-reveal-btn flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-bold text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
@@ -237,6 +227,8 @@ export function renderCouponCardHtml(item = {}) {
             onmouseover="this.style.background='#E14A15'"
             onmouseout="this.style.background='#FF5A1F'"
             data-offer-id="${id}"
+            data-code="${rawCode}"
+            data-coupon-type="${couponType}"
             aria-label="${btnAriaLabel}"
           >
             ${

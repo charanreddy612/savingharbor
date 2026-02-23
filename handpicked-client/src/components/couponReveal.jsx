@@ -2,10 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { renderCouponCardHtml } from "../lib/renderers/couponCardHtml.js";
 
-/**
- * CouponReveal React island
- */
-
 async function fetchWithRetry(url, options, retries = 2) {
   for (let i = 0; i <= retries; i++) {
     try {
@@ -35,6 +31,48 @@ function Toast({ message, onClose }) {
   );
 }
 
+// ── Shared helper: replaces a button with the revealed code UI ──
+function buildCodeBox(code) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "flex flex-col gap-1.5";
+
+  const box = document.createElement("div");
+  box.className =
+    "w-full rounded-md px-3 py-2 text-sm font-mono font-bold tracking-widest text-center border border-dashed overflow-x-auto";
+  box.style.cssText =
+    "background:#FFF0EB; border-color:#FF5A1F; color:#B93C10;";
+  box.textContent = code;
+
+  wrapper.appendChild(box);
+  return { wrapper, box };
+}
+
+function buildCopyBanner(success) {
+  const banner = document.createElement("div");
+  banner.className =
+    "w-full rounded-md px-3 py-1.5 text-xs font-semibold text-center";
+  if (success) {
+    banner.style.cssText =
+      "background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0;";
+    banner.textContent = "✓ Code copied to clipboard";
+  } else {
+    banner.style.cssText =
+      "background:#fffbeb; color:#92400e; border:1px solid #fcd34d;";
+    banner.textContent = "⚠ Copy manually — clipboard blocked";
+  }
+  return banner;
+}
+
+function buildDealBox() {
+  const box = document.createElement("div");
+  box.className =
+    "w-full rounded-md px-3 py-2 text-sm font-semibold text-center";
+  box.style.cssText =
+    "background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0;";
+  box.textContent = "✓ Deal Activated";
+  return box;
+}
+
 export default function CouponReveal({ coupon, storeSlug }) {
   const c = coupon || {};
   const sSlug = storeSlug || null;
@@ -54,18 +92,18 @@ export default function CouponReveal({ coupon, storeSlug }) {
   };
   const removeToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
-  // Core click handler extracted so we can attach it to buttons directly
   const handleRevealClick = async (btnEl, offerId) => {
     if (!btnEl || !offerId) return;
     if (disabledOfferIds.has(String(offerId))) return;
 
-    // disable immediate to prevent double-taps
     btnEl.disabled = true;
+
     try {
       const base = import.meta.env.PUBLIC_API_BASE_URL || "";
       const endpoint =
         (base || "").replace(/\/+$/, "") +
         `/offers/${encodeURIComponent(String(offerId))}/click`;
+
       const resp = await fetchWithRetry(
         endpoint,
         {
@@ -95,52 +133,33 @@ export default function CouponReveal({ coupon, storeSlug }) {
 
       const serverCode = data?.code ?? null;
       const serverRedirect = data?.redirect_url ?? null;
-
       const codeToReveal =
         serverCode ?? (c.code ? String(c.code).trim() : null);
 
       if (codeToReveal) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "flex flex-col gap-1.5";
+        // ── Show the actual code ──
+        const { wrapper } = buildCodeBox(codeToReveal);
 
-        const box = document.createElement("div");
-        box.className =
-          "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto text-center";
-        box.textContent = codeToReveal;
-
-        const banner = document.createElement("div");
-        banner.className =
-          "w-full rounded-md px-3 py-1.5 text-xs font-semibold text-center";
-
+        let copied = false;
         try {
           await navigator.clipboard.writeText(codeToReveal);
-          banner.className +=
-            " text-green-700 bg-green-50 border border-green-200";
-          banner.textContent = "✓ Code copied to clipboard";
-        } catch (e) {
-          banner.className +=
-            " text-amber-700 bg-amber-50 border border-amber-200";
-          banner.textContent = "⚠ Copy manually — clipboard blocked";
-        }
+          copied = true;
+        } catch (_) {}
 
-        wrapper.appendChild(box);
-        wrapper.appendChild(banner);
+        wrapper.appendChild(buildCopyBanner(copied));
         btnEl.replaceWith(wrapper);
-        pushToast("Code copied to clipboard");
+        if (copied) pushToast("Code copied to clipboard");
       } else {
-        // No code — it's a deal activation
-        const box = document.createElement("div");
-        box.className =
-          "w-full rounded-md px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
-        box.textContent = "Deal Activated";
-        btnEl.replaceWith(box);
+        // ── Deal activation (no code) ──
+        btnEl.replaceWith(buildDealBox());
       }
 
+      // redirect
       if (serverRedirect) {
-        // small delay to allow UI update & copy toast to appear
-        setTimeout(() => {
-          window.open(serverRedirect, "_blank", "noopener,noreferrer");
-        }, 100);
+        setTimeout(
+          () => window.open(serverRedirect, "_blank", "noopener,noreferrer"),
+          100,
+        );
       } else {
         const m = c?.merchant || {};
         const fallback = m.affl_url?.startsWith("http")
@@ -149,13 +168,13 @@ export default function CouponReveal({ coupon, storeSlug }) {
             ? m.web_url
             : null;
         if (fallback && !codeToReveal) {
-          setTimeout(() => {
-            window.open(fallback, "_blank", "noopener,noreferrer");
-          }, 100);
+          setTimeout(
+            () => window.open(fallback, "_blank", "noopener,noreferrer"),
+            100,
+          );
         }
       }
 
-      // mark revealed in this session
       setDisabledOfferIds((prev) => new Set(prev).add(String(offerId)));
     } catch (err) {
       pushToast("An error occurred. Try again.");
@@ -163,65 +182,58 @@ export default function CouponReveal({ coupon, storeSlug }) {
     }
   };
 
-  // Inject SSR-markup from renderCouponCardHtml into this island's container
+  // Inject SSR markup + attach handlers
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     el.innerHTML = renderCouponCardHtml(c);
-    // If this offer was revealed previously in this session, reflect that state
+
+    // ── Restore previously revealed state in this session ──
     if (disabledOfferIds.has(String(c.id))) {
       const btn = el.querySelector(
         `.js-reveal-btn[data-offer-id="${String(c.id)}"]`,
       );
-      // if (btn) {
-      //   const box = document.createElement("div");
-      //   box.className =
-      //     "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto";
-      //   box.textContent = "REVEALED";
-      //   btn.replaceWith(box);
-      // }
       if (btn) {
-        const isCoupon = btn.getAttribute("aria-label")?.includes("coupon");
-        const box = document.createElement("div");
-        box.className = isCoupon
-          ? "w-full rounded-md px-3 py-2 text-sm font-mono text-brand-primary bg-brand-primary/10 border border-dashed border-brand-accent overflow-x-auto text-center"
-          : "w-full rounded-md px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 text-center";
-        box.textContent = isCoupon ? c.code || "REVEALED" : "Deal Activated";
-        btn.replaceWith(box);
+        const couponType = btn.getAttribute("data-coupon-type");
+        if (couponType === "coupon") {
+          // show actual code, not "REVEALED"
+          const code = btn.getAttribute("data-code") || c.code || "";
+          if (code) {
+            const { wrapper } = buildCodeBox(code);
+            btn.replaceWith(wrapper);
+          } else {
+            btn.disabled = true;
+            btn.textContent = "Code Revealed";
+          }
+        } else {
+          btn.replaceWith(buildDealBox());
+        }
       }
     }
 
-    // Attach direct click handlers to any reveal buttons found in the injected HTML.
+    // Attach direct click handlers
     const buttons = el.querySelectorAll(".js-reveal-btn[data-offer-id]");
-    if (buttons && buttons.length > 0) {
-      buttons.forEach((btn) => {
-        const offerId = btn.getAttribute("data-offer-id");
-        if (!offerId) return;
-
-        // avoid attaching multiple handlers: use a flag
-        if (!btn.__coupon_reveal_attached) {
-          btn.__coupon_reveal_attached = true;
-          btn.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            handleRevealClick(btn, offerId);
-          });
-        }
+    buttons.forEach((btn) => {
+      const offerId = btn.getAttribute("data-offer-id");
+      if (!offerId || btn.__coupon_reveal_attached) return;
+      btn.__coupon_reveal_attached = true;
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        handleRevealClick(btn, offerId);
       });
-    }
+    });
   }, [c, disabledOfferIds]);
 
-  // Keep delegated listener as a safety-net for elements added later dynamically
+  // Delegated listener as safety-net
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const delegated = async (ev) => {
-      const btn = ev.target.closest && ev.target.closest(".js-reveal-btn");
+      const btn = ev.target.closest?.(".js-reveal-btn");
       if (!btn) return;
       const offerId = btn.getAttribute("data-offer-id");
-      if (!offerId) return;
-      // avoid running twice if direct handler already processed it
-      if (btn.__coupon_reveal_attached_handled) return;
+      if (!offerId || btn.__coupon_reveal_attached_handled) return;
       btn.__coupon_reveal_attached_handled = true;
       await handleRevealClick(btn, offerId);
     };
