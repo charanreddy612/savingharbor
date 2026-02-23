@@ -1,5 +1,5 @@
 // dbhelper/AuthorsRepo.js
-import { supabase } from "./dbclient.js";
+import { supabase } from "../dbhelper/dbclient.js";
 
 /**
  * Fetch author by slug
@@ -82,13 +82,56 @@ export async function getStoresByAuthor(authorId, { limit = 50 } = {}) {
 }
 
 /**
+ * List all authors (for listing page)
+ */
+export async function listAuthors({ limit = 100 } = {}) {
+  try {
+    const { data, error } = await supabase
+      .from("authors")
+      .select(
+        `
+        id,
+        slug,
+        name,
+        designation,
+        avatar_url,
+        verifying_since,
+        same_as
+      `,
+      )
+      .order("name", { ascending: true })
+      .eq("is_content_author", true)
+      .limit(limit);
+
+    if (error) {
+      console.error("AuthorsRepo.listAuthors error:", error);
+      return [];
+    }
+
+    return (data || []).map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      designation: r.designation || "",
+      avatar_url: r.avatar_url || null,
+      verifying_since: r.verifying_since || null,
+      same_as: Array.isArray(r.same_as) ? r.same_as : [],
+    }));
+  } catch (e) {
+    console.error("AuthorsRepo.listAuthors unexpected error:", e);
+    return [];
+  }
+}
+
+/**
  * List all author slugs for static path generation
  */
 export async function listAuthorSlugs() {
   try {
     const { data, error } = await supabase
       .from("authors")
-      .select("slug, updated_at");
+      .select("slug, updated_at")
+      .eq("is_content_author", true);
 
     if (error) {
       console.error("AuthorsRepo.listAuthorSlugs error:", error);
