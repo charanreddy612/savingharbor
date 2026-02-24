@@ -34,7 +34,7 @@ type AuthorDetail = {
   slug: string;
   name: string;
   designation: string;
-  bio_html?: string | null;
+  bioHtml?: string | null;
   avatar_url?: string | null;
   verifying_since?: string | null;
   same_as: SameAs[];
@@ -170,11 +170,11 @@ const icons: Record<string, string> = {
         </div>
 
         {
-          author.bio_html && (
+          author.bioHtml && (
             <div
               class="text-sm leading-relaxed mb-4 prose max-w-none"
               style="color:#4B5563;"
-              set:html={author.bio_html}
+              set:html={author.bioHtml}
             />
           )
         }

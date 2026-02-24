@@ -37,7 +37,7 @@ export async function getAuthorBySlug(slug) {
       slug: data.slug,
       name: data.name,
       designation: data.designation || "",
-      description: data.description || "",
+      bioHtml: data.bio_html || "",
       avatar_url: data.avatar_url || null,
       verifying_since: data.verifying_since || null,
       same_as: Array.isArray(data.same_as) ? data.same_as : [],
