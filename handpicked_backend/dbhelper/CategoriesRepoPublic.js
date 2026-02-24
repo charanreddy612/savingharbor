@@ -18,7 +18,7 @@ export async function list({
   try {
     // Build base query - ROOT CATEGORIES ONLY (parent_id IS NULL)
     let query = supabase
-      .from("merchant_categories")
+      .from("merchant_categories_v2")
       .select(
         `
         id, name, slug, description, thumb_url, 
@@ -78,7 +78,8 @@ export async function list({
               .from("merchants")
               .select("id", { count: "exact", head: true })
               .eq("is_publish", true)
-              .contains("category_names", [row.name]);
+              .eq("category_id", row.id);
+            // .contains("category_names", [row.name]);
             storeCount = count || 0;
           } catch (e) {
             console.warn("Category store count failed:", row.name, e);
@@ -123,30 +124,6 @@ export async function list({
       const last = pageRows[pageRows.length - 1];
       nextCursor = Buffer.from(`${last.name}:${last.id}`).toString("base64");
     }
-
-    // // Total count
-    // let total = null;
-    // if (!skipCount) {
-    //   try {
-    //     let countQuery = supabase
-    //       .from("merchant_categories")
-    //       .select("id", { count: "exact", head: true })
-    //       .eq("is_publish", true)
-    //       .is("parent_id", null);
-
-    //     if (q) countQuery = countQuery.ilike("name", `%${q}%`);
-    //     if (letter && letter !== "All") {
-    //       countQuery = countQuery.ilike("name", `${letter}%`);
-    //     }
-
-    //     const { count, error: cErr } = await countQuery;
-    //     if (cErr) throw cErr;
-    //     total = count || 0;
-    //   } catch (err) {
-    //     console.warn("Categories.list: count query failed:", err);
-    //     total = rows.length;
-    //   }
-    // }
     return { rows, total: total || rows.length, nextCursor };
   } catch (e) {
     console.error("Categories.list error:", e);
@@ -164,7 +141,7 @@ export async function getBySlug(slug) {
 
   try {
     const { data, error } = await supabase
-      .from("merchant_categories")
+      .from("merchant_categories_v2")
       .select(
         `
         id, name, slug, description, thumb_url, top_banner_url, side_banner_url,
@@ -186,7 +163,7 @@ export async function getBySlug(slug) {
         .from("merchants")
         .select("id", { count: "exact", head: true })
         .eq("is_publish", true)
-        .contains("category_names", [data.name]);
+        .eq("category_id", [data.id]);
       storeCount = count || 0;
     } catch (e) {
       console.warn("getBySlug: store count failed:", e);
@@ -196,7 +173,7 @@ export async function getBySlug(slug) {
     let children = [];
     try {
       const { data: childData } = await supabase
-        .from("merchant_categories")
+        .from("merchant_categories_v2")
         .select("id, name, slug, thumb_url")
         .eq("parent_id", data.id)
         .eq("is_publish", true)
