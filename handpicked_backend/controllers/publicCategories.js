@@ -9,7 +9,7 @@ import {
   deriveLocale,
 } from "../utils/validation.js";
 import { badRequest } from "../utils/errors.js";
-import { CATEGORY_SORTS } from "../constants/publicEnums.js"; // Add this enum
+import { CATEGORY_SORTS } from "../constants/publicEnums.js";
 import { getOrigin, getPath } from "../utils/request-helper.js";
 import { makeListCacheKey } from "../utils/cacheKey.js";
 
@@ -25,7 +25,7 @@ export async function list(req, res) {
     const qRaw = String(req.query.q || "");
     const q = qRaw.length > 200 ? qRaw.slice(0, 200) : qRaw;
     const letter = String(req.query.letter || "All").trim();
-    const cursor = String(req.query.cursor || null);
+    const cursor = String(req.query.cursor || "");
 
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
@@ -38,7 +38,7 @@ export async function list(req, res) {
       origin,
       path,
       letter,
-      cursor,
+      cursor: cursor || null,
     };
 
     const cacheKey = makeListCacheKey("categories", {
@@ -78,7 +78,7 @@ export async function list(req, res) {
 }
 
 /**
- * GET /public/v1/categories/:slug - Category detail
+ * GET /public/v1/categories/:slug - Parent category with subcategories
  */
 export async function detail(req, res) {
   try {
@@ -90,16 +90,9 @@ export async function detail(req, res) {
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
-    const page = valLimit(req.query.page);
-    const limit = valLimit(req.query.limit);
+    const params = { slug, origin, path };
 
-    const params = { slug, page, limit, origin, path };
-
-    const cacheKey = makeListCacheKey("categories", {
-      slug,
-      page,
-      limit,
-    });
+    const cacheKey = makeListCacheKey("categories", { slug });
 
     const result = await withCache(
       req,
@@ -123,5 +116,69 @@ export async function detail(req, res) {
   } catch (e) {
     console.error("Category detail controller error:", e);
     return fail(res, "Failed to get category detail", e);
+  }
+}
+
+/**
+ * GET /public/v1/categories/:parentSlug/:subSlug - Subcategory with merchants
+ */
+export async function subcategoryDetail(req, res) {
+  try {
+    const parentSlug = String(req.params.parentSlug || "")
+      .trim()
+      .toLowerCase();
+    const subSlug = String(req.params.subSlug || "")
+      .trim()
+      .toLowerCase();
+
+    if (!parentSlug || !subSlug) {
+      return badRequest(res, "Invalid category or subcategory slug");
+    }
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = valLimit(req.query.limit) || 20;
+
+    const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
+    const path = await Promise.resolve(getPath(req));
+
+    const params = { parentSlug, subSlug, page, limit, origin, path };
+
+    const cacheKey = makeListCacheKey("subcategories", {
+      parentSlug,
+      subSlug,
+      page,
+      limit,
+    });
+
+    const result = await withCache(
+      req,
+      async () => {
+        const data = await CategoriesRepo.getSubcategoryBySlug(
+          params.parentSlug,
+          params.subSlug,
+          { page: params.page, limit: params.limit },
+        );
+
+        if (!data) return { data: null, meta: { status: 404 } };
+
+        return {
+          data,
+          meta: {
+            generated_at: new Date().toISOString(),
+            canonical: null,
+          },
+        };
+      },
+      { ttlSeconds: 60, keyExtra: cacheKey },
+    );
+
+    if (!result?.data) {
+      return notFound(res, "Subcategory not found");
+    }
+
+    return ok(res, result);
+  } catch (e) {
+    console.error("Subcategory detail controller error:", e);
+    return fail(res, "Failed to get subcategory detail", e);
   }
 }

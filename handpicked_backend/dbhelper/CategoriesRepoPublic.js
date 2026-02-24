@@ -67,32 +67,27 @@ export async function list({
     //Total Count
     let total = pageRows.length;
 
-    // Add store counts via JSONB overlap
+    // Add store counts
     const rows = (
       await Promise.all(
         pageRows.map(async (row) => {
           let storeCount = 0;
           try {
-            // Case-insensitive + flexible matching
             const { count } = await supabase
               .from("merchants")
               .select("id", { count: "exact", head: true })
               .eq("is_publish", true)
               .eq("category_id", row.id);
-            // .contains("category_names", [row.name]);
             storeCount = count || 0;
           } catch (e) {
             console.warn("Category store count failed:", row.name, e);
           }
 
-          // TEMPORARILY disable filtering until data is fixed
-          // if (storeCount === 0) return null;
-
-          // Children count
+          // Children count (subcategories)
           let childrenCount = 0;
           try {
             const { count: cc } = await supabase
-              .from("merchant_categories")
+              .from("merchant_categories_v2")
               .select("id", { count: "exact", head: true })
               .eq("parent_id", row.id)
               .eq("is_publish", true);
@@ -111,7 +106,7 @@ export async function list({
             meta_description: row.meta_description || "",
             stats: {
               stores: storeCount,
-              children: childrenCount,
+              subcategories: childrenCount,
             },
           };
         }),
@@ -132,7 +127,7 @@ export async function list({
 }
 
 /**
- * getBySlug(slug) - Single category + children + store count
+ * getBySlug(slug) - Parent category + subcategories (NO merchants)
  */
 export async function getBySlug(slug) {
   if (!slug) return null;
@@ -147,7 +142,7 @@ export async function getBySlug(slug) {
         id, name, slug, description, thumb_url, top_banner_url, side_banner_url,
         top_banner_link_url, side_banner_link_url,
         meta_title, meta_keywords, meta_description,
-        is_publish, show_home, show_deals_page, is_header
+        is_publish, show_home, show_deals_page, is_header, parent_id
       `,
       )
       .eq("slug", normSlug)
@@ -163,24 +158,41 @@ export async function getBySlug(slug) {
         .from("merchants")
         .select("id", { count: "exact", head: true })
         .eq("is_publish", true)
-        .eq("category_id", [data.id]);
+        .eq("category_id", data.id);
       storeCount = count || 0;
     } catch (e) {
       console.warn("getBySlug: store count failed:", e);
     }
 
-    // Children categories
-    let children = [];
+    // Subcategories with merchant counts
+    let subcategories = [];
     try {
-      const { data: childData } = await supabase
+      const { data: subData } = await supabase
         .from("merchant_categories_v2")
         .select("id, name, slug, thumb_url")
         .eq("parent_id", data.id)
         .eq("is_publish", true)
         .order("name");
-      children = childData || [];
+
+      // Add merchant count per subcategory
+      subcategories = await Promise.all(
+        (subData || []).map(async (sub) => {
+          const { count } = await supabase
+            .from("merchants")
+            .select("id", { count: "exact", head: true })
+            .eq("is_publish", true)
+            .eq("subcategory_id", sub.id);
+          return {
+            id: sub.id,
+            name: sub.name,
+            slug: sub.slug,
+            thumb_url: sub.thumb_url || null,
+            merchant_count: count || 0,
+          };
+        }),
+      );
     } catch (e) {
-      console.warn("getBySlug: children failed:", e);
+      console.warn("getBySlug: subcategories failed:", e);
     }
 
     return {
@@ -196,11 +208,118 @@ export async function getBySlug(slug) {
       meta_title: data.meta_title || `${data.name} Coupons`,
       meta_description:
         data.meta_description || `Best ${data.name} coupons and deals.`,
-      stats: { stores: storeCount },
-      children,
+      stats: {
+        stores: storeCount,
+        subcategories: subcategories.length,
+      },
+      subcategories,
     };
   } catch (e) {
     console.error("getBySlug error:", e);
+    return null;
+  }
+}
+
+/**
+ * getSubcategoryBySlug(parentSlug, subSlug) - Subcategory + merchants list
+ */
+export async function getSubcategoryBySlug(
+  parentSlug,
+  subSlug,
+  { page = 1, limit = 20 } = {},
+) {
+  if (!parentSlug || !subSlug) return null;
+
+  const offset = (page - 1) * limit;
+
+  try {
+    // Get parent category
+    const { data: parent } = await supabase
+      .from("merchant_categories_v2")
+      .select("id, name, slug")
+      .eq("slug", parentSlug)
+      .eq("is_publish", true)
+      .is("parent_id", null)
+      .maybeSingle();
+
+    if (!parent) return null;
+
+    // Get subcategory
+    const { data: subcategory } = await supabase
+      .from("merchant_categories_v2")
+      .select(
+        `
+        id, name, slug, description, thumb_url,
+        meta_title, meta_description,
+        top_banner_url, side_banner_url,
+        top_banner_link_url, side_banner_link_url
+      `,
+      )
+      .eq("slug", subSlug)
+      .eq("parent_id", parent.id)
+      .eq("is_publish", true)
+      .maybeSingle();
+
+    if (!subcategory) return null;
+
+    // Get total merchant count
+    const { count: totalMerchants } = await supabase
+      .from("merchants")
+      .select("id", { count: "exact", head: true })
+      .eq("is_publish", true)
+      .eq("subcategory_id", subcategory.id);
+
+    // Get merchants for this subcategory
+    const { data: merchants, error: merchantsError } = await supabase
+      .from("merchants")
+      .select(
+        `
+        id, name, slug, logo_url,
+        active_coupons_count,
+        meta_description
+      `,
+      )
+      .eq("is_publish", true)
+      .eq("subcategory_id", subcategory.id)
+      .order("active_coupons_count", { ascending: false })
+      .order("name", { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (merchantsError) throw merchantsError;
+
+    return {
+      parent: {
+        id: parent.id,
+        name: parent.name,
+        slug: parent.slug,
+      },
+      subcategory: {
+        id: subcategory.id,
+        name: subcategory.name,
+        slug: subcategory.slug,
+        description: subcategory.description || "",
+        thumb_url: subcategory.thumb_url || null,
+        top_banner_url: subcategory.top_banner_url || null,
+        side_banner_url: subcategory.side_banner_url || null,
+        top_banner_link_url: subcategory.top_banner_link_url || null,
+        side_banner_link_url: subcategory.side_banner_link_url || null,
+        meta_title:
+          subcategory.meta_title ||
+          `${subcategory.name} Coupons & Deals - ${parent.name}`,
+        meta_description:
+          subcategory.meta_description ||
+          `Browse ${subcategory.name} stores. Find the best coupons and deals.`,
+      },
+      merchants: merchants || [],
+      pagination: {
+        page,
+        limit,
+        total: totalMerchants || 0,
+        totalPages: Math.ceil((totalMerchants || 0) / limit),
+      },
+    };
+  } catch (e) {
+    console.error("getSubcategoryBySlug error:", e);
     return null;
   }
 }

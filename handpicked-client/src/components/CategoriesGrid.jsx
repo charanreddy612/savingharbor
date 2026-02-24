@@ -221,7 +221,7 @@ export default function CategoriesGrid({ apiUrl }) {
                   <div className="text-xs text-gray-500 space-y-1 mt-auto">
                     <div>{category.stats?.stores || 0} stores</div>
                     {category.stats?.children > 0 && (
-                      <div>{category.stats.children} sub-categories</div>
+                      <div>{category.stats.subcategories} sub-categories</div>
                     )}
                   </div>
                 </a>
