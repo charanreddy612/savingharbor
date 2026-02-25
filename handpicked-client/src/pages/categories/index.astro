@@ -21,7 +21,7 @@ const apiUrl = import.meta.env.PUBLIC_API_BASE_URL;
       <p class="mt-2 text-base text-gray-600 max-w-2xl">{pageDesc}</p>
     </div>
 
-    <!-- React island: infinite scroll + letter filters + category cards -->
+    <!-- React island: sidebar + subcategories grid -->
     <CategoriesGrid client:load apiUrl={apiUrl} />
   </main>
   <Footer />

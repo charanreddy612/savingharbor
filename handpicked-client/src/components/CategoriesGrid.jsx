@@ -1,265 +1,235 @@
-// src/components/islands/CategoriesGrid.jsx
-import { useState, useEffect, useRef, useCallback } from "react";
-
-const ALPHABET = [
-  "All",
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "U",
-  "V",
-  "W",
-  "X",
-  "Y",
-  "Z",
-];
-const INITIAL_LOAD = 24;
-const LOAD_MORE = 12;
+// src/components/CategoriesGrid.jsx
+import { useState, useEffect } from "react";
 
 export default function CategoriesGrid({ apiUrl }) {
   const [categories, setCategories] = useState([]);
-  const [selectedLetter, setSelectedLetter] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [cursor, setCursor] = useState(null);
-  const [total, setTotal] = useState(0);
+  const [loadingSubcats, setLoadingSubcats] = useState(false);
   const [error, setError] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const observerRef = useRef(null);
-  const loadMoreRef = useRef(null);
-
-  const fetchCategories = async (
-    letter,
-    currentCursor = null,
-    append = false,
-  ) => {
+  // Fetch parent categories
+  const fetchCategories = async () => {
     try {
       setError(null);
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-
-      const limit = currentCursor === null ? INITIAL_LOAD : LOAD_MORE;
-      let url = `${apiUrl}/categories?limit=${limit}`;
-
-      if (letter !== "All") url += `&letter=${encodeURIComponent(letter)}`;
-      if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
+      setLoading(true);
+      const response = await fetch(`${apiUrl}/categories?limit=100`);
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const data = await response.json();
-      if (!data?.data) throw new Error("Invalid API response");
+      if (!data?.data) throw new Error("Invalid response");
 
-      const newCategories = data.data;
-      const totalCount = data.meta?.total || 0;
-      const nextCursor = data.meta?.nextCursor || null;
+      setCategories(data.data);
 
-      if (append) {
-        setCategories((prev) => [...prev, ...newCategories]);
-      } else {
-        setCategories(newCategories);
+      // Auto-select first category
+      if (data.data.length > 0) {
+        setSelectedCategory(data.data[0]);
+        fetchSubcategories(data.data[0].slug);
       }
-
-      setTotal(totalCount);
-      setHasMore(!!nextCursor);
-      setCursor(nextCursor);
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError(err.message);
-      setHasMore(false);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
-  const handleLetterChange = (letter) => {
-    if (letter === selectedLetter) return;
-    setSelectedLetter(letter);
-    setCursor(null);
-    setHasMore(true);
-    setCategories([]);
-    fetchCategories(letter, null, false);
+  // Fetch subcategories for selected category
+  const fetchSubcategories = async (slug) => {
+    try {
+      setLoadingSubcats(true);
+      const response = await fetch(`${apiUrl}/categories/${slug}`);
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+      const data = await response.json();
+      if (!data?.data) throw new Error("Invalid response");
+
+      setSubcategories(data.data.subcategories || []);
+    } catch (err) {
+      console.error("Error fetching subcategories:", err);
+      setSubcategories([]);
+    } finally {
+      setLoadingSubcats(false);
+    }
   };
 
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && cursor) {
-      fetchCategories(selectedLetter, cursor, true);
-    }
-  }, [loadingMore, hasMore, selectedLetter, cursor]);
+  // Handle category selection
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    setIsMobileMenuOpen(false);
+    fetchSubcategories(category.slug);
+  };
 
   useEffect(() => {
-    if (!loadMoreRef.current || !hasMore || loadingMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { threshold: 0.1, rootMargin: "100px" },
-    );
-
-    observer.observe(loadMoreRef.current);
-    observerRef.current = observer;
-
-    return () => {
-      if (observerRef.current) observerRef.current.disconnect();
-    };
-  }, [hasMore, loadingMore, loadMore]);
-
-  useEffect(() => {
-    fetchCategories("All", null, false);
+    fetchCategories();
   }, []);
 
-  return (
-    <div className="min-h-screen">
-      {/* Alphabet Filter - EXACT StoresGrid copy */}
-      <div className="sticky top-0 z-10 bg-white py-4 mb-6 border-b shadow-sm">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {ALPHABET.map((letter) => (
-            <button
-              key={letter}
-              onClick={() => handleLetterChange(letter)}
-              disabled={loading && selectedLetter !== letter}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedLetter === letter
-                  ? "bg-brand-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
-              }`}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
+    );
+  }
 
-      {/* Count */}
-      <div className="mb-4 text-sm text-gray-600">
-        {loading ? (
-          <span>Loading categories...</span>
-        ) : error ? (
-          <span className="text-red-600">Error: {error}</span>
-        ) : (
-          <span>
-            Showing {categories.length} of {total} categories starting with "
-            {selectedLetter}"
-          </span>
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 text-lg mb-4">Failed to load categories</p>
+        <button
+          onClick={fetchCategories}
+          className="px-6 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[600px]">
+      {/* Mobile: Category Dropdown */}
+      <div className="lg:hidden">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between text-left font-medium"
+        >
+          <span>{selectedCategory?.name || "Select Category"}</span>
+          <svg
+            className={`w-5 h-5 transition-transform ${isMobileMenuOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        {isMobileMenuOpen && (
+          <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat)}
+                className={`w-full px-4 py-3 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
+                  selectedCategory?.id === cat.id
+                    ? "bg-brand-primary/10 text-brand-primary font-semibold"
+                    : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{cat.name}</span>
+                  <span className="text-xs text-gray-500">
+                    {cat.stats?.subcategories || 0} subcategories
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Categories Grid - 4 cols lg */}
-      {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="bg-gray-200 rounded-lg h-48 p-4"></div>
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-red-600 text-lg mb-4">Failed to load categories</p>
-          <button
-            onClick={() => fetchCategories(selectedLetter, null, false)}
-            className="px-6 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      ) : categories.length > 0 ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {categories
-              // .filter((cat) => cat.stats?.stores > 0)
-              .map((category) => (
-                <a
-                  key={category.id}
-                  href={`/categories/${category.slug}`}
-                  className="group rounded-lg bg-white border border-gray-200 p-4 h-full transition-all hover:shadow-lg hover:border-brand-primary flex flex-col"
-                >
-                  {/* Category Image */}
-                  <div className="aspect-square mb-3 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg overflow-hidden">
-                    {category.thumb_url ? (
-                      <img
-                        src={category.thumb_url}
-                        alt={category.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-to-r from-brand-primary/20 to-brand-primary rounded-lg flex items-center justify-center">
-                        <span className="text-brand-primary text-xl font-bold">
-                          🏷️
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Category Name */}
-                  <h3 className="text-sm font-semibold text-gray-900 text-center mb-2 group-hover:text-brand-primary transition-colors line-clamp-2">
-                    {category.name}
-                  </h3>
-
-                  {/* Stats */}
-                  <div className="text-xs text-gray-500 space-y-1 mt-auto">
-                    <div>{category.stats?.stores || 0} stores</div>
-                    {category.stats?.subcategories > 0 && (
-                      <div>{category.stats.subcategories} sub-categories</div>
-                    )}
-                  </div>
-                </a>
-              ))}
+      {/* Desktop: Left Sidebar */}
+      <aside className="hidden lg:block lg:w-64 flex-shrink-0">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-4">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h2 className="font-semibold text-gray-900">Categories</h2>
           </div>
-
-          {/* Load More - EXACT StoresGrid copy */}
-          {hasMore && (
-            <div ref={loadMoreRef} className="mt-8 flex justify-center py-8">
-              {loadingMore ? (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                  <span>Loading more categories...</span>
+          <nav className="max-h-[calc(100vh-200px)] overflow-y-auto">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat)}
+                className={`w-full px-4 py-3 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${
+                  selectedCategory?.id === cat.id
+                    ? "bg-brand-primary/10 text-brand-primary font-semibold border-l-4 border-l-brand-primary"
+                    : "text-gray-700"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">{cat.name}</span>
+                  {cat.stats?.subcategories > 0 && (
+                    <span className="text-xs text-gray-400">
+                      {cat.stats.subcategories}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <button
-                  onClick={loadMore}
-                  className="px-6 py-3 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors"
-                >
-                  Load More
-                </button>
-              )}
-            </div>
-          )}
-
-          {!hasMore && categories.length > 0 && (
-            <div className="mt-8 text-center text-gray-500 py-4">
-              <p>You've reached the end of the categories list</p>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
-            No categories found starting with "{selectedLetter}"
-          </p>
+              </button>
+            ))}
+          </nav>
         </div>
-      )}
+      </aside>
+
+      {/* Right: Subcategories Grid */}
+      <main className="flex-1">
+        {selectedCategory && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {selectedCategory.name}
+            </h2>
+            {selectedCategory.description && (
+              <p className="mt-2 text-gray-600">
+                {selectedCategory.description}
+              </p>
+            )}
+            <p className="mt-1 text-sm text-gray-500">
+              {subcategories.length} subcategories ·{" "}
+              {selectedCategory.stats?.stores || 0} stores
+            </p>
+          </div>
+        )}
+
+        {loadingSubcats ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-200 rounded-lg h-40"></div>
+              </div>
+            ))}
+          </div>
+        ) : subcategories.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {subcategories.map((subcat) => (
+              <a
+                key={subcat.id}
+                href={`/categories/${selectedCategory.slug}/${subcat.slug}`}
+                className="group bg-white rounded-lg border border-gray-200 p-5 hover:shadow-lg hover:border-brand-primary transition-all"
+              >
+                <div className="w-12 h-12 mb-3 bg-gradient-to-br from-brand-primary/10 to-brand-primary/20 rounded-lg flex items-center justify-center">
+                  {subcat.thumb_url ? (
+                    <img
+                      src={subcat.thumb_url}
+                      alt={subcat.name}
+                      className="w-full h-full object-cover rounded-lg"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="text-2xl">📦</span>
+                  )}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-brand-primary transition-colors line-clamp-2">
+                  {subcat.name}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {subcat.merchant_count || 0}{" "}
+                  {subcat.merchant_count === 1 ? "store" : "stores"}
+                </p>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            <p>No subcategories available</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
