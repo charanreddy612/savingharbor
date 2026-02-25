@@ -104,6 +104,33 @@ try {
   resp = { data: null, meta: { title: "Store - Saving Harbor", description: "Store details unavailable." } };
 }
 const store = resp?.data || null;
+
+//Dynamic breadcrumbs if referred from category page
+const refType = Astro.url.searchParams.get("ref");
+const parentSlug = Astro.url.searchParams.get("parent");
+const subSlug = Astro.url.searchParams.get("sub");
+
+let breadcrumbs = store?.breadcrumbs;
+
+if (store && refType === "category" && parentSlug && subSlug) {
+  const apiUrl = import.meta.env.PUBLIC_API_BASE_URL;
+  try {
+    const res = await fetch(`${apiUrl}/categories/${parentSlug}/${subSlug}`);
+    const catData = await res.json();
+    if (catData?.data) {
+      breadcrumbs = [
+        { name: "Home", url: "/" },
+        { name: "Categories", url: "/categories" },
+        { name: catData.data.parent.name, url: `/categories/${parentSlug}` },
+        { name: catData.data.subcategory.name, url: `/categories/${parentSlug}/${subSlug}` },
+        { name: store.name, url: `/stores/${store.slug}` },
+      ];
+    }
+  } catch (e) {
+    console.error("Breadcrumb category fetch failed:", e);
+  }
+}
+
 const meta = resp?.meta || {};
 const pageTitle = meta?.title || (store?.name ? `${store.name} - Saving Harbor` : "Store - Saving Harbor");
 const pageDesc =
@@ -180,7 +207,7 @@ try {
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     {store ? (
       <>
-        <Breadcrumbs breadcrumbs={store.breadcrumbs} />
+        <Breadcrumbs breadcrumbs={breadcrumbs} />
         
         <!-- Hero: left column wider (flexible) + right column for descriptions -->
         <section class="mt-4">

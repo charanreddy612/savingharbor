@@ -226,7 +226,7 @@ export async function getBySlug(slug) {
 export async function getSubcategoryBySlug(
   parentSlug,
   subSlug,
-  { page = 1, limit = 20 } = {},
+  { cursor = null, limit = 20 } = {},
 ) {
   if (!parentSlug || !subSlug) return null;
 
@@ -270,22 +270,40 @@ export async function getSubcategoryBySlug(
       .eq("subcategory_id", subcategory.id);
 
     // Get merchants for this subcategory
-    const { data: merchants, error: merchantsError } = await supabase
+    let query = supabase
       .from("merchants")
       .select(
-        `
-        id, name, slug, logo_url,
-        active_coupons_count,
-        meta_description
-      `,
+        `id, name, slug, logo_url, active_coupons_count, meta_description`,
       )
       .eq("is_publish", true)
       .eq("subcategory_id", subcategory.id)
       .order("active_coupons_count", { ascending: false })
       .order("name", { ascending: true })
-      .range(offset, offset + limit - 1);
+      .limit(limit + 1); // fetch one extra to know if there's a next page
 
+    if (cursor) {
+      const { count, name } = JSON.parse(atob(cursor));
+      // Keyset: rows where (count < cursor_count) OR (count = cursor_count AND name > cursor_name)
+      query = query.or(
+        `active_coupons_count.lt.${count},and(active_coupons_count.eq.${count},name.gt.${name})`,
+      );
+    }
+
+    const { data: merchants, error: merchantsError } = await query;
     if (merchantsError) throw merchantsError;
+
+    const hasMore = merchants.length > limit;
+    const items = hasMore ? merchants.slice(0, limit) : merchants;
+
+    const lastItem = items[items.length - 1];
+    const nextCursor = hasMore
+      ? btoa(
+          JSON.stringify({
+            count: lastItem.active_coupons_count,
+            name: lastItem.name,
+          }),
+        )
+      : null;
 
     return {
       parent: {
@@ -310,12 +328,12 @@ export async function getSubcategoryBySlug(
           subcategory.meta_description ||
           `Browse ${subcategory.name} stores. Find the best coupons and deals.`,
       },
-      merchants: merchants || [],
+      merchants: items || [],
       pagination: {
-        page,
-        limit,
         total: totalMerchants || 0,
-        totalPages: Math.ceil((totalMerchants || 0) / limit),
+        limit,
+        nextCursor,
+        hasMore,
       },
     };
   } catch (e) {

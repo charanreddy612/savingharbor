@@ -135,18 +135,18 @@ export async function subcategoryDetail(req, res) {
       return badRequest(res, "Invalid category or subcategory slug");
     }
 
-    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const cursor = req.query.cursor || null;
     const limit = valLimit(req.query.limit) || 20;
 
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
-    const params = { parentSlug, subSlug, page, limit, origin, path };
+    const params = { parentSlug, subSlug, cursor, limit, origin, path };
 
     const cacheKey = makeListCacheKey("subcategories", {
       parentSlug,
       subSlug,
-      page,
+      cursor,
       limit,
     });
 
@@ -156,7 +156,7 @@ export async function subcategoryDetail(req, res) {
         const data = await CategoriesRepo.getSubcategoryBySlug(
           params.parentSlug,
           params.subSlug,
-          { page: params.page, limit: params.limit },
+          { cursor: params.cursor, limit: params.limit },
         );
 
         if (!data) return { data: null, meta: { status: 404 } };

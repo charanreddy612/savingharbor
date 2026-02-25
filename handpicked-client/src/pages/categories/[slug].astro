@@ -4,7 +4,7 @@ import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import StoresGrid from "../../components/StoresGrid.jsx"; // Reuse stores grid w/ category filter
+import ParentCategorySubcategories from "../../components/ParentCategorySubcategories.jsx"; // Reuse stores grid w/ category filter
 import { api } from "../../lib/api";
 
 interface Breadcrumb {
@@ -81,7 +81,7 @@ const canonical = category?.meta?.canonical;
 
           {/* Stores Grid - filtered by this category */}
           <div class="mt-12">
-            <StoresGrid
+            <ParentCategorySubcategories
               client:load
               apiUrl={import.meta.env.PUBLIC_API_BASE_URL}
               categorySlug={slug}
