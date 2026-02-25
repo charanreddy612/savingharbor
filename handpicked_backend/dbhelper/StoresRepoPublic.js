@@ -61,7 +61,7 @@ export async function list({
       let query = supabase
         .from("merchants")
         .select("id, slug, name, logo_url, active_coupons_count")
-        .eq("tag_home", true) //
+        .eq("home", true) //
         .order("created_at", { ascending: false })
         .range(0, safeLimit - 1);
 
