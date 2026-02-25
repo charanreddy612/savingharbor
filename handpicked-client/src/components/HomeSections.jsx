@@ -1,7 +1,7 @@
 // src/components/HomeSections.jsx
-import PopularCategories from "./PopularCategories.jsx";
-import TopStores from "./TopStores.jsx";
-import TopDeals from "./TopDeals.jsx";
+import PopularCategories from "./CategoriesSection.jsx";
+import TopStores from "./StoresSection.jsx";
+import TopDeals from "./DealsSection.jsx";
 import TestimonialsCarousel from "./TestimonialsCarousel.jsx";
 
 /**
