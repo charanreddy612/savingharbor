@@ -48,7 +48,7 @@ async function fetchAndWrite(path, outFile) {
 
 (async () => {
   await Promise.all([
-    fetchAndWrite("/stores?limit=8&mode=homepage", `${OUT_DIR}/home.json`),
-    fetchAndWrite("/coupons?limit=8&mode=homepage", `${OUT_DIR}/coupons.json`),
+    fetchAndWrite("/stores?limit=8&home=true&mode=homepage", `${OUT_DIR}/home.json`),
+    fetchAndWrite("/coupons?limit=8&home=true&mode=homepage", `${OUT_DIR}/coupons.json`),
   ]);
 })();

@@ -71,7 +71,6 @@ export async function list(req, res) {
           const safeRows = Array.isArray(data) ? data : [];
 
           const offers = safeRows
-            .filter((i) => !!i.ends_at)
             .map((i) => buildOfferJsonLd(i, params.origin));
 
           let apiNext = null;
