@@ -41,7 +41,8 @@ export async function list(req, res) {
 
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
-
+    const mode = req.query.mode || "default";
+    
     const params = {
       q: q.trim(),
       categorySlug,
@@ -52,9 +53,10 @@ export async function list(req, res) {
       path,
       seasonSlug,
       letter,
-      cursor, // cursor for keyset pagination
+      mode,
+      cursor,
     };
-
+0
     const cacheKey = makeListCacheKey("stores", {
       limit,
       q: params.q || "",
@@ -64,6 +66,7 @@ export async function list(req, res) {
       season: params.seasonSlug || "",
       letter: params.letter || "",
       cursor: params.cursor || "",
+      mode: params.mode || "",
     });
 
     const result = await withCache(

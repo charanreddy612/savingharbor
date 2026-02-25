@@ -11,6 +11,11 @@ export function makeListCacheKey(prefix, params = {}) {
     "sort",
     "locale",
     "status",
+    "parentSlug", 
+    "subSlug", 
+    "cursor", 
+    "mode",
+    "showHome",
   ];
   const parts = [prefix];
   for (const k of ordered) {

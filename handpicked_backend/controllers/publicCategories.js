@@ -30,6 +30,8 @@ export async function list(req, res) {
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
 
+    const showHome = req.query.show_home === "true";
+
     const params = {
       q: q.trim(),
       sort,
@@ -39,6 +41,7 @@ export async function list(req, res) {
       path,
       letter,
       cursor: cursor || null,
+      showHome,
     };
 
     const cacheKey = makeListCacheKey("categories", {
@@ -48,6 +51,7 @@ export async function list(req, res) {
       locale: params.locale || "",
       letter: params.letter || "",
       cursor: params.cursor || "",
+      showHome: String(showHome),
     });
 
     const result = await withCache(

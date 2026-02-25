@@ -12,6 +12,7 @@ export async function list({
   cursor = null,
   limit = 100,
   skipCount = false,
+  showHome = false,
 } = {}) {
   const safeLimit = Number(limit) >= 1 ? Number(limit) : 20;
 
@@ -27,10 +28,13 @@ export async function list({
       `,
       )
       .eq("is_publish", true)
-      .is("parent_id", null) // ROOT only
-      .order("name", { ascending: true })
-      .order("id", { ascending: true })
-      .limit(safeLimit + 1);
+      .is("parent_id", null); // ROOT only
+    if (showHome)
+      query = query
+        .eq("show_home", true)
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(safeLimit + 1);
 
     // Search filter
     if (q) query = query.ilike("name", `%${q}%`);

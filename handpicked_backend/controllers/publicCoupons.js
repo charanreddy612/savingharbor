@@ -36,6 +36,7 @@ export async function list(req, res) {
 
     const origin = await Promise.resolve(getOrigin(req, { trustProxy: false }));
     const path = await Promise.resolve(getPath(req));
+    const mode = req.query.mode || "default";
 
     const params = {
       q: q.trim(),
@@ -49,6 +50,7 @@ export async function list(req, res) {
       cursor,
       origin,
       path,
+      mode,
     };
 
     const cacheKey = makeListCacheKey("coupons", {
@@ -59,6 +61,7 @@ export async function list(req, res) {
       sort: params.sort || "",
       locale: params.locale || "",
       type: params.type || "",
+      mode: params.mode || "",
     });
 
     const ttlSeconds = 0;
@@ -70,8 +73,9 @@ export async function list(req, res) {
           const { data, meta } = await CouponsRepo.list(params);
           const safeRows = Array.isArray(data) ? data : [];
 
-          const offers = safeRows
-            .map((i) => buildOfferJsonLd(i, params.origin));
+          const offers = safeRows.map((i) =>
+            buildOfferJsonLd(i, params.origin),
+          );
 
           let apiNext = null;
           let apiPrev = null;
