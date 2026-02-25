@@ -1,7 +1,7 @@
 // src/components/HomeSections.jsx
 import PopularCategories from "./CategoriesSection.jsx";
-import TopStores from "./StoresSection.jsx";
-import TopDeals from "./DealsSection.jsx";
+import StoresSection from "./StoresSection.jsx";
+import DealsSection from "./DealsSection.jsx";
 import TestimonialsCarousel from "./TestimonialsCarousel.jsx";
 
 /**
@@ -15,9 +15,9 @@ export default function HomeSections({
 }) {
   return (
     <>
+      <StoresSection apiUrl={apiUrl} />
+      <DealsSection apiUrl={apiUrl} />
       <PopularCategories apiUrl={apiUrl} />
-      <TopStores apiUrl={apiUrl} />
-      <TopDeals apiUrl={apiUrl} />
       <TestimonialsCarousel
         items={testimonials}
         avgRating={avgRating}

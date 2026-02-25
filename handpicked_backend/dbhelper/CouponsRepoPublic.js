@@ -86,11 +86,11 @@ export async function list({
     if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
     if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
     if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
-    if (status !== "all") {
-      qBuilder = qBuilder.or(
-        `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
-      );
-    }
+    // if (status !== "all") {
+    //   qBuilder = qBuilder.or(
+    //     `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+    //   );
+    // }
     if (categoryName) {
       const { data: mids, error: mErr } = await supabase
         .from("merchants")
@@ -156,11 +156,11 @@ export async function list({
   if (q) qBuilder = qBuilder.ilike("title", `%${q}%`);
   if (merchantId) qBuilder = qBuilder.eq("merchant_id", merchantId);
   if (type && type !== "all") qBuilder = qBuilder.eq("coupon_type", type);
-  if (status !== "all") {
-    qBuilder = qBuilder.or(
-      `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
-    );
-  }
+  // if (status !== "all") {
+  //   qBuilder = qBuilder.or(
+  //     `ends_at.is.null,ends_at.gt.${new Date().toISOString()}`,
+  //   );
+  // }
   if (categoryName) {
     const { data: mids, error: mErr } = await supabase
       .from("merchants")
@@ -236,9 +236,7 @@ export async function listForStore({
   if (type !== "all") query = query.eq("coupon_type", type);
 
   // Sorting optimizations
-  if (sort === "ending") {
-    query = query.order("ends_at", { ascending: true, nullsFirst: false });
-  } else if (sort === "editor") {
+  if (sort === "editor") {
     query = query
       .order("is_editor", { ascending: false })
       .order("id", { ascending: false });
