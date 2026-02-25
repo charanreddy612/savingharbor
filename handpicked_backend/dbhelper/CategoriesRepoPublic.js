@@ -230,8 +230,6 @@ export async function getSubcategoryBySlug(
 ) {
   if (!parentSlug || !subSlug) return null;
 
-  const offset = (page - 1) * limit;
-
   try {
     // Get parent category
     const { data: parent } = await supabase
