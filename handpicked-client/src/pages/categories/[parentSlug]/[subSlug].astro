@@ -70,24 +70,42 @@ const canonical = `https://savingharbor.com/categories/${parentSlug}/${subSlug}`
     </nav>
 
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-brand-primary">
-        {subcategoryData.subcategory.name}
-      </h1>
+    <!-- Hero -->
+    <section class="mt-8">
       {
-        subcategoryData.subcategory.description && (
-          <p class="mt-2 text-base text-gray-600 max-w-3xl">
-            {subcategoryData.subcategory.description}
-          </p>
+        subcategoryData.subcategory.thumb_url && (
+          <div class="w-full h-48 md:h-64 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl overflow-hidden mb-6">
+            <img
+              src={subcategoryData.subcategory.thumb_url}
+              alt={subcategoryData.subcategory.name}
+              class="w-full h-full object-contain p-4"
+            />
+          </div>
         )
       }
-      <p class="mt-2 text-sm text-gray-500">
-        {subcategoryData.pagination.total} stores in {
-          subcategoryData.subcategory.name
+      <div class="text-center md:text-left">
+        <h1
+          class="text-4xl md:text-5xl font-extrabold text-brand-primary leading-tight mb-4"
+        >
+          {subcategoryData.subcategory.name}
+        </h1>
+        {
+          subcategoryData.subcategory.description && (
+            <div class="max-w-2xl mx-auto md:ml-0 text-lg text-gray-600 mb-8">
+              {subcategoryData.subcategory.description}
+            </div>
+          )
         }
-      </p>
-    </div>
-
+        <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+          <span class="pill pill-green">
+            {subcategoryData.pagination.total} stores
+          </span>
+          <span class="pill pill-blue">
+            {subcategoryData.parent.name}
+          </span>
+        </div>
+      </div>
+    </section>
     <!-- Merchants Grid (Client-side with pagination) -->
     <SubcategoryMerchants
       client:load

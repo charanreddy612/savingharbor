@@ -207,7 +207,7 @@ export default function CategoriesGrid({ apiUrl }) {
                     <img
                       src={subcat.thumb_url}
                       alt={subcat.name}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-contain rounded-lg"
                       loading="lazy"
                     />
                   ) : (
