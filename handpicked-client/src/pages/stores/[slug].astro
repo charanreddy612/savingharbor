@@ -290,6 +290,8 @@ try {
             <!-- Coupons -->
             <section id="coupons">
               <h2 class="section-heading">Coupons & Deals</h2>
+                          <!-- Merchant proofs -->
+            <MerchantProofsIsland client:visible proofs={proofs} />
               {store.coupons?.items && store.coupons.items.length > 0 ? (
                 <div class="flex flex-col gap-3">
                   {store.coupons.items.map((c) => (
@@ -302,8 +304,6 @@ try {
                 <p class="text-gray-500">No active coupons at the moment.</p>
               )}
             </section>
-            <!-- Merchant proofs -->
-            <MerchantProofsIsland client:visible proofs={proofs} />
             <!-- About Store -->
             <section id="about-section" class="card-base p-6">
               <h2 class="section-heading">About this store</h2>
