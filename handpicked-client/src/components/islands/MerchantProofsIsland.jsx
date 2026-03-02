@@ -71,20 +71,21 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
             <button
               key={p.id}
               onClick={() => openLightbox(idx)}
-              className="relative block border rounded-lg overflow-hidden hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none"
+              className="relative block rounded-xl p-[1px] bg-gradient-to-br from-[rgba(255,90,31,0.25)] via-transparent to-[rgba(184,242,0,0.35)] hover:shadow-md hover:scale-[1.02] transition-all duration-300"
               aria-label={`Open proof ${p.filename}`}
             >
-              <img
-                src={p.image_url}
-                alt={p.filename}
-                loading="lazy"
-                decoding="async"
-                className="object-cover w-full h-32 sm:h-36 lg:h-40 transition-transform duration-300 ease-in-out"
-              />
-              <div className="text-xs text-gray-500 mt-1 px-1 truncate">
-                {p.filename}
+              <div className="bg-white rounded-xl overflow-hidden">
+                <img
+                  src={p.image_url}
+                  alt={p.filename}
+                  loading="lazy"
+                  decoding="async"
+                  className="object-cover w-full h-32 sm:h-36 lg:h-40"
+                />
+                <div className="text-xs text-gray-500 mt-1 px-1 truncate">
+                  {p.filename}
+                </div>
               </div>
-
               {/* Right-arrow overlay on the rightmost visible thumbnail when more images exist */}
               {idx === visibleProofs.length - 1 &&
                 startIndex + idx < proofsArr.length - 1 && (
