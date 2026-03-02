@@ -71,10 +71,10 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
             <button
               key={p.id}
               onClick={() => openLightbox(idx)}
-              className="relative block rounded-xl p-[1px] bg-gradient-to-br from-[rgba(255,90,31,0.25)] via-transparent to-[rgba(184,242,0,0.35)] hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+              className="relative block rounded-xl p-[2px] bg-gradient-to-br from-[rgba(255,90,31,0.4)] via-transparent to-[rgba(184,242,0,0.5)] hover:shadow-md hover:scale-[1.02] transition-all duration-300"
               aria-label={`Open proof ${p.filename}`}
             >
-              <div className="bg-white rounded-xl overflow-hidden">
+              <div className="bg-white rounded-xl overflow-hidden m-[1px]">
                 <img
                   src={p.image_url}
                   alt={p.filename}
