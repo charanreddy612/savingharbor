@@ -61,7 +61,7 @@ export default function MerchantProofsIsland({ proofs: initialProofs = [] }) {
   return (
     <section className="mt-8" aria-labelledby="merchant-proofs-heading">
       <h2 id="merchant-proofs-heading" className="section-heading">
-        Proof Images
+        Coupon Proof Images
       </h2>
 
       <div className="relative mt-4">
